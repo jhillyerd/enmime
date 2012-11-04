@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mime"
 	"net/mail"
+	"strings"
 )
 
 type MIMEBody struct {
@@ -44,10 +45,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch mediatype {
-		case "multipart/alternative":
-			// Good
-		default:
+		if !strings.HasPrefix(mediatype, "multipart/") {
 			return nil, fmt.Errorf("Unknown mediatype: %v", mediatype)
 		}
 		boundary := params["boundary"]
@@ -63,7 +61,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		}
 
 		// Locate text body
-		match := root.BreadthFirstSearch(func(node *MIMEPart) bool {
+		match := root.BreadthMatchFirst(func(node *MIMEPart) bool {
 			return node.Type == "text/plain"
 		})
 		if match != nil {
@@ -71,7 +69,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		}
 
 		// Locate HTML body
-		match = root.BreadthFirstSearch(func(node *MIMEPart) bool {
+		match = root.BreadthMatchFirst(func(node *MIMEPart) bool {
 			return node.Type == "text/html"
 		})
 		if match != nil {
