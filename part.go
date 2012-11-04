@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"github.com/sloonz/go-qprintable"
 	"io"
 	"mime"
@@ -13,38 +12,70 @@ import (
 	"strings"
 )
 
-// MIMEPart contains a single part of a multipart MIME document, the tree
-// may be navigated via the Parent, FirstChild and NextSibling pointers.
-type MIMEPart struct {
-	Parent      *MIMEPart
-	FirstChild  *MIMEPart
-	NextSibling *MIMEPart
-	Header      textproto.MIMEHeader
-	Type        string
-	Disposition string
-	FileName    string
-	Content     []byte
+type MIMEPart interface {
+	Parent() MIMEPart
+	FirstChild() MIMEPart
+	NextSibling() MIMEPart
+	Header() textproto.MIMEHeader
+	ContentType() string
+	Disposition() string
+	FileName() string
+	// TODO Content should probably be a reader
+	Content() []byte
 }
 
-func NewMIMEPart(parent *MIMEPart, contentType string) *MIMEPart {
-	return &MIMEPart{Parent: parent, Type: contentType}
+// memMIMEPart contains a single part of a multipart MIME document in memory,
+// the tree may be navigated via the Parent, FirstChild and NextSibling pointers.
+type memMIMEPart struct {
+	parent      MIMEPart
+	firstChild  MIMEPart
+	nextSibling MIMEPart
+	header      textproto.MIMEHeader
+	contentType string
+	disposition string
+	fileName    string
+	content     []byte
 }
 
-func (n *MIMEPart) String() string {
-	children := ""
-	siblings := ""
-	if n.FirstChild != nil {
-		children = n.FirstChild.String()
-	}
-	if n.NextSibling != nil {
-		siblings = n.NextSibling.String()
-	}
-	return fmt.Sprintf("[%v %v] %v", n.Type, children, siblings)
+func NewMIMEPart(parent MIMEPart, contentType string) *memMIMEPart {
+	return &memMIMEPart{parent: parent, contentType: contentType}
+}
+
+func (p *memMIMEPart) Parent() MIMEPart {
+	return p.parent
+}
+
+func (p *memMIMEPart) FirstChild() MIMEPart {
+	return p.firstChild
+}
+
+func (p *memMIMEPart) NextSibling() MIMEPart {
+	return p.nextSibling
+}
+
+func (p *memMIMEPart) Header() textproto.MIMEHeader {
+	return p.header
+}
+
+func (p *memMIMEPart) ContentType() string {
+	return p.contentType
+}
+
+func (p *memMIMEPart) Disposition() string {
+	return p.disposition
+}
+
+func (p *memMIMEPart) FileName() string {
+	return p.fileName
+}
+
+func (p *memMIMEPart) Content() []byte {
+	return p.content
 }
 
 // ParseMIME reads a MIME document from the provided reader and parses it into
 // tree of MIMEPart objects.
-func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
+func ParseMIME(reader *bufio.Reader) (MIMEPart, error) {
 	tr := textproto.NewReader(reader)
 	header, err := tr.ReadMIMEHeader()
 	if err != nil {
@@ -54,7 +85,7 @@ func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 	if err != nil {
 		return nil, err
 	}
-	root := &MIMEPart{Header: header, Type: mediatype}
+	root := &memMIMEPart{header: header, contentType: mediatype}
 
 	if strings.HasPrefix(mediatype, "multipart/") {
 		boundary := params["boundary"]
@@ -68,15 +99,15 @@ func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 		if err != nil {
 			return nil, err
 		}
-		root.Content = content
+		root.content = content
 	}
 
 	return root, nil
 }
 
 // parseParts recursively parses a mime multipart document.
-func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
-	var prevSibling *MIMEPart
+func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
+	var prevSibling *memMIMEPart
 
 	// Loop over MIME parts
 	mr := multipart.NewReader(reader, boundary)
@@ -98,9 +129,9 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 		// Insert ourselves into tree, p is go-mime's mime-part
 		p := NewMIMEPart(parent, mediatype)
 		if prevSibling != nil {
-			prevSibling.NextSibling = p
+			prevSibling.nextSibling = p
 		} else {
-			parent.FirstChild = p
+			parent.firstChild = p
 		}
 		prevSibling = p
 
@@ -108,11 +139,11 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 		disposition, dparams, err := mime.ParseMediaType(mrp.Header.Get("Content-Disposition"))
 		if err == nil {
 			// Disposition is optional
-			p.Disposition = disposition
-			p.FileName = dparams["filename"]
+			p.disposition = disposition
+			p.fileName = dparams["filename"]
 		}
-		if p.FileName == "" && mparams["name"] != "" {
-			p.FileName = mparams["name"]
+		if p.fileName == "" && mparams["name"] != "" {
+			p.fileName = mparams["name"]
 		}
 
 		boundary := mparams["boundary"]
@@ -128,7 +159,7 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 			if err != nil {
 				return err
 			}
-			p.Content = data
+			p.content = data
 		}
 	}
 

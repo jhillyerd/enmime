@@ -61,19 +61,19 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		}
 
 		// Locate text body
-		match := root.BreadthMatchFirst(func(node *MIMEPart) bool {
-			return node.Type == "text/plain"
+		match := BreadthMatchFirst(root, func(node MIMEPart) bool {
+			return node.ContentType() == "text/plain"
 		})
 		if match != nil {
-			mimeMsg.Text = string(match.Content)
+			mimeMsg.Text = string(match.Content())
 		}
 
 		// Locate HTML body
-		match = root.BreadthMatchFirst(func(node *MIMEPart) bool {
-			return node.Type == "text/html"
+		match = BreadthMatchFirst(root, func(node MIMEPart) bool {
+			return node.ContentType() == "text/html"
 		})
 		if match != nil {
-			mimeMsg.Html = string(match.Content)
+			mimeMsg.Html = string(match.Content())
 		}
 	}
 

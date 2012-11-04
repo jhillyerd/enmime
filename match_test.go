@@ -15,12 +15,12 @@ func TestBreadthMatchFirst(t *testing.T) {
 	}
 	assert.NotNil(t, root, "Root node should not be nil")
 
-	p := root.BreadthMatchFirst(func(pt *MIMEPart) bool { return pt.Type == "text/plain" })
+	p := BreadthMatchFirst(root, func(pt MIMEPart) bool { return pt.ContentType() == "text/plain" })
 	assert.NotNil(t, p, "BreathMatchFirst should have returned a result for text/plain")
-	assert.Contains(t, string(p.Content), "A text section")
+	assert.Contains(t, string(p.Content()), "A text section")
 
-	p = root.BreadthMatchFirst(func(pt *MIMEPart) bool { return pt.Type == "text/html" })
+	p = BreadthMatchFirst(root, func(pt MIMEPart) bool { return pt.ContentType() == "text/html" })
 	assert.NotNil(t, p, "BreathMatchFirst should have returned a result for text/html")
-	assert.Contains(t, string(p.Content), "An HTML section")
+	assert.Contains(t, string(p.Content()), "An HTML section")
 }
 
