@@ -1,12 +1,14 @@
 package enmime
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/sloonz/go-qprintable"
 	"io"
 	"mime"
 	"mime/multipart"
+	"net/textproto"
 	"strings"
 )
 
@@ -15,6 +17,7 @@ type MIMEPart struct {
 	FirstChild  *MIMEPart
 	NextSibling *MIMEPart
 	Type        string
+	Header      textproto.MIMEHeader
 	Content     []byte
 }
 
@@ -55,6 +58,36 @@ func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func parseRoot(reader *bufio.Reader) (*MIMEPart, error) {
+	tr := textproto.NewReader(reader)
+	header, err := tr.ReadMIMEHeader()
+	if err != nil {
+	  return nil, err
+	}
+	mediatype, params, err := mime.ParseMediaType(header.Get("Content-Type"))
+	if err != nil {
+	  return nil, err
+	}
+	root := &MIMEPart{Header: header, Type: mediatype}
+
+	if strings.HasPrefix(mediatype, "multipart/") {
+		boundary := params["boundary"]
+		err = parseParts(root, reader, boundary)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Content is text or data, decode it
+		content, err := decodeSection(header.Get("Content-Transfer-Encoding"), reader)
+		if err != nil {
+			return nil, err
+		}
+		root.Content = content
+	}
+
+	return root, nil
 }
 
 func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
