@@ -1,0 +1,22 @@
+From: James Hillyerd <james@makita.skynet>
+Subject: Attachment
+Date: Thu, 18 Oct 2012 22:48:39 -0700
+Message-Id: <07B7061D-2676-487E-942E-C341CE4D13DC@makita.skynet>
+To: greg@inbucket
+Mime-Version: 1.0 
+Content-Type: multipart/mixed; boundary="Enmime-Test-100"
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+A text section
+--Enmime-Test-100
+Content-Transfer-Encoding: base64
+Content-Type: text/html; name="test.html"
+Content-Disposition: attachment; filename=test.html
+
+PGh0bWw+Cg==
+
+--Enmime-Test-100--
+

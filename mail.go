@@ -8,12 +8,14 @@ import (
 )
 
 type MIMEBody struct {
-	Text string
-	Html string
-	Root *MIMEPart
+	Text        string
+	Html        string
+	Root        MIMEPart
+	Attachments []MIMEPart
+	Inlines     []MIMEPart
 }
 
-func IsMIMEMessage(mailMsg *mail.Message) bool {
+func IsMultipartMessage(mailMsg *mail.Message) bool {
 	// Parse top-level multipart
 	ctype := mailMsg.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(ctype)
@@ -21,7 +23,9 @@ func IsMIMEMessage(mailMsg *mail.Message) bool {
 		return false
 	}
 	switch mediatype {
-	case "multipart/alternative":
+	case "multipart/alternative",
+		"multipart/mixed",
+		"multipart/related":
 		return true
 	}
 
@@ -31,7 +35,7 @@ func IsMIMEMessage(mailMsg *mail.Message) bool {
 func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	mimeMsg := new(MIMEBody)
 
-	if !IsMIMEMessage(mailMsg) {
+	if !IsMultipartMessage(mailMsg) {
 		// Parse as text only
 		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
 		if err != nil {
@@ -61,20 +65,30 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		}
 
 		// Locate text body
-		match := BreadthMatchFirst(root, func(node MIMEPart) bool {
-			return node.ContentType() == "text/plain"
+		match := BreadthMatchFirst(root, func(p MIMEPart) bool {
+			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		if match != nil {
 			mimeMsg.Text = string(match.Content())
 		}
 
 		// Locate HTML body
-		match = BreadthMatchFirst(root, func(node MIMEPart) bool {
-			return node.ContentType() == "text/html"
+		match = BreadthMatchFirst(root, func(p MIMEPart) bool {
+			return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 		})
 		if match != nil {
 			mimeMsg.Html = string(match.Content())
 		}
+
+		// Locate attachments
+		mimeMsg.Attachments = BreadthMatchAll(root, func(p MIMEPart) bool {
+			return p.Disposition() == "attachment"
+		})
+
+		// Locate inlines
+		mimeMsg.Inlines = BreadthMatchAll(root, func(p MIMEPart) bool {
+			return p.Disposition() == "inline"
+		})
 	}
 
 	return mimeMsg, nil
