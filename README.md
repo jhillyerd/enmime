@@ -15,7 +15,7 @@ About
 -----
 enmime is written in [Google Go][1].
 
-go-mime is open source software released under the MIT License.  The latest
-version can be found at https://github.com/jhillyerd/go-mime
+enmime is open source software released under the MIT License.  The latest
+version can be found at https://github.com/jhillyerd/go.enmime
 
 [1]: http://golang.org/
