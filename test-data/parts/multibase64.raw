@@ -1,0 +1,16 @@
+Content-Type: multipart/mixed; boundary="Enmime-Test-100"
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+A text section
+--Enmime-Test-100
+Content-Transfer-Encoding: base64
+Content-Type: text/html; name="test.html"
+Content-Disposition: attachment; filename=test.html
+
+PGh0bWw+Cg==
+
+--Enmime-Test-100--
+

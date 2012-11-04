@@ -58,6 +58,9 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		// Root Node of our tree
 		root := NewMIMEPart(nil, mediatype)
 		err = parseParts(root, mailMsg.Body, boundary)
+		if err != nil {
+			return nil, err
+		}
 
 		// Locate text body
 		match := root.BreadthFirstSearch(func(node *MIMEPart) bool {

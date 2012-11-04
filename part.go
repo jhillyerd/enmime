@@ -3,6 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/sloonz/go-qprintable"
 	"io"
@@ -12,12 +13,16 @@ import (
 	"strings"
 )
 
+// MIMEPart contains a single part of a multipart MIME document, the tree
+// may be navigated via the Parent, FirstChild and NextSibling pointers.
 type MIMEPart struct {
 	Parent      *MIMEPart
 	FirstChild  *MIMEPart
 	NextSibling *MIMEPart
-	Type        string
 	Header      textproto.MIMEHeader
+	Type        string
+	Disposition string
+	FileName    string
 	Content     []byte
 }
 
@@ -37,38 +42,17 @@ func (n *MIMEPart) String() string {
 	return fmt.Sprintf("[%v %v] %v", n.Type, children, siblings)
 }
 
-// decodeSection attempts to decode the data from reader using the algorithm listed in
-// the Content-Transfer-Encoding header, returning the raw data if it does not known
-// the encoding type.
-func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
-	switch strings.ToLower(encoding) {
-	case "quoted-printable":
-		decoder := qprintable.NewDecoder(qprintable.WindowsTextEncoding, reader)
-		buf := new(bytes.Buffer)
-		_, err := buf.ReadFrom(decoder)
-		if err != nil {
-			return nil, err
-		}
-		return buf.Bytes(), nil
-	}
-	// Don't know this type, just return bytes
-	buf := new(bytes.Buffer)
-	_, err := buf.ReadFrom(reader)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func parseRoot(reader *bufio.Reader) (*MIMEPart, error) {
+// ParseMIME reads a MIME document from the provided reader and parses it into
+// tree of MIMEPart objects.
+func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 	tr := textproto.NewReader(reader)
 	header, err := tr.ReadMIMEHeader()
 	if err != nil {
-	  return nil, err
+		return nil, err
 	}
 	mediatype, params, err := mime.ParseMediaType(header.Get("Content-Type"))
 	if err != nil {
-	  return nil, err
+		return nil, err
 	}
 	root := &MIMEPart{Header: header, Type: mediatype}
 
@@ -90,6 +74,7 @@ func parseRoot(reader *bufio.Reader) (*MIMEPart, error) {
 	return root, nil
 }
 
+// parseParts recursively parses a mime multipart document.
 func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 	var prevSibling *MIMEPart
 
@@ -105,7 +90,7 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 			}
 			return err
 		}
-		mediatype, params, err := mime.ParseMediaType(mrp.Header.Get("Content-Type"))
+		mediatype, mparams, err := mime.ParseMediaType(mrp.Header.Get("Content-Type"))
 		if err != nil {
 			return err
 		}
@@ -119,7 +104,18 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 		}
 		prevSibling = p
 
-		boundary := params["boundary"]
+		// Figure out our disposition, filename
+		disposition, dparams, err := mime.ParseMediaType(mrp.Header.Get("Content-Disposition"))
+		if err == nil {
+			// Disposition is optional
+			p.Disposition = disposition
+			p.FileName = dparams["filename"]
+		}
+		if p.FileName == "" && mparams["name"] != "" {
+			p.FileName = mparams["name"]
+		}
+
+		boundary := mparams["boundary"]
 		if boundary != "" {
 			// Content is another multipart
 			err = parseParts(p, mrp, boundary)
@@ -138,3 +134,28 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 
 	return nil
 }
+
+// decodeSection attempts to decode the data from reader using the algorithm listed in
+// the Content-Transfer-Encoding header, returning the raw data if it does not known
+// the encoding type.
+func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
+	// Default is to just read input into bytes
+	decoder := reader
+
+	switch strings.ToLower(encoding) {
+	case "quoted-printable":
+		decoder = qprintable.NewDecoder(qprintable.WindowsTextEncoding, reader)
+	case "base64":
+		decoder = base64.NewDecoder(base64.StdEncoding, reader)
+	}
+	
+	// Read bytes into buffer
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(decoder)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+

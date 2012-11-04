@@ -1,0 +1,30 @@
+Content-Type: multipart/alternative; boundary="Enmime-Test-100"
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+A text section
+--Enmime-Test-100
+Content-Type: multipart/related; boundary="Enmime-Test-200"
+
+--Enmime-Test-200
+Content-Transfer-Encoding: 7bit
+Content-Type: text/html; charset=us-ascii
+
+An HTML section
+--Enmime-Test-200
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline; filename=attach.txt
+Content-Type: text/plain; name="attach.txt"
+
+An inline text attachment
+--Enmime-Test-200
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Type: text/plain; name="attach2.txt"
+
+Another inline text attachment
+--Enmime-Test-200--
+--Enmime-Test-100--
+
