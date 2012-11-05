@@ -177,7 +177,8 @@ func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
 	case "quoted-printable":
 		decoder = qprintable.NewDecoder(qprintable.WindowsTextEncoding, reader)
 	case "base64":
-		decoder = base64.NewDecoder(base64.StdEncoding, reader)
+		cleaner := NewBase64Cleaner(reader)
+		decoder = base64.NewDecoder(base64.StdEncoding, cleaner)
 	}
 	
 	// Read bytes into buffer
