@@ -4,10 +4,13 @@ import (
 	"container/list"
 )
 
+// MIMEPartMatcher is a function type that you must implement to search for MIMEParts using
+// the BreathMatch* functions.  Implementators should inspect the provided MIMEPart and
+// return true if it matches your criteria.
 type MIMEPartMatcher func(part MIMEPart) bool
 
-// BreadthMatchFirst performs a breadth first search of the MIMEPart tree
-// and returns the first part that causes the given matcher to return true
+// BreadthMatchFirst performs a breadth first search of the MIMEPart tree and returns the
+// first part that causes the given matcher to return true
 func BreadthMatchFirst(p MIMEPart, matcher MIMEPartMatcher) MIMEPart {
 	q := list.New()
 	q.PushBack(p)
@@ -30,8 +33,8 @@ func BreadthMatchFirst(p MIMEPart, matcher MIMEPartMatcher) MIMEPart {
 	return nil
 }
 
-// BreadthMatchAll performs a breadth first search of the MIMEPart tree
-// and returns all parts that cause the given matcher to return true
+// BreadthMatchAll performs a breadth first search of the MIMEPart tree and returns all parts
+// that cause the given matcher to return true
 func BreadthMatchAll(p MIMEPart, matcher MIMEPartMatcher) []MIMEPart {
 	q := list.New()
 	q.PushBack(p)

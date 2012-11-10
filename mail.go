@@ -7,14 +7,18 @@ import (
 	"strings"
 )
 
+// MIMEBody is the outer wrapper for MIME messages.
 type MIMEBody struct {
-	Text        string
-	Html        string
-	Root        MIMEPart
-	Attachments []MIMEPart
-	Inlines     []MIMEPart
+	Text        string     // The plain text portion of the message
+	Html        string     // The HTML portion of the message
+	Root        MIMEPart   // The top-level MIMEPart
+	Attachments []MIMEPart // All parts having a Content-Disposition of attachment
+	Inlines     []MIMEPart // All parts having a Content-Disposition of inline
 }
 
+// IsMultipartMessage returns true if the message has a recognized multipart Content-Type
+// header.  You don't need to check this before calling ParseMIMEBody, it can handle
+// non-multipart messages.
 func IsMultipartMessage(mailMsg *mail.Message) bool {
 	// Parse top-level multipart
 	ctype := mailMsg.Header.Get("Content-Type")
@@ -32,12 +36,17 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	return false
 }
 
+// ParseMIMEBody parses the body of the message object into a  tree of MIMEPart objects,
+// each of which is aware of its content type, filename and headers.  If the part was
+// encoded in quoted-printable or base64, it is decoded before being stored in the
+// MIMEPart object.
 func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	mimeMsg := new(MIMEBody)
 
 	if !IsMultipartMessage(mailMsg) {
 		// Parse as text only
-		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
+		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"),
+			mailMsg.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -92,8 +101,4 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	}
 
 	return mimeMsg, nil
-}
-
-func (m *MIMEBody) String() string {
-	return fmt.Sprintf("----TEXT----\n%v\n----HTML----\n%v\n----END----\n", m.Text, m.Html)
 }

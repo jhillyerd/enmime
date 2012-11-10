@@ -12,20 +12,25 @@ import (
 	"strings"
 )
 
+// MIMEPart is the primary interface enmine clients will use.  Each MIMEPart represents
+// a node in the MIME multipart tree.  The Content-Type, Disposition and File Name are
+// parsed out of the header for easier access.
+//
+// TODO Content should probably be a reader so that it does not need to be stored in
+// memory.
 type MIMEPart interface {
-	Parent() MIMEPart
-	FirstChild() MIMEPart
-	NextSibling() MIMEPart
-	Header() textproto.MIMEHeader
-	ContentType() string
-	Disposition() string
-	FileName() string
-	// TODO Content should probably be a reader
-	Content() []byte
+	Parent() MIMEPart             // Parent of this part (can be nil)
+	FirstChild() MIMEPart         // First (top most) child of this part
+	NextSibling() MIMEPart        // Next sibling of this part
+	Header() textproto.MIMEHeader // Header as parsed by textproto package
+	ContentType() string          // Content-Type header without parameters
+	Disposition() string          // Content-Disposition header without parameters
+	FileName() string             // File Name from disposition or type header
+	Content() []byte              // Decoded content of this part (can be empty)
 }
 
-// memMIMEPart contains a single part of a multipart MIME document in memory,
-// the tree may be navigated via the Parent, FirstChild and NextSibling pointers.
+// memMIMEPart is an in-memory implementation of the MIMEPart interface.  It will likely
+// choke on huge attachments.
 type memMIMEPart struct {
 	parent      MIMEPart
 	firstChild  MIMEPart
@@ -37,38 +42,48 @@ type memMIMEPart struct {
 	content     []byte
 }
 
+// NewMIMEPart creates a new memMIMEPart object.  It does not update the parents FirstChild
+// attribute.
 func NewMIMEPart(parent MIMEPart, contentType string) *memMIMEPart {
 	return &memMIMEPart{parent: parent, contentType: contentType}
 }
 
+// Parent of this part (can be nil)
 func (p *memMIMEPart) Parent() MIMEPart {
 	return p.parent
 }
 
+// First (top most) child of this part
 func (p *memMIMEPart) FirstChild() MIMEPart {
 	return p.firstChild
 }
 
+// Next sibling of this part
 func (p *memMIMEPart) NextSibling() MIMEPart {
 	return p.nextSibling
 }
 
+// Header as parsed by textproto package
 func (p *memMIMEPart) Header() textproto.MIMEHeader {
 	return p.header
 }
 
+// Content-Type header without parameters
 func (p *memMIMEPart) ContentType() string {
 	return p.contentType
 }
 
+// Content-Disposition header without parameters
 func (p *memMIMEPart) Disposition() string {
 	return p.disposition
 }
 
+// File Name from disposition or type header
 func (p *memMIMEPart) FileName() string {
 	return p.fileName
 }
 
+// Decoded content of this part (can be empty)
 func (p *memMIMEPart) Content() []byte {
 	return p.content
 }
@@ -180,7 +195,7 @@ func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
 		cleaner := NewBase64Cleaner(reader)
 		decoder = base64.NewDecoder(base64.StdEncoding, cleaner)
 	}
-	
+
 	// Read bytes into buffer
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(decoder)
@@ -189,5 +204,3 @@ func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
-
-
