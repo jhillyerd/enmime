@@ -1,15 +1,18 @@
 enmime
 ======
 
-enmime is a MIME parsing library for Go.  It's built ontop of Go's
-included mime/multipart support, but is geared towards parsing MIME encoded
-emails.
+enmime is a MIME parsing library for Go.  It's built ontop of Go's included mime/multipart
+support, but is geared towards parsing MIME encoded emails.
 
 It is being developed in tandem with the Inbucket email service.
 
+API documentation can be found here:
+http://go.pkgdoc.org/github.com/jhillyerd/go.enmime
+
 Development Status
 ------------------
-enmime is not currently useful.
+enmime is alpha quality: it works but has not been tested with a wide variety of source data,
+and it's likely the API will evolve some before an official release.
 
 About
 -----
