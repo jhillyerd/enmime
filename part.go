@@ -143,6 +143,7 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 
 		// Insert ourselves into tree, p is go-mime's mime-part
 		p := NewMIMEPart(parent, mediatype)
+		p.header = mrp.Header
 		if prevSibling != nil {
 			prevSibling.nextSibling = p
 		} else {
