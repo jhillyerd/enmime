@@ -68,6 +68,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 		// Root Node of our tree
 		root := NewMIMEPart(nil, mediatype)
+		mimeMsg.Root = root
 		err = parseParts(root, mailMsg.Body, boundary)
 		if err != nil {
 			return nil, err

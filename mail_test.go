@@ -31,6 +31,16 @@ func TestParseNonMime(t *testing.T) {
 	assert.Contains(t, mime.Text, "This is a test mailing")
 }
 
+func TestParseMimeTree(t *testing.T) {
+	msg := readMessage("attachment.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.NotNil(t, mime.Root, "Message should have a root node")
+}
+
 func TestParseInlineText(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
 	mime, err := ParseMIMEBody(msg)
