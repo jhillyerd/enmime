@@ -127,7 +127,7 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 	// Loop over MIME parts
 	mr := multipart.NewReader(reader, boundary)
 	for {
-		// mrp is go's build in mime-part
+		// mrp is go's built in mime-part
 		mrp, err := mr.NextPart()
 		if err != nil {
 			if err == io.EOF {
@@ -141,7 +141,7 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 			return err
 		}
 
-		// Insert ourselves into tree, p is go-mime's mime-part
+		// Insert ourselves into tree, p is enmime's mime-part
 		p := NewMIMEPart(parent, mediatype)
 		p.header = mrp.Header
 		if prevSibling != nil {
