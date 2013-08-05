@@ -31,6 +31,16 @@ func TestParseNonMime(t *testing.T) {
 	assert.Contains(t, mime.Text, "This is a test mailing")
 }
 
+func TestParseMimeTree(t *testing.T) {
+	msg := readMessage("attachment.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.NotNil(t, mime.Root, "Message should have a root node")
+}
+
 func TestParseInlineText(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
 	mime, err := ParseMIMEBody(msg)
@@ -106,6 +116,19 @@ func TestParseInline(t *testing.T) {
 	assert.Equal(t, mime.Inlines[0].FileName(), "favicon.png", "Inline should have correct filename")
 	assert.True(t, bytes.HasPrefix(mime.Inlines[0].Content(), []byte{0x89, 'P', 'N', 'G'}),
 		"Content should be PNG image")
+}
+
+func TestParseNestedHeaders(t *testing.T) {
+	msg := readMessage("html-mime-inline.raw")
+	mime, err := ParseMIMEBody(msg)
+
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.Equal(t, len(mime.Inlines), 1, "Should have one inline")
+	assert.Equal(t, mime.Inlines[0].FileName(), "favicon.png", "Inline should have correct filename")
+	assert.Equal(t, mime.Inlines[0].Header().Get("Content-Id"), "<8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet>", "Inline should have a Content-Id header")
 }
 
 // readMessage is a test utility function to fetch a mail.Message object.
