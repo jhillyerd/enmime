@@ -2,7 +2,7 @@ package enmime
 
 import (
 	"bytes"
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 )

@@ -3,7 +3,7 @@ package enmime
 import (
 	"bufio"
 	"fmt"
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"

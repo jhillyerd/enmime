@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"net/mail"
 	"os"
 	"path/filepath"
