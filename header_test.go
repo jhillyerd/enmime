@@ -7,51 +7,32 @@ import (
 
 // Put the quoted-printable decoder through its paces
 func TestQuotedPrintableDecoder(t *testing.T) {
-	var input, expect, result []byte
-	var err error
+	// Test table data
+	var qpTests = []struct {
+		input, expect string
+	}{
+		{"", ""},
+		{"Hello", "Hello"},
+		{"Hello_World", "Hello World"},
+		{"Hello=20World", "Hello World"},
+		{"Hello=3f", "Hello?"},
+		{"Hello=3F", "Hello?"},
+	}
 
-	input = []byte("")
-	expect = []byte("")
-	result, err = decodeQuotedPrintable(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
+	for _, qp := range qpTests {
+		result, err := decodeQuotedPrintable([]byte(qp.input))
+		assert.Nil(t, err)
+		assert.Equal(t, qp.expect, string(result),
+			"got '%s', expected '%v' for '%v'", result, qp.expect, qp.input)
+	}
 
-	input = []byte("Hello")
-	expect = []byte("Hello")
-	result, err = decodeQuotedPrintable(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-
-	input = []byte("Hello_World")
-	expect = []byte("Hello World")
-	result, err = decodeQuotedPrintable(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-
-	input = []byte("Hello=20World")
-	expect = []byte("Hello World")
-	result, err = decodeQuotedPrintable(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-
-	input = []byte("Hello=3f")
-	expect = []byte("Hello?")
-	result, err = decodeQuotedPrintable(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-
-	input = []byte("Hello=3F")
-	expect = []byte("Hello?")
-	result, err = decodeQuotedPrintable(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-
-	input = []byte("Hello=")
-	result, err = decodeQuotedPrintable(input)
+	// Check malformed quoted chars
+	input := []byte("Hello=")
+	_, err := decodeQuotedPrintable(input)
 	assert.NotNil(t, err)
 
 	input = []byte("Hello=3")
-	result, err = decodeQuotedPrintable(input)
+	_, err = decodeQuotedPrintable(input)
 	assert.NotNil(t, err)
 }
 
@@ -156,49 +137,22 @@ func TestEmbeddedAsciiQ(t *testing.T) {
 
 // Spacing rules from RFC 2047
 func TestSpacing(t *testing.T) {
-	var input, expect, result string
-	var err error
+	var spTable = []struct {
+		input, expect string
+	}{
+		{"(=?ISO-8859-1?Q?a?=)", "(a)"},
+		{"(=?ISO-8859-1?Q?a?= b)", "(a b)"},
+		{"(=?ISO-8859-1?Q?a?= =?ISO-8859-1?Q?b?=)", "(ab)"},
+		{"(=?ISO-8859-1?Q?a?=  =?ISO-8859-1?Q?b?=)", "(ab)"},
+		{"(=?ISO-8859-1?Q?a?=\r\n  =?ISO-8859-1?Q?b?=)", "(ab)"},
+		{"(=?ISO-8859-1?Q?a_b?=)", "(a b)"},
+		{"(=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=)", "(a b)"},
+	}
 
-	input = "(=?ISO-8859-1?Q?a?=)"
-	expect = "(a)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
-
-	input = "(=?ISO-8859-1?Q?a?= b)"
-	expect = "(a b)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
-
-	input = "(=?ISO-8859-1?Q?a?= =?ISO-8859-1?Q?b?=)"
-	expect = "(ab)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
-
-	input = "(=?ISO-8859-1?Q?a?=  =?ISO-8859-1?Q?b?=)"
-	expect = "(ab)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
-
-	input = "(=?ISO-8859-1?Q?a?=\r\n  =?ISO-8859-1?Q?b?=)"
-	expect = "(ab)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
-
-	input = "(=?ISO-8859-1?Q?a_b?=)"
-	expect = "(a b)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
-
-	input = "(=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=)"
-	expect = "(a b)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, result)
+	for _, sp := range spTable {
+		result, err := decodeHeader(sp.input)
+		assert.Nil(t, err)
+		assert.Equal(t, sp.expect, result,
+			"got '%v', expected '%v' for '%v'", result, sp.expect, sp.input)
+	}
 }
-
