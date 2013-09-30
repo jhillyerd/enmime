@@ -38,9 +38,14 @@ type headerDec struct {
 	outbuf   bytes.Buffer
 }
 
+// eof returns true if we've read the last rune
+func (h *headerDec) eof() bool {
+	return h.pos >= len(h.input)
+}
+
 // next returns the next rune in the input
 func (h *headerDec) next() rune {
-	if h.pos >= len(h.input) {
+	if h.eof() {
 		return eof
 	}
 	r := h.input[h.pos]
@@ -57,6 +62,9 @@ func (h *headerDec) backup() {
 
 // peek at the next rune without consuming it
 func (h *headerDec) peek() rune {
+	if h.eof() {
+		return eof
+	}
 	r := h.next()
 	h.backup()
 	return r
@@ -70,7 +78,7 @@ func (h *headerDec) ignore() {
 // output will append all input from start to pos (inclusive) to outbuf
 func (h *headerDec) output() {
 	if h.pos > h.start {
-		h.outbuf.Write(h.input[h.start : h.pos])
+		h.outbuf.Write(h.input[h.start:h.pos])
 		h.start = h.pos
 	}
 }
@@ -95,7 +103,7 @@ func decodeHeader(input string) (utf8 string, err error) {
 
 	h := &headerDec{
 		input: []byte(input),
-		state: plainState,
+		state: plainSpaceState,
 	}
 
 	debug("Starting parse of: '%v'\n", input)
@@ -114,31 +122,55 @@ func decodeHeader(input string) (utf8 string, err error) {
 func resetState(h *headerDec) stateFn {
 	debug("entering reset state with buf %q", h.outbuf.String())
 	h.output()
-	return plainState
+	return plainTextState
 }
 
-// State: In plain text
-func plainState(h *headerDec) stateFn {
-	debug("entering plain state with buf %q", h.outbuf.String())
-	for r := h.next(); r != eof; r = h.next() {
-		//fmt.Printf(" %q\n", r)
-		// Scan for start of encoded word: =?
-		if r == '=' {
-			// Dump out preceeding plaintext, w/o =
+// State: In plain space - we want to output this space, and it is legal to transition into
+// an encoded word from here.
+func plainSpaceState(h *headerDec) stateFn {
+	debug("entering plain space state with buf %q", h.outbuf.String())
+	for ! h.eof() {
+		switch {
+		case h.accept("="):
+			// Possible encoded word, dump out preceeding plaintext, w/o leading =
 			h.backup()
 			h.output()
 			h.next()
 			if h.accept("?") {
 				return charsetState
 			}
+		case h.accept(" \t\r\n("):
+			// '(' is the start of a MIME header "comment", so it is still legal to transition
+			// to an encoded word after it
+		default:
+			// Hit some plain text
+			return plainTextState
 		}
 	}
-	// Hitting EOF in plain state means we are done
+	// Hitting EOF in plain space state means we are done
 	h.output()
 	return nil
 }
 
-// State: In charset name
+// State: In plain text - we want to output this text.  It is not legal to transition into
+// an encoded word from here!
+func plainTextState(h *headerDec) stateFn {
+	debug("entering plain text state with buf %q", h.outbuf.String())
+	for ! h.eof() {
+		if h.accept(" \t\r\n(") {
+			// TODO Not sure if '(' belongs here, maybe space first?
+			// Whitespace character
+			h.backup()
+			return plainSpaceState
+		}
+		h.next()
+	}
+	// Hitting EOF in plain text state means we are done
+	h.output()
+	return nil
+}
+
+// State: In encoded-word charset name
 func charsetState(h *headerDec) stateFn {
 	debug("entering charset state with buf %q", h.outbuf.String())
 	myStart := h.pos
@@ -161,7 +193,7 @@ func charsetState(h *headerDec) stateFn {
 	return resetState
 }
 
-// State: In encoding name
+// State: In encoded-word encoding name
 func encodingState(h *headerDec) stateFn {
 	debug("entering encoding state with buf %q", h.outbuf.String())
 	myStart := h.pos
@@ -250,7 +282,7 @@ Loop:
 	debug("In plain")
 	// We hit plain text, will need to output whitespace
 	h.output()
-	return plainState
+	return plainTextState
 }
 
 // Convert the encTextBytes to UTF-8 and return as a string

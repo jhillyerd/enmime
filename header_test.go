@@ -127,10 +127,17 @@ func TestAsciiB64(t *testing.T) {
 
 // Try decoding an embedded ASCII quoted-printable encoded word
 func TestEmbeddedAsciiQ(t *testing.T) {
+	// This is not legal, so we expect it to fail
 	input := "ab=?US-ASCII?Q?Keith_Moore?=CD"
-	expect := "abKeith MooreCD"
+	expect := input
 	result, err := decodeHeader(input)
+	assert.Nil(t, err)
+	assert.Equal(t, expect, result)
 
+	// Abutting a MIME header comment is legal
+	input = "(=?US-ASCII?Q?Keith_Moore?=)"
+	expect = "(Keith Moore)"
+	result, err = decodeHeader(input)
 	assert.Nil(t, err)
 	assert.Equal(t, expect, result)
 }
