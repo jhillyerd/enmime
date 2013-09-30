@@ -7,7 +7,7 @@ support, but is geared towards parsing MIME encoded emails.
 It is being developed in tandem with the Inbucket email service.
 
 API documentation can be found here:
-http://go.pkgdoc.org/github.com/jhillyerd/go.enmime
+http://godoc.org/github.com/jhillyerd/go.enmime
 
 Development Status
 ------------------
