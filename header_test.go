@@ -8,7 +8,7 @@ import (
 // Put the quoted-printable decoder through its paces
 func TestQuotedPrintableDecoder(t *testing.T) {
 	// Test table data
-	var qpTests = []struct {
+	var testTable = []struct {
 		input, expect string
 	}{
 		{"", ""},
@@ -19,11 +19,11 @@ func TestQuotedPrintableDecoder(t *testing.T) {
 		{"Hello=3F", "Hello?"},
 	}
 
-	for _, qp := range qpTests {
-		result, err := decodeQuotedPrintable([]byte(qp.input))
+	for _, tt := range testTable {
+		result, err := decodeQuotedPrintable([]byte(tt.input))
 		assert.Nil(t, err)
-		assert.Equal(t, qp.expect, string(result),
-			"got '%s', expected '%v' for '%v'", result, qp.expect, qp.input)
+		assert.Equal(t, tt.expect, string(result),
+			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
 	}
 
 	// Check malformed quoted chars
@@ -144,7 +144,7 @@ func TestEmbeddedAsciiQ(t *testing.T) {
 
 // Spacing rules from RFC 2047
 func TestSpacing(t *testing.T) {
-	var spTable = []struct {
+	var testTable = []struct {
 		input, expect string
 	}{
 		{"(=?ISO-8859-1?Q?a?=)", "(a)"},
@@ -156,10 +156,28 @@ func TestSpacing(t *testing.T) {
 		{"(=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=)", "(a b)"},
 	}
 
-	for _, sp := range spTable {
-		result, err := decodeHeader(sp.input)
+	for _, tt := range testTable {
+		result, err := decodeHeader(tt.input)
 		assert.Nil(t, err)
-		assert.Equal(t, sp.expect, result,
-			"got '%v', expected '%v' for '%v'", result, sp.expect, sp.input)
+		assert.Equal(t, tt.expect, result,
+			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
+	}
+}
+
+// Test some different character sets
+func TestCharsets(t *testing.T) {
+	var testTable = []struct {
+		input, expect string
+	}{
+		{"=?utf-8?q?abcABC_=24_=c2=a2_=e2=82=ac?=", "abcABC $ \u00a2 \u20ac"},
+		{"=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=", "#\u00a3 c\u00a9 r\u00ae u\u00b5"},
+		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "\uff08 \uff5b \u3008"},
+	}
+
+	for _, tt := range testTable {
+		result, err := decodeHeader(tt.input)
+		assert.Nil(t, err)
+		assert.Equal(t, tt.expect, result,
+			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
 	}
 }

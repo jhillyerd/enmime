@@ -2,6 +2,7 @@ package enmime
 
 import (
 	"bytes"
+	"code.google.com/p/mahonia"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -129,7 +130,7 @@ func resetState(h *headerDec) stateFn {
 // an encoded word from here.
 func plainSpaceState(h *headerDec) stateFn {
 	debug("entering plain space state with buf %q", h.outbuf.String())
-	for ! h.eof() {
+	for !h.eof() {
 		switch {
 		case h.accept("="):
 			// Possible encoded word, dump out preceeding plaintext, w/o leading =
@@ -156,9 +157,9 @@ func plainSpaceState(h *headerDec) stateFn {
 // an encoded word from here!
 func plainTextState(h *headerDec) stateFn {
 	debug("entering plain text state with buf %q", h.outbuf.String())
-	for ! h.eof() {
+	for !h.eof() {
 		if h.accept(" \t\r\n(") {
-			// TODO Not sure if '(' belongs here, maybe space first?
+			// TODO Not sure if '(' belongs here, maybe require space first?
 			// Whitespace character
 			h.backup()
 			return plainSpaceState
@@ -209,10 +210,12 @@ func encodingState(h *headerDec) stateFn {
 			return encTextState
 		default:
 			// Invalid character
+			debug("invalid character")
 			return resetState
 		}
 	}
 	// Hit eof!
+	debug("hit unexpected eof")
 	return resetState
 }
 
@@ -253,6 +256,7 @@ func encTextState(h *headerDec) stateFn {
 		}
 	}
 	// Hit eof!
+	debug("Hit eof early")
 	return resetState
 }
 
@@ -286,19 +290,33 @@ Loop:
 }
 
 // Convert the encTextBytes to UTF-8 and return as a string
-func convertText(charset string, encoding string, encTextBytes []byte) (string, error) {
+func convertText(charsetName string, encoding string, encTextBytes []byte) (string, error) {
+	// Setup mahonia to convert bytes to UTF-8 string
+	charset := mahonia.GetCharset(charsetName)
+	if charset == nil {
+		// Unknown charset
+		return "", fmt.Errorf("Unknown (to mahonia) charset: %q", charsetName)
+	}
+	decoder := charset.NewDecoder()
+
+	// Unpack quoted-printable or base64 first
+	var textBytes []byte
+	var err error
 	switch strings.ToLower(encoding) {
 	case "b":
 		// Base64 encoded
-		textBytes, err := decodeBase64(encTextBytes)
-		return string(textBytes), err
+		textBytes, err = decodeBase64(encTextBytes)
 	case "q":
 		// Quoted printable encoded
-		textBytes, err := decodeQuotedPrintable(encTextBytes)
-		return string(textBytes), err
+		textBytes, err = decodeQuotedPrintable(encTextBytes)
 	default:
-		return "", fmt.Errorf("Invalid encoding: %v", encoding)
+		err = fmt.Errorf("Invalid encoding: %v", encoding)
 	}
+	if err != nil {
+		return "", err
+	}
+
+	return decoder.ConvertString(string(textBytes)), nil
 }
 
 func decodeQuotedPrintable(input []byte) ([]byte, error) {
