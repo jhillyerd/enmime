@@ -96,11 +96,11 @@ func (h *headerDec) accept(valid string) bool {
 }
 
 // Decode a MIME header per RFC 2047
-func decodeHeader(input string) (utf8 string, err error) {
-	//if ! strings.Contains(input, "=?") {
-	//	// Don't scan if there is nothing to do here
-	//	return input, nil
-	//}
+func decodeHeader(input string) string {
+	if !strings.Contains(input, "=?") {
+		// Don't scan if there is nothing to do here
+		return input
+	}
 
 	h := &headerDec{
 		input: []byte(input),
@@ -113,7 +113,7 @@ func decodeHeader(input string) (utf8 string, err error) {
 		h.state = h.state(h)
 	}
 
-	return h.outbuf.String(), nil
+	return h.outbuf.String()
 }
 
 // State: Reset, output mangled encoded-word as plaintext

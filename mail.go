@@ -9,11 +9,12 @@ import (
 
 // MIMEBody is the outer wrapper for MIME messages.
 type MIMEBody struct {
-	Text        string     // The plain text portion of the message
-	Html        string     // The HTML portion of the message
-	Root        MIMEPart   // The top-level MIMEPart
-	Attachments []MIMEPart // All parts having a Content-Disposition of attachment
-	Inlines     []MIMEPart // All parts having a Content-Disposition of inline
+	Text        string      // The plain text portion of the message
+	Html        string      // The HTML portion of the message
+	Root        MIMEPart    // The top-level MIMEPart
+	Attachments []MIMEPart  // All parts having a Content-Disposition of attachment
+	Inlines     []MIMEPart  // All parts having a Content-Disposition of inline
+	header      mail.Header // Header from original message
 }
 
 // IsMultipartMessage returns true if the message has a recognized multipart Content-Type
@@ -41,7 +42,7 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 // encoded in quoted-printable or base64, it is decoded before being stored in the
 // MIMEPart object.
 func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
-	mimeMsg := new(MIMEBody)
+	mimeMsg := &MIMEBody{header: mailMsg.Header}
 
 	if !IsMultipartMessage(mailMsg) {
 		// Parse as text only
@@ -102,4 +103,9 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	}
 
 	return mimeMsg, nil
+}
+
+// Process the specified header for RFC 2047 encoded words and return the result
+func (m *MIMEBody) GetHeader(name string) string {
+	return decodeHeader(m.header.Get(name))
 }

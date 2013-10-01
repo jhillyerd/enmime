@@ -49,9 +49,7 @@ func TestBase64Decoder(t *testing.T) {
 func TestPlainSingleToken(t *testing.T) {
 	input := "Test"
 	expect := input
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -59,9 +57,7 @@ func TestPlainSingleToken(t *testing.T) {
 func TestPlainTokens(t *testing.T) {
 	input := "Testing One two 3 4"
 	expect := input
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -69,9 +65,7 @@ func TestPlainTokens(t *testing.T) {
 func TestCharsetControlDetect(t *testing.T) {
 	input := "=?US\nASCII?Q?Keith_Moore?="
 	expect := input
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -79,9 +73,7 @@ func TestCharsetControlDetect(t *testing.T) {
 func TestEncodingControlDetect(t *testing.T) {
 	input := "=?US-ASCII?\r?Keith_Moore?="
 	expect := input
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -89,9 +81,7 @@ func TestEncodingControlDetect(t *testing.T) {
 func TestEncTextControlDetect(t *testing.T) {
 	input := "=?US-ASCII?Q?Keith\tMoore?="
 	expect := input
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -99,9 +89,7 @@ func TestEncTextControlDetect(t *testing.T) {
 func TestInvalidTermination(t *testing.T) {
 	input := "=?US-ASCII?Q?Keith_Moore?!"
 	expect := input
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -109,9 +97,7 @@ func TestInvalidTermination(t *testing.T) {
 func TestAsciiQ(t *testing.T) {
 	input := "=?US-ASCII?Q?Keith_Moore?="
 	expect := "Keith Moore"
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -119,9 +105,7 @@ func TestAsciiQ(t *testing.T) {
 func TestAsciiB64(t *testing.T) {
 	input := "=?US-ASCII?B?SGVsbG8gV29ybGQ=?="
 	expect := "Hello World"
-	result, err := decodeHeader(input)
-
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -130,15 +114,13 @@ func TestEmbeddedAsciiQ(t *testing.T) {
 	// This is not legal, so we expect it to fail
 	input := "ab=?US-ASCII?Q?Keith_Moore?=CD"
 	expect := input
-	result, err := decodeHeader(input)
-	assert.Nil(t, err)
+	result := decodeHeader(input)
 	assert.Equal(t, expect, result)
 
 	// Abutting a MIME header comment is legal
 	input = "(=?US-ASCII?Q?Keith_Moore?=)"
 	expect = "(Keith Moore)"
-	result, err = decodeHeader(input)
-	assert.Nil(t, err)
+	result = decodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
@@ -157,8 +139,7 @@ func TestSpacing(t *testing.T) {
 	}
 
 	for _, tt := range testTable {
-		result, err := decodeHeader(tt.input)
-		assert.Nil(t, err)
+		result := decodeHeader(tt.input)
 		assert.Equal(t, tt.expect, result,
 			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
 	}
@@ -175,8 +156,7 @@ func TestCharsets(t *testing.T) {
 	}
 
 	for _, tt := range testTable {
-		result, err := decodeHeader(tt.input)
-		assert.Nil(t, err)
+		result := decodeHeader(tt.input)
 		assert.Equal(t, tt.expect, result,
 			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
 	}
