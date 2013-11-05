@@ -1,4 +1,4 @@
-enmime
+enmime [![Build Status](https://travis-ci.org/jhillyerd/go.enmime.png?branch=master)](https://travis-ci.org/jhillyerd/go.enmime)
 ======
 
 enmime is a MIME parsing library for Go.  It's built ontop of Go's included mime/multipart
