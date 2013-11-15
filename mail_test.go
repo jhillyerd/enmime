@@ -29,6 +29,18 @@ func TestParseNonMime(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "This is a test mailing")
+	assert.Empty(t, mime.Html, "Expected no HTML body")
+}
+
+func TestParseNonMimeHtml(t *testing.T) {
+	msg := readMessage("non-mime-html.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse non-MIME: %v", err)
+	}
+
+	assert.Contains(t, mime.Text, "This is a test mailing")
+	assert.Contains(t, mime.Html, "This is a test mailing")
 }
 
 func TestParseMimeTree(t *testing.T) {

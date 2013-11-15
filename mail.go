@@ -52,6 +52,16 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 			return nil, err
 		}
 		mimeMsg.Text = string(bodyBytes)
+
+		// Check for HTML at top-level, eat errors quietly
+		ctype := mailMsg.Header.Get("Content-Type")
+		if ctype != "" {
+			if mediatype, _, err := mime.ParseMediaType(ctype); err == nil {
+				if mediatype == "text/html" {
+					mimeMsg.Html = mimeMsg.Text
+				}
+			}
+		}
 	} else {
 		// Parse top-level multipart
 		ctype := mailMsg.Header.Get("Content-Type")
