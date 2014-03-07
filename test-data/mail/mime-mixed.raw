@@ -1,0 +1,22 @@
+Message-ID: <5081A889.3020108@jamehi03lx.noa.com>
+Date: Fri, 19 Oct 2012 12:22:49 -0700
+From: James Hillyerd <jamehi03@jamehi03lx.noa.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: greg@inbucket.com
+Subject: Multipart Mixed
+Content-Type: multipart/mixed; boundary="Enmime-Test-100"
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+Section one
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+Section two
+--Enmime-Test-100--
+

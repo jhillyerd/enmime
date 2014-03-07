@@ -63,6 +63,28 @@ func TestParseInlineText(t *testing.T) {
 	assert.Equal(t, mime.Text, "Test of text section")
 }
 
+func TestParseMultiMixedText(t *testing.T) {
+	msg := readMessage("mime-mixed.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.Equal(t, mime.Text, "Section one\n\n--\nSection two",
+		"Text parts should be concatenated")
+}
+
+func TestParseMultiSignedText(t *testing.T) {
+	msg := readMessage("mime-signed.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.Equal(t, mime.Text, "Section one\n\n--\nSection two\n--\nSection three",
+		"Text parts should be concatenated")
+}
+
 func TestParseQuotedPrintable(t *testing.T) {
 	msg := readMessage("quoted-printable.raw")
 	mime, err := ParseMIMEBody(msg)

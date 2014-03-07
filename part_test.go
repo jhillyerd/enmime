@@ -68,6 +68,60 @@ func TestMultiAlternParts(t *testing.T) {
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 }
 
+func TestMultiMixedParts(t *testing.T) {
+	r := openPart("multimixed.raw")
+	p, err := ParseMIME(r)
+
+	// Examine root
+	if !assert.Nil(t, err, "Parsing should not have generated an error") {
+		t.FailNow()
+	}
+	assert.NotNil(t, p, "Root node should not be nil")
+	assert.Equal(t, p.ContentType(), "multipart/mixed", "Expected type to be set")
+	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
+	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+
+	// Examine first child
+	p = p.FirstChild()
+	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Contains(t, string(p.Content()), "Section one", "First child contains wrong content")
+	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	// Examine sibling
+	p = p.NextSibling()
+	assert.Equal(t, p.ContentType(), "text/plain", "Second child should have been html")
+	assert.Contains(t, string(p.Content()), "Section two", "Second child contains wrong content")
+	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+}
+
+func TestMultiOtherParts(t *testing.T) {
+	r := openPart("multiother.raw")
+	p, err := ParseMIME(r)
+
+	// Examine root
+	if !assert.Nil(t, err, "Parsing should not have generated an error") {
+		t.FailNow()
+	}
+	assert.NotNil(t, p, "Root node should not be nil")
+	assert.Equal(t, p.ContentType(), "multipart/x-enmime", "Expected type to be set")
+	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
+	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+
+	// Examine first child
+	p = p.FirstChild()
+	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Contains(t, string(p.Content()), "Section one", "First child contains wrong content")
+	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	// Examine sibling
+	p = p.NextSibling()
+	assert.Equal(t, p.ContentType(), "text/plain", "Second child should have been html")
+	assert.Contains(t, string(p.Content()), "Section two", "Second child contains wrong content")
+	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+}
+
 func TestNestedAlternParts(t *testing.T) {
 	r := openPart("nestedmulti.raw")
 	p, err := ParseMIME(r)

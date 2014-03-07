@@ -30,7 +30,8 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	switch mediatype {
 	case "multipart/alternative",
 		"multipart/mixed",
-		"multipart/related":
+		"multipart/related",
+		"multipart/signed":
 		return true
 	}
 
@@ -86,15 +87,28 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		}
 
 		// Locate text body
-		match := BreadthMatchFirst(root, func(p MIMEPart) bool {
-			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
-		})
-		if match != nil {
-			mimeMsg.Text = string(match.Content())
+		if mediatype == "multipart/altern" {
+			match := BreadthMatchFirst(root, func(p MIMEPart) bool {
+				return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
+			})
+			if match != nil {
+				mimeMsg.Text = string(match.Content())
+			}
+		} else {
+			// multipart is of a mixed type
+			match := BreadthMatchAll(root, func(p MIMEPart) bool {
+				return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
+			})
+			for i, m := range match {
+				if i > 0 {
+					mimeMsg.Text += "\n--\n"
+				}
+				mimeMsg.Text += string(m.Content())
+			}
 		}
 
 		// Locate HTML body
-		match = BreadthMatchFirst(root, func(p MIMEPart) bool {
+		match := BreadthMatchFirst(root, func(p MIMEPart) bool {
 			return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 		})
 		if match != nil {

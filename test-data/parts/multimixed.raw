@@ -1,0 +1,15 @@
+Content-Type: multipart/mixed; boundary="Enmime-Test-100"
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+Section one
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+Section two
+--Enmime-Test-100--
+
