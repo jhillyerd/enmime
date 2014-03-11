@@ -81,7 +81,7 @@ func TestParseMultiSignedText(t *testing.T) {
 		t.Fatalf("Failed to parse MIME: %v", err)
 	}
 
-	assert.Equal(t, mime.Text, "Section one\n\n--\nSection two\n--\nSection three",
+	assert.Equal(t, mime.Text, "Section one\n\n--\nSection two",
 		"Text parts should be concatenated")
 }
 

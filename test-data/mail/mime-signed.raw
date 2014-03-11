@@ -5,23 +5,45 @@ User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderb
 MIME-Version: 1.0
 To: greg@inbucket.com
 Subject: Multipart Signed
-Content-Type: multipart/signed; boundary="Enmime-Test-100"
+Content-Type: multipart/mixed; boundary="Enmime-Test-100"
 
 --Enmime-Test-100
+Content-Type: multipart/signed; boundary="Enmime-Test-200"
+Content-Disposition: inline
+
+--Enmime-Test-200
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=us-ascii
 
 Section one
 
+--Enmime-Test-200
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUBUvPn/Tk1h9l9hlALAQisew//Ve290uPsmsI4LRoQs/KQPssAdfkxuzNI
+KG/TBJUkh+h0xcKpdumL/i1I8fuUEB7V9fvb3t5ReMuk+Q7gjXyccW8zhMU9oTaN
+Xb34fduyx2TcmAJ9eMsjoT7/qfzEd83C1luDc/by+ud/AECcS/Ud0t6LlmcolCY+
+B47NhK5QwP+s7fkuYG3jWcXwrEarVcXRd6Wt6EDB4zRNO6UQ5yZK5knRtv9JwE9I
+7l1fYUBG6Lsne7m0znaqIEpAvZzAMVYPOjAYX3EZk4a25nDg/PXHl0agtsD5s0c6
+lgL1JjVENhM4XGntqreVaK1peE/6P6EUdXkHvuPXEZf+7z8xitnCiM2rQgdR46OI
+T0jXWzkVeMy54jNzCC03k4uSCkrxnGrPA5bPIn+Sml0NfJEXRH/t+9Cq0Gbn40Xe
+O4KN+a3YKPu/DGliU0NQzlUBO4TL+2N2YjkYz4akzPjNEPA8tCJ6w76SK+832HCw
+sOAxlxyYjFIoG6ZLysi5b6u3Nt+9tJHAt9P3/VHy1TsXuY08qlrBWjxe6Hp6tQrC
+xN47E2pZCC2pd8Z78Te3nIFLbRrGZkuqUyzVue73aLmIyvXombh5NoioN7J5J6sD
+hCwqizTI/x29sMQecKS2sBWsCH4ohPQcTExrgMftxix+PkW9QEYU5qV3MU8kLqxz
+at6toX0WKAE=
+=dBVL
+-----END PGP SIGNATURE-----
+
+--Enmime-Test-200--
 --Enmime-Test-100
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=us-ascii
 
 Section two
---Enmime-Test-100
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=us-ascii
-
-Section three
 --Enmime-Test-100--
 

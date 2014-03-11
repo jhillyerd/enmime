@@ -14,12 +14,12 @@ func TestBreadthMatchFirst(t *testing.T) {
 	//    ├── a2
 	//    └── a3
 
-	root := &memMIMEPart{contentType: "multipart/alternative"}
-	a1 := &memMIMEPart{contentType: "multipart/related", parent: root}
-	a2 := &memMIMEPart{contentType: "text/plain", parent: root}
-	a3 := &memMIMEPart{contentType: "text/html", parent: root}
-	b1 := &memMIMEPart{contentType: "text/plain", parent: a1}
-	b2 := &memMIMEPart{contentType: "text/html", parent: a1}
+	root := &memMIMEPart{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &memMIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &memMIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &memMIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &memMIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &memMIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
 	root.firstChild = a1
 	a1.nextSibling = a2
 	a2.nextSibling = a3
@@ -29,15 +29,15 @@ func TestBreadthMatchFirst(t *testing.T) {
 	p := BreadthMatchFirst(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/plain"
 	})
-	assert.NotNil(t, p, "BreathMatchFirst should have returned a result for text/plain")
+	assert.NotNil(t, p, "BreadthMatchFirst should have returned a result for text/plain")
 	assert.True(t, p.(*memMIMEPart) == a2,
-		"BreadthMatchFirst should have returned the first text/plain object")
+		"BreadthMatchFirst should have returned a2, got %v", p.FileName())
 
 	p = BreadthMatchFirst(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/html"
 	})
 	assert.True(t, p.(*memMIMEPart) == a3,
-		"BreadthMatchFirst should have returned the first text/html object")
+		"BreadthMatchFirst should have returned a3, got %v", p.FileName())
 }
 
 func TestBreadthMatchAll(t *testing.T) {
@@ -49,12 +49,12 @@ func TestBreadthMatchAll(t *testing.T) {
 	//    ├── a2
 	//    └── a3
 
-	root := &memMIMEPart{contentType: "multipart/alternative"}
-	a1 := &memMIMEPart{contentType: "multipart/related", parent: root}
-	a2 := &memMIMEPart{contentType: "text/plain", parent: root}
-	a3 := &memMIMEPart{contentType: "text/html", parent: root}
-	b1 := &memMIMEPart{contentType: "text/plain", parent: a1}
-	b2 := &memMIMEPart{contentType: "text/html", parent: a1}
+	root := &memMIMEPart{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &memMIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &memMIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &memMIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &memMIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &memMIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
 	root.firstChild = a1
 	a1.nextSibling = a2
 	a2.nextSibling = a3
@@ -66,16 +66,91 @@ func TestBreadthMatchAll(t *testing.T) {
 	})
 	assert.Equal(t, len(ps), 2, "BreadthMatchAll should have returned two matches")
 	assert.True(t, ps[0].(*memMIMEPart) == a2,
-		"BreadthMatchFirst should have returned the first text/plain object")
+		"BreadthMatchAll should have returned a2, got %v", ps[0].FileName())
 	assert.True(t, ps[1].(*memMIMEPart) == b1,
-		"BreadthMatchFirst should have returned the second text/plain object")
+		"BreadthMatchAll should have returned b1, got %v", ps[1].FileName())
 
 	ps = BreadthMatchAll(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/html"
 	})
 	assert.Equal(t, len(ps), 2, "BreadthMatchAll should have returned two matches")
 	assert.True(t, ps[0].(*memMIMEPart) == a3,
-		"BreadthMatchFirst should have returned the first text/html object")
+		"BreadthMatchAll should have returned a3, got %v", ps[0].FileName())
 	assert.True(t, ps[1].(*memMIMEPart) == b2,
-		"BreadthMatchFirst should have returned the second text/html object")
+		"BreadthMatchAll should have returned b2, got %v", ps[1].FileName())
+}
+
+func TestDepthMatchFirst(t *testing.T) {
+	// Setup test MIME tree:
+	//    root
+	//    ├── a1
+	//    │   ├── b1
+	//    │   └── b2
+	//    ├── a2
+	//    └── a3
+
+	root := &memMIMEPart{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &memMIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &memMIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &memMIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &memMIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &memMIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
+	root.firstChild = a1
+	a1.nextSibling = a2
+	a2.nextSibling = a3
+	a1.firstChild = b1
+	b1.nextSibling = b2
+
+	p := DepthMatchFirst(root, func(pt MIMEPart) bool {
+		return pt.ContentType() == "text/plain"
+	})
+	assert.NotNil(t, p, "DepthMatchFirst should have returned a result for text/plain")
+	assert.True(t, p.(*memMIMEPart) == b1,
+		"DepthMatchFirst should have returned b1, got %v", p.FileName())
+
+	p = DepthMatchFirst(root, func(pt MIMEPart) bool {
+		return pt.ContentType() == "text/html"
+	})
+	assert.True(t, p.(*memMIMEPart) == b2,
+		"DepthMatchFirst should have returned b2, got %v", p.FileName())
+}
+
+func TestDepthMatchAll(t *testing.T) {
+	// Setup test MIME tree:
+	//    root
+	//    ├── a1
+	//    │   ├── b1
+	//    │   └── b2
+	//    ├── a2
+	//    └── a3
+
+	root := &memMIMEPart{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &memMIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &memMIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &memMIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &memMIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &memMIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
+	root.firstChild = a1
+	a1.nextSibling = a2
+	a2.nextSibling = a3
+	a1.firstChild = b1
+	b1.nextSibling = b2
+
+	ps := DepthMatchAll(root, func(pt MIMEPart) bool {
+		return pt.ContentType() == "text/plain"
+	})
+	assert.Equal(t, len(ps), 2, "DepthMatchAll should have returned two matches")
+	assert.True(t, ps[0].(*memMIMEPart) == b1,
+		"DepthMatchAll should have returned b1, got %v", ps[0].FileName())
+	assert.True(t, ps[1].(*memMIMEPart) == a2,
+		"DepthMatchAll should have returned a2, got %v", ps[1].FileName())
+
+	ps = DepthMatchAll(root, func(pt MIMEPart) bool {
+		return pt.ContentType() == "text/html"
+	})
+	assert.Equal(t, len(ps), 2, "DepthMatchAll should have returned two matches")
+	assert.True(t, ps[0].(*memMIMEPart) == b2,
+		"DepthMatchAll should have returned b2, got %v", ps[0].FileName())
+	assert.True(t, ps[1].(*memMIMEPart) == a3,
+		"DepthMatchAll should have returned a3, got %v", ps[1].FileName())
 }

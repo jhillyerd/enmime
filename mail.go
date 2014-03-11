@@ -96,7 +96,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 			}
 		} else {
 			// multipart is of a mixed type
-			match := BreadthMatchAll(root, func(p MIMEPart) bool {
+			match := DepthMatchAll(root, func(p MIMEPart) bool {
 				return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 			})
 			for i, m := range match {
