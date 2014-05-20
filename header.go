@@ -2,11 +2,12 @@ package enmime
 
 import (
 	"bytes"
-	"code.google.com/p/mahonia"
 	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"code.google.com/p/mahonia"
 )
 
 func debug(format string, args ...interface{}) {

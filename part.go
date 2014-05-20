@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"github.com/sloonz/go-qprintable"
 	"io"
 	"mime"
 	"mime/multipart"
 	"net/textproto"
 	"strings"
+
+	"github.com/sloonz/go-qprintable"
 )
 
 // MIMEPart is the primary interface enmine clients will use.  Each MIMEPart represents

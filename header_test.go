@@ -1,8 +1,9 @@
 package enmime
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Put the quoted-printable decoder through its paces

@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"net/mail"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIdentifySinglePart(t *testing.T) {

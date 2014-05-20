@@ -19,7 +19,7 @@
 			mime, _ := enmime.ParseMIMEBody(msg)    // Parse message body with enmime
 
 			fmt.Printf("Subject: %v\n",             // Headers are in the net/mail msg
-				msg.Header.Get("Subject")) 
+				msg.Header.Get("Subject"))
 			fmt.Printf("----\n%v\n", mime.Text)     // Display the plain text body
 
 			// List the attachments

@@ -2,9 +2,10 @@ package enmime
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBase64Cleaner(t *testing.T) {

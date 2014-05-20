@@ -105,4 +105,3 @@ func DepthMatchAll(p MIMEPart, matcher MIMEPartMatcher) []MIMEPart {
 		}
 	}
 }
-

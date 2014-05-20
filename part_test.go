@@ -3,10 +3,11 @@ package enmime
 import (
 	"bufio"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPlainTextPart(t *testing.T) {

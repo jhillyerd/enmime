@@ -8,8 +8,8 @@ import (
 // whitespace that would cause Go to lose count of things and issue an "illegal base64 data at
 // input byte..." error
 type Base64Cleaner struct {
-	in    io.Reader
-	buf   [1024]byte
+	in  io.Reader
+	buf [1024]byte
 	//count int64
 }
 
