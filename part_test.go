@@ -203,6 +203,29 @@ func TestMultiBase64Parts(t *testing.T) {
 		"Second child should have <html> as decoded content")
 }
 
+func TestBadBoundaryTerm(t *testing.T) {
+	r := openPart("badboundary.raw")
+	p, err := ParseMIME(r)
+
+	// Examine root
+	if !assert.Nil(t, err, "Parsing should not have generated an error") {
+		t.FailNow()
+	}
+	assert.NotNil(t, p, "Root node should not be nil")
+	assert.Equal(t, p.ContentType(), "multipart/alternative", "Expected type to be set")
+
+	// Examine first child
+	p = p.FirstChild()
+	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	// Examine sibling
+	p = p.NextSibling()
+	assert.Equal(t, p.ContentType(), "text/html", "Second child should have been html")
+	assert.Contains(t, string(p.Content()), "An HTML section", "Second child contains wrong content")
+	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+}
+
 // openPart is a test utility function to open a part as a reader
 func openPart(filename string) *bufio.Reader {
 	// Open test part for parsing

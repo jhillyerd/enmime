@@ -50,7 +50,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"),
 			mailMsg.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding single-part message: %v", err)
 		}
 		mimeMsg.Text = string(bodyBytes)
 
@@ -68,7 +68,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		ctype := mailMsg.Header.Get("Content-Type")
 		mediatype, params, err := mime.ParseMediaType(ctype)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Unable to parse media type: %v", err)
 		}
 		if !strings.HasPrefix(mediatype, "multipart/") {
 			return nil, fmt.Errorf("Unknown mediatype: %v", mediatype)

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -128,7 +129,7 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 	// Loop over MIME parts
 	mr := multipart.NewReader(reader, boundary)
 	for {
-		// mrp is go's built in mime-part
+		// mrp is golang's built in mime-part
 		mrp, err := mr.NextPart()
 		if err != nil {
 			if err == io.EOF {
@@ -137,7 +138,26 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 			}
 			return err
 		}
-		mediatype, mparams, err := mime.ParseMediaType(mrp.Header.Get("Content-Type"))
+		if len(mrp.Header) == 0 {
+			// Empty header probably means the part didn't using the correct trailing "--"
+			// syntax to close its boundary.  We will let this slide if this this the
+			// last MIME part.
+			if _, err := mr.NextPart(); err != nil {
+				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
+					// This is what we were hoping for
+					break
+				} else {
+					return fmt.Errorf("Error at boundary %v: %v", boundary, err)
+				}
+			}
+
+			return fmt.Errorf("Empty header at boundary %v", boundary)
+		}
+		ctype := mrp.Header.Get("Content-Type")
+		if ctype == "" {
+			return fmt.Errorf("Missing Content-Type at boundary %v", boundary)
+		}
+		mediatype, mparams, err := mime.ParseMediaType(ctype)
 		if err != nil {
 			return err
 		}
