@@ -34,13 +34,13 @@ func dump(reader io.Reader, name string) error {
 	// Read email using Go's net/mail
 	msg, err := mail.ReadMessage(reader)
 	if err != nil {
-		return err
+		return fmt.Errorf("During mail.ReadMessage: %v", err)
 	}
 
 	// Parse message body with enmime
 	mime, err := enmime.ParseMIMEBody(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("During enmime.ParseMIMEBody: %v", err)
 	}
 
 	h1(name)
