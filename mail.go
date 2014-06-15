@@ -50,7 +50,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"),
 			mailMsg.Body)
 		if err != nil {
-			return nil, fmt.Errorf("Error decoding single-part message: %v", err)
+			return nil, fmt.Errorf("Error decoding text-only message: %v", err)
 		}
 		mimeMsg.Text = string(bodyBytes)
 
