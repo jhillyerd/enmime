@@ -66,7 +66,11 @@ func dump(reader io.Reader, name string) error {
 	fmt.Println()
 
 	h2("MIME Part Tree")
-	printPart(mime.Root, "    ")
+	if mime.Root == nil {
+		fmt.Println("Message was not MIME encoded")
+	} else {
+		printPart(mime.Root, "    ")
+	}
 
 	return nil
 }
