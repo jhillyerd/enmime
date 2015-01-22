@@ -182,6 +182,9 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 		if p.fileName == "" && mparams["name"] != "" {
 			p.fileName = mparams["name"]
 		}
+		if p.fileName == "" && mparams["file"] != "" {
+			p.fileName = mparams["file"]
+		}
 
 		boundary := mparams["boundary"]
 		if boundary != "" {

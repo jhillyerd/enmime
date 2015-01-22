@@ -77,7 +77,6 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		if boundary == "" {
 			return nil, fmt.Errorf("Unable to locate boundary param in Content-Type header")
 		}
-
 		// Root Node of our tree
 		root := NewMIMEPart(nil, mediatype)
 		mimeMsg.Root = root
@@ -117,7 +116,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 		// Locate attachments
 		mimeMsg.Attachments = BreadthMatchAll(root, func(p MIMEPart) bool {
-			return p.Disposition() == "attachment"
+			return p.Disposition() == "attachment" || p.ContentType() == "application/octet-stream"
 		})
 
 		// Locate inlines
