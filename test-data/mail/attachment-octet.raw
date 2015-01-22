@@ -1,0 +1,26 @@
+From: me@here.com
+To: you@there.com
+Subject: In One Ear
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="MyBoundaryString"
+
+This is a MIME message. If the next few lines look like gibberish,
+then your mail reader sucks.
+
+If you are using a MIME reader, then you aren't even seeing this.
+
+--MyBoundaryString
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+
+A text section
+--MyBoundaryString
+Content-Type: application/octet-stream; file="ATTACHMENT.EXE"
+Content-Transfer-Encoding: base64
+
+AxfhfujropadladnggnfjgwsaiubvnmkadiuhterqHJSFfuAjkfhrqpeorLAkFn
+jNfhgt7Fjd9dfkliodf==
+
+--MyBoundaryString--
+
+This text is ignored.

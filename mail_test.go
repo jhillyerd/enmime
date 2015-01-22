@@ -137,6 +137,24 @@ func TestParseAttachment(t *testing.T) {
 	//}
 }
 
+func TestParseAttachmentOctet(t *testing.T) {
+	msg := readMessage("attachment-octet.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.Contains(t, mime.Text, "A text section")
+	assert.Equal(t, mime.Html, "", "Html attachment is not for display")
+	assert.Equal(t, len(mime.Inlines), 0, "Should have no inlines")
+	assert.Equal(t, len(mime.Attachments), 1, "Should have a single attachment")
+	assert.Equal(t, mime.Attachments[0].FileName(), "ATTACHMENT.EXE", "Attachment should have correct filename")
+	assert.Equal(t, mime.Attachments[0].Content(),
+		[]byte{0x3, 0x17, 0xe1, 0x7e, 0xe8, 0xeb, 0xa2, 0x96, 0x9d, 0x95, 0xa7, 0x67, 0x82, 0x9, 0xdf, 0x8e, 0xc, 0x2c, 0x6a, 0x2b, 0x9b, 0xbe, 0x79, 0xa4, 0x69, 0xd8, 0xae, 0x86, 0xd7, 0xab, 0xa8, 0x72, 0x52, 0x15, 0xfb, 0x80, 0x8e, 0x47, 0xe1, 0xae, 0xaa, 0x5e, 0xa2, 0xb2, 0xc0, 0x90, 0x59, 0xe3, 0x35, 0xf8, 0x60, 0xb7, 0xb1, 0x63, 0x77, 0xd7, 0x5f, 0x92, 0x58, 0xa8, 0x75},
+		"Attachment should have correct content")
+
+}
+
 func TestParseInline(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
 	mime, err := ParseMIMEBody(msg)
