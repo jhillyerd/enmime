@@ -14,6 +14,7 @@ type MIMEBody struct {
 	Root        MIMEPart    // The top-level MIMEPart
 	Attachments []MIMEPart  // All parts having a Content-Disposition of attachment
 	Inlines     []MIMEPart  // All parts having a Content-Disposition of inline
+	OtherParts  []MIMEPart  // All parts not in Attachments and Inlines
 	header      mail.Header // Header from original message
 }
 
@@ -122,6 +123,23 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		// Locate inlines
 		mimeMsg.Inlines = BreadthMatchAll(root, func(p MIMEPart) bool {
 			return p.Disposition() == "inline"
+		})
+
+		// Locate others parts not handled in "Attachments" and "inlines"
+		mimeMsg.OtherParts = BreadthMatchAll(root, func(p MIMEPart) bool {
+			if strings.HasPrefix(p.ContentType(), "multipart/") {
+				return false
+			}
+
+			if p.Disposition() != "" {
+				return false
+			}
+
+			if p.ContentType() == "application/octet-stream" {
+				return false
+			}
+
+			return p.ContentType() != "text/plain" && p.ContentType() != "text/html"
 		})
 	}
 
