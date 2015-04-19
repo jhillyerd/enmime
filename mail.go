@@ -130,5 +130,5 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 // Process the specified header for RFC 2047 encoded words and return the result
 func (m *MIMEBody) GetHeader(name string) string {
-	return decodeHeader(m.header.Get(name))
+	return DecodeHeader(m.header.Get(name))
 }
