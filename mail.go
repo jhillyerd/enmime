@@ -132,3 +132,15 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 func (m *MIMEBody) GetHeader(name string) string {
 	return DecodeHeader(m.header.Get(name))
 }
+
+// Return AddressList with RFC 2047 encoded encoded names.
+func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
+	ret, err := m.header.AddressList(key)
+	if err != nil {
+		return nil, err
+	}
+	for _, addr := range ret {
+		addr.Name = DecodeHeader(addr.Name)
+	}
+	return ret, nil
+}
