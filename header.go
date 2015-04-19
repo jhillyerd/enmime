@@ -97,7 +97,7 @@ func (h *headerDec) accept(valid string) bool {
 }
 
 // Decode a MIME header per RFC 2047
-func decodeHeader(input string) string {
+func DecodeHeader(input string) string {
 	if !strings.Contains(input, "=?") {
 		// Don't scan if there is nothing to do here
 		return input
