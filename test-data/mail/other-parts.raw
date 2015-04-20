@@ -1,0 +1,23 @@
+From: Valere JEANTET <valere.jeantet@gmail.com>
+Subject: Emoji from Gmail
+Date: Thu, 18 Oct 2012 22:48:39 -0700
+To: contact@vjeantet.fr
+Mime-Version: 1.0 
+Content-Type: multipart/mixed; boundary="Enmime-Test-100"
+
+--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+A text section
+--Enmime-Test-100
+Content-Type: image/gif; name="B05.gif"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: B05@goomoji.gmail
+Content-ID: <B05@goomoji.gmail>
+
+R0lGODlhDwAPAKIFAN7r81uw7ACJ46PQ7QBGdN3t+gAAAAAAACH5BAEAAAUALAAAAAAPAA8AAANA
+WCWkS7A5AUajI1tHRmidIAaf0pVFRAjoKTlp670MQUqugs0cn86vH8M0GMJCuIDxGITAntDo8gG1
+Ga1BUzObAAA7
+--Enmime-Test-100--
+
