@@ -202,8 +202,9 @@ func TestParseNestedHeaders(t *testing.T) {
 	assert.Equal(t, mime.Inlines[0].Header().Get("Content-Id"), "<8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet>", "Inline should have a Content-Id header")
 }
 
-func TestParseEncodedSubject(t *testing.T) {
+func TestParseEncodedSubjectAndAddress(t *testing.T) {
 	// Even non-MIME messages should support encoded-words in headers
+	// Also, encoded addresses should be suppored
 	msg := readMessage("qp-ascii-header.raw")
 	mime, err := ParseMIMEBody(msg)
 	if err != nil {
@@ -218,6 +219,12 @@ func TestParseEncodedSubject(t *testing.T) {
 		t.Fatalf("Failed to parse MIME: %v", err)
 	}
 	assert.Equal(t, mime.GetHeader("Subject"), "MIME UTF8 Test \u00a2 More Text")
+	toAddresses, err := mime.AddressList("To")
+	if err != nil {
+		t.Fatalf("Failed to parse To list: %v", err)
+	}
+	assert.Equal(t, len(toAddresses), 1)
+	assert.Equal(t, toAddresses[0].Name, "Mirosław Marczak")
 }
 
 // readMessage is a test utility function to fetch a mail.Message object.
