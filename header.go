@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/axgle/mahonia"
+	"github.com/qiniu/iconv"
 )
 
 func debug(format string, args ...interface{}) {
@@ -321,17 +321,14 @@ Loop:
 
 // Convert the encTextBytes to UTF-8 and return as a string
 func convertText(charsetName string, encoding string, encTextBytes []byte) (string, error) {
-	// Setup mahonia to convert bytes to UTF-8 string
-	charset := mahonia.GetCharset(charsetName)
-	if charset == nil {
-		// Unknown charset
-		return "", fmt.Errorf("Unknown (to mahonia) charset: %q", charsetName)
+	// Convert ? to utf8
+	cd, err := iconv.Open("utf-8", charsetName)
+	if err != nil {
+		return "", fmt.Errorf("Unknown (to iconv) charset: %q", charsetName)
 	}
-	decoder := charset.NewDecoder()
-
+	defer cd.Close()
 	// Unpack quoted-printable or base64 first
 	var textBytes []byte
-	var err error
 	switch strings.ToLower(encoding) {
 	case "b":
 		// Base64 encoded
@@ -346,7 +343,7 @@ func convertText(charsetName string, encoding string, encTextBytes []byte) (stri
 		return "", err
 	}
 
-	return decoder.ConvertString(string(textBytes)), nil
+	return cd.ConvString(string(textBytes)), nil
 }
 
 func decodeQuotedPrintable(input []byte) ([]byte, error) {
