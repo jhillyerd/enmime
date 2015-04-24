@@ -133,7 +133,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				if err != nil {
 					return nil, err
 				}
-				mimeMsg.Text += newStr
+				mimeMsg.Html += newStr
 			} else {
 				mimeMsg.Html = string(match.Content())
 			}
