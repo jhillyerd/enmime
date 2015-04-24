@@ -319,15 +319,22 @@ Loop:
 	return plainTextState
 }
 
-// Convert the encTextBytes to UTF-8 and return as a string
-func convertText(charsetName string, encoding string, encTextBytes []byte) (string, error) {
-	// Convert ? to utf8
-	cd, err := iconv.Open("utf-8", charsetName)
+func ConvertText(dstCharset, srcCharset, text string) (string, error) {
+	if dstCharset == srcCharset {
+		return text, nil
+	}
+	cd, err := iconv.Open(dstCharset, srcCharset)
 	if err != nil {
-		return "", fmt.Errorf("Unknown (to iconv) charset: %q", charsetName)
+		return "", fmt.Errorf("Unknown (to iconv) charset: %q to %q", srcCharset, dstCharset)
 	}
 	defer cd.Close()
+	return cd.ConvString(text), nil
+}
+
+// Convert the encTextBytes to UTF-8 and return as a string
+func convertText(charsetName string, encoding string, encTextBytes []byte) (string, error) {
 	// Unpack quoted-printable or base64 first
+	var err error
 	var textBytes []byte
 	switch strings.ToLower(encoding) {
 	case "b":
@@ -343,7 +350,7 @@ func convertText(charsetName string, encoding string, encTextBytes []byte) (stri
 		return "", err
 	}
 
-	return cd.ConvString(string(textBytes)), nil
+	return ConvertText("utf-8", charsetName, string(textBytes))
 }
 
 func decodeQuotedPrintable(input []byte) ([]byte, error) {

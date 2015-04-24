@@ -28,6 +28,7 @@ type MIMEPart interface {
 	ContentType() string          // Content-Type header without parameters
 	Disposition() string          // Content-Disposition header without parameters
 	FileName() string             // File Name from disposition or type header
+	Charset() string              // Content Charset
 	Content() []byte              // Decoded content of this part (can be empty)
 }
 
@@ -41,6 +42,7 @@ type memMIMEPart struct {
 	contentType string
 	disposition string
 	fileName    string
+	charset     string
 	content     []byte
 }
 
@@ -83,6 +85,11 @@ func (p *memMIMEPart) Disposition() string {
 // File Name from disposition or type header
 func (p *memMIMEPart) FileName() string {
 	return p.fileName
+}
+
+// Content charset
+func (p *memMIMEPart) Charset() string {
+	return p.charset
 }
 
 // Decoded content of this part (can be empty)
@@ -184,6 +191,9 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 		}
 		if p.fileName == "" && mparams["file"] != "" {
 			p.fileName = mparams["file"]
+		}
+		if p.charset == "" {
+			p.charset = mparams["charset"]
 		}
 
 		boundary := mparams["boundary"]

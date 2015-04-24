@@ -92,7 +92,15 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 			})
 			if match != nil {
-				mimeMsg.Text = string(match.Content())
+				if match.Charset() != "" {
+					newStr, err := ConvertText("utf-8", match.Charset(), string(match.Content()))
+					if err != nil {
+						return nil, err
+					}
+					mimeMsg.Text += newStr
+				} else {
+					mimeMsg.Text += string(match.Content())
+				}
 			}
 		} else {
 			// multipart is of a mixed type
@@ -103,7 +111,15 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				if i > 0 {
 					mimeMsg.Text += "\n--\n"
 				}
-				mimeMsg.Text += string(m.Content())
+				if m.Charset() != "" {
+					newStr, err := ConvertText("utf-8", m.Charset(), string(m.Content()))
+					if err != nil {
+						return nil, err
+					}
+					mimeMsg.Text += newStr
+				} else {
+					mimeMsg.Text += string(m.Content())
+				}
 			}
 		}
 
@@ -112,7 +128,16 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 			return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 		})
 		if match != nil {
-			mimeMsg.Html = string(match.Content())
+			if match.Charset() != "" {
+				newStr, err := ConvertText("utf-8", match.Charset(), string(match.Content()))
+				if err != nil {
+					return nil, err
+				}
+				mimeMsg.Text += newStr
+			} else {
+				mimeMsg.Html = string(match.Content())
+			}
+
 		}
 
 		// Locate attachments
