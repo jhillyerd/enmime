@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.google.com/p/mahonia"
+	"github.com/axgle/mahonia"
 )
 
 func debug(format string, args ...interface{}) {
@@ -37,6 +37,7 @@ type headerDec struct {
 	pos      int     // Current parsing position
 	charset  string  // Character set of current encoded word
 	encoding string  // Encoding of current encoded word
+	inner    bool    // Convert other character to utf8-base64 =?UTF-8?B?==?=
 	outbuf   bytes.Buffer
 }
 
@@ -106,6 +107,28 @@ func DecodeHeader(input string) string {
 	h := &headerDec{
 		input: []byte(input),
 		state: plainSpaceState,
+	}
+
+	debug("Starting parse of: '%v'\n", input)
+
+	for h.state != nil {
+		h.state = h.state(h)
+	}
+
+	return h.outbuf.String()
+}
+
+// Decode a MIME header per RFC 2047 to =?utf-8b?
+func DecodeToUTF8Base64Header(input string) string {
+	if !strings.Contains(input, "=?") {
+		// Don't scan if there is nothing to do here
+		return input
+	}
+
+	h := &headerDec{
+		input: []byte(input),
+		state: plainSpaceState,
+		inner: true,
 	}
 
 	debug("Starting parse of: '%v'\n", input)
@@ -240,7 +263,13 @@ func encTextState(h *headerDec) stateFn {
 				text, err := convertText(h.charset, h.encoding, h.input[myStart:h.pos-2])
 				if err == nil {
 					debug("Text converted to: %q", text)
-					h.outbuf.WriteString(text)
+					if h.inner {
+						h.outbuf.WriteString("=?UTF-8?B?")
+						h.outbuf.WriteString(base64.StdEncoding.EncodeToString(([]byte)(text)))
+						h.outbuf.WriteString("?=")
+					} else {
+						h.outbuf.WriteString(text)
+					}
 					h.ignore()
 					// Entering post-word space
 					return spaceState
