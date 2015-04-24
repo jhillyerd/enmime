@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/encoding/korean"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/traditionalchinese"
+	"golang.org/x/text/transform"
+	"io/ioutil"
 	"strconv"
 	"strings"
-
-	"github.com/qiniu/iconv"
 )
 
 func debug(format string, args ...interface{}) {
@@ -320,15 +325,35 @@ Loop:
 }
 
 func ConvertText(dstCharset, srcCharset, text string) (string, error) {
-	if dstCharset == srcCharset {
+	if strings.ToLower(srcCharset) == strings.ToLower(dstCharset) {
 		return text, nil
 	}
-	cd, err := iconv.Open(dstCharset, srcCharset)
-	if err != nil {
-		return "", fmt.Errorf("Unknown (to iconv) charset: %q to %q", srcCharset, dstCharset)
+	var ed encoding.Encoding
+	switch strings.ToLower(srcCharset) {
+	case "gb2312", "gbk":
+		ed = simplifiedchinese.GBK
+	case "gb18030":
+		ed = simplifiedchinese.GB18030
+	case "big5":
+		ed = traditionalchinese.Big5
+	case "shift_jisx0213","shift-jis", "shift_jis":
+		ed = japanese.ShiftJIS
+	case "euc-jp","euc_jp":
+		ed = japanese.EUCJP
+	case "iso-2022-jp-2", "iso-2022-jp-3", "iso-2022-jp":
+		ed = japanese.ISO2022JP
+	case "euc-kr","euc_kr":
+		ed = korean.EUCKR
+	default:
+		return "", fmt.Errorf("Unsupport charset %s to %s", srcCharset, dstCharset)
 	}
-	defer cd.Close()
-	return cd.ConvString(text), nil
+	input := bytes.NewReader(([]byte)(text))
+	reader := transform.NewReader(input, ed.NewDecoder())
+	output, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
 }
 
 // Convert the encTextBytes to UTF-8 and return as a string
