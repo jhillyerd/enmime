@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jhillyerd/go.enmime"
+	"github.com/cinience/go.enmime"
 )
 
 func main() {

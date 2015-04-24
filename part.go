@@ -184,13 +184,13 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 		if err == nil {
 			// Disposition is optional
 			p.disposition = disposition
-			p.fileName = dparams["filename"]
+			p.fileName = DecodeHeader(dparams["filename"])
 		}
 		if p.fileName == "" && mparams["name"] != "" {
-			p.fileName = mparams["name"]
+			p.fileName = DecodeHeader(mparams["name"])
 		}
 		if p.fileName == "" && mparams["file"] != "" {
-			p.fileName = mparams["file"]
+			p.fileName = DecodeHeader(mparams["file"])
 		}
 		if p.charset == "" {
 			p.charset = mparams["charset"]
