@@ -44,11 +44,42 @@ func dump(reader io.Reader, name string) error {
 	}
 
 	h1(name)
+	h2("Header")
+	for k, _ := range msg.Header {
+		switch strings.ToLower(k) {
+		case "from", "to", "bcc", "subject":
+			continue
+		}
+		fmt.Printf("%v: %v  \n", k, mime.GetHeader(k))
+	}
 
 	h2("Envelope")
-	fmt.Printf("From: %v  \n", mime.GetHeader("From"))
-	fmt.Printf("To: %v  \n", mime.GetHeader("To"))
-	fmt.Printf("Subject: %v  \n", mime.GetHeader("Subject"))
+	fmt.Println("##From")
+	addrlist, err := mime.AddressList("From")
+	if err != nil {
+		panic(err)
+	}
+	for _, addr := range addrlist {
+		fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
+	}
+	fmt.Println("##To")
+	addrlist, err = mime.AddressList("To")
+	if err != nil {
+		panic(err)
+	}
+	for _, addr := range addrlist {
+		fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
+	}
+
+	addrlist, err = mime.AddressList("Bcc")
+	if err == nil {
+		fmt.Println("##Bcc")
+		for _, addr := range addrlist {
+			fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
+		}
+	}
+
+	fmt.Printf("##Subject\n %v ", mime.GetHeader("Subject"))
 	fmt.Println()
 
 	h2("Body Text")

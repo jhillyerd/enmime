@@ -58,7 +58,17 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		// Check for HTML at top-level, eat errors quietly
 		ctype := mailMsg.Header.Get("Content-Type")
 		if ctype != "" {
-			if mediatype, _, err := mime.ParseMediaType(ctype); err == nil {
+			if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
+				/* 
+				 *Content-Type: text/plain;\t charset="hz-gb-2312"
+				 */ 
+				if mparams["charset"] != "" {
+					newStr, err := ConvertText("utf-8", mparams["charset"], mimeMsg.Text)
+					if err != nil {
+						return nil, err
+					}
+					mimeMsg.Text = newStr
+				}
 				if mediatype == "text/html" {
 					mimeMsg.Html = mimeMsg.Text
 				}

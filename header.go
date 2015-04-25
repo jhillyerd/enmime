@@ -5,11 +5,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
-	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"strconv"
@@ -344,7 +344,7 @@ func ConvertText(dstCharset, srcCharset, text string) (string, error) {
 		ed = simplifiedchinese.GB18030
 	case "big5":
 		ed = traditionalchinese.Big5
-	case "shiftjisx0213","shiftjis":
+	case "shiftjisx0213", "shiftjis":
 		ed = japanese.ShiftJIS
 	case "eucjp":
 		ed = japanese.EUCJP
