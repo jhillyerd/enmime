@@ -9,6 +9,7 @@ import (
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
+	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"strconv"
@@ -329,23 +330,30 @@ func ConvertText(dstCharset, srcCharset, text string) (string, error) {
 		return text, nil
 	}
 	var ed encoding.Encoding
-	switch strings.ToLower(srcCharset) {
+	fmtCharset := strings.ToLower(srcCharset)
+	fmtCharset = strings.Replace(fmtCharset, "-", "", -1)
+	fmtCharset = strings.Replace(fmtCharset, "_", "", -1)
+	switch fmtCharset {
+	case "iso88591":
+		ed = charmap.Windows1254
+	case "hzgb2312":
+		ed = simplifiedchinese.HZGB2312
 	case "gb2312", "gbk":
 		ed = simplifiedchinese.GBK
 	case "gb18030":
 		ed = simplifiedchinese.GB18030
 	case "big5":
 		ed = traditionalchinese.Big5
-	case "shift_jisx0213","shift-jis", "shift_jis":
+	case "shiftjisx0213","shiftjis":
 		ed = japanese.ShiftJIS
-	case "euc-jp","euc_jp":
+	case "eucjp":
 		ed = japanese.EUCJP
-	case "iso-2022-jp-2", "iso-2022-jp-3", "iso-2022-jp":
+	case "iso2022jp2", "iso2022jp3", "iso2022jp":
 		ed = japanese.ISO2022JP
-	case "euc-kr","euc_kr":
+	case "euckr":
 		ed = korean.EUCKR
 	default:
-		return "", fmt.Errorf("Unsupport charset %s to %s", srcCharset, dstCharset)
+		return text, nil
 	}
 	input := bytes.NewReader(([]byte)(text))
 	reader := transform.NewReader(input, ed.NewDecoder())
