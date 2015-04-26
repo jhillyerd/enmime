@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/cinience/go.enmime"
+	"github.com/godeps/go.enmime"
 )
 
 func main() {
@@ -54,33 +54,21 @@ func dump(reader io.Reader, name string) error {
 	}
 
 	h2("Envelope")
-	fmt.Println("##From")
-	addrlist, err := mime.AddressList("From")
-	if err != nil {
-		panic(err)
-	}
-	for _, addr := range addrlist {
-		fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
-	}
-	fmt.Println("##To")
-	addrlist, err = mime.AddressList("To")
-	if err != nil {
-		panic(err)
-	}
-	for _, addr := range addrlist {
-		fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
-	}
-
-	addrlist, err = mime.AddressList("Bcc")
-	if err == nil {
-		fmt.Println("##Bcc")
+	for _, hkey := range enmime.AddressHeaders {
+		addrlist, err := mime.AddressList(hkey)
+		if err != nil {
+			if err == mail.ErrHeaderNotPresent {
+				continue
+			}
+			panic(err)
+		}
+		fmt.Println("### " + hkey)
 		for _, addr := range addrlist {
 			fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
 		}
 	}
 
-	fmt.Printf("##Subject\n %v ", mime.GetHeader("Subject"))
-	fmt.Println()
+	fmt.Printf("### Subject\n %v\n", mime.GetHeader("Subject"))
 
 	h2("Body Text")
 	fmt.Println(mime.Text)
@@ -107,13 +95,12 @@ func dump(reader io.Reader, name string) error {
 }
 
 func h1(content string) {
-	bar := strings.Repeat("=", len(content))
-	fmt.Printf("%v\n%v\n\n", content, bar)
+	bar := strings.Repeat("-", len(content))
+	fmt.Printf("#%v\n%v\n\n", content, bar)
 }
 
 func h2(content string) {
-	bar := strings.Repeat("-", len(content))
-	fmt.Printf("%v\n%v\n", content, bar)
+	fmt.Printf("##%v\n", content)
 }
 
 // printPart pretty prints the MIMEPart tree

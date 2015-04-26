@@ -18,6 +18,8 @@ type MIMEBody struct {
 	header      mail.Header // Header from original message
 }
 
+var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
+
 // IsMultipartMessage returns true if the message has a recognized multipart Content-Type
 // header.  You don't need to check this before calling ParseMIMEBody, it can handle
 // non-multipart messages.
@@ -59,9 +61,9 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		ctype := mailMsg.Header.Get("Content-Type")
 		if ctype != "" {
 			if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
-				/* 
+				/*
 				 *Content-Type: text/plain;\t charset="hz-gb-2312"
-				 */ 
+				 */
 				if mparams["charset"] != "" {
 					newStr, err := ConvertText("utf-8", mparams["charset"], mimeMsg.Text)
 					if err != nil {
@@ -188,12 +190,22 @@ func (m *MIMEBody) GetHeader(name string) string {
 
 // Return AddressList with RFC 2047 encoded encoded names.
 func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
+	isAddrHeader := false
+	for _, hkey := range AddressHeaders {
+		if strings.ToLower(hkey) == strings.ToLower(key) {
+			isAddrHeader = true
+		}
+	}
+	if !isAddrHeader {
+		return nil, fmt.Errorf("%s is not address header", key)
+	}
+	
 	str := DecodeToUTF8Base64Header(m.header.Get(key))
 	if str == "" {
 		return nil, mail.ErrHeaderNotPresent
 	}
 	ret, err := mail.ParseAddressList(str)
-	if err != nil && err == mail.ErrHeaderNotPresent {
+	if err != nil {
 		return nil, err
 	}
 	return ret, nil

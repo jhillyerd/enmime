@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 	"flag"
-	"github.com/cinience/go.enmime"
+	"github.com/godeps/go.enmime"
 )
 
 var (
