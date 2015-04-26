@@ -65,7 +65,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				 *Content-Type: text/plain;\t charset="hz-gb-2312"
 				 */
 				if mparams["charset"] != "" {
-					newStr, err := ConvertText("utf-8", mparams["charset"], mimeMsg.Text)
+					newStr, err := ConvertToUTF8String(mparams["charset"], mimeMsg.Text)
 					if err != nil {
 						return nil, err
 					}
@@ -105,7 +105,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 			})
 			if match != nil {
 				if match.Charset() != "" {
-					newStr, err := ConvertText("utf-8", match.Charset(), string(match.Content()))
+					newStr, err := ConvertToUTF8String(match.Charset(), string(match.Content()))
 					if err != nil {
 						return nil, err
 					}
@@ -124,7 +124,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 					mimeMsg.Text += "\n--\n"
 				}
 				if m.Charset() != "" {
-					newStr, err := ConvertText("utf-8", m.Charset(), string(m.Content()))
+					newStr, err := ConvertToUTF8String(m.Charset(), string(m.Content()))
 					if err != nil {
 						return nil, err
 					}
@@ -141,7 +141,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		})
 		if match != nil {
 			if match.Charset() != "" {
-				newStr, err := ConvertText("utf-8", match.Charset(), string(match.Content()))
+				newStr, err := ConvertToUTF8String(match.Charset(), string(match.Content()))
 				if err != nil {
 					return nil, err
 				}
@@ -199,7 +199,7 @@ func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
 	if !isAddrHeader {
 		return nil, fmt.Errorf("%s is not address header", key)
 	}
-	
+
 	str := DecodeToUTF8Base64Header(m.header.Get(key))
 	if str == "" {
 		return nil, mail.ErrHeaderNotPresent

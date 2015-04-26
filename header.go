@@ -4,14 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/encoding/charmap"
-	"golang.org/x/text/encoding/japanese"
-	"golang.org/x/text/encoding/korean"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/encoding/traditionalchinese"
-	"golang.org/x/text/transform"
-	"io/ioutil"
 	"strconv"
 	"strings"
 )
@@ -43,7 +35,7 @@ type headerDec struct {
 	pos      int     // Current parsing position
 	charset  string  // Character set of current encoded word
 	encoding string  // Encoding of current encoded word
-	inner    bool    // Convert other character to utf8-base64 =?UTF-8?B?==?=
+	trans    bool    // Convert other character to utf8-base64 =?UTF-8?B?==?=
 	outbuf   bytes.Buffer
 }
 
@@ -134,7 +126,7 @@ func DecodeToUTF8Base64Header(input string) string {
 	h := &headerDec{
 		input: []byte(input),
 		state: plainSpaceState,
-		inner: true,
+		trans: true,
 	}
 
 	debug("Starting parse of: '%v'\n", input)
@@ -269,7 +261,7 @@ func encTextState(h *headerDec) stateFn {
 				text, err := convertText(h.charset, h.encoding, h.input[myStart:h.pos-2])
 				if err == nil {
 					debug("Text converted to: %q", text)
-					if h.inner {
+					if h.trans {
 						h.outbuf.WriteString("=?UTF-8?B?")
 						h.outbuf.WriteString(base64.StdEncoding.EncodeToString(([]byte)(text)))
 						h.outbuf.WriteString("?=")
@@ -325,47 +317,8 @@ Loop:
 	return plainTextState
 }
 
-func ConvertText(dstCharset, srcCharset, text string) (string, error) {
-	if strings.ToLower(srcCharset) == strings.ToLower(dstCharset) {
-		return text, nil
-	}
-	var ed encoding.Encoding
-	fmtCharset := strings.ToLower(srcCharset)
-	fmtCharset = strings.Replace(fmtCharset, "-", "", -1)
-	fmtCharset = strings.Replace(fmtCharset, "_", "", -1)
-	switch fmtCharset {
-	case "iso88591":
-		ed = charmap.Windows1254
-	case "hzgb2312":
-		ed = simplifiedchinese.HZGB2312
-	case "gb2312", "gbk":
-		ed = simplifiedchinese.GBK
-	case "gb18030":
-		ed = simplifiedchinese.GB18030
-	case "big5":
-		ed = traditionalchinese.Big5
-	case "shiftjisx0213", "shiftjis":
-		ed = japanese.ShiftJIS
-	case "eucjp":
-		ed = japanese.EUCJP
-	case "iso2022jp2", "iso2022jp3", "iso2022jp":
-		ed = japanese.ISO2022JP
-	case "euckr":
-		ed = korean.EUCKR
-	default:
-		return text, nil
-	}
-	input := bytes.NewReader(([]byte)(text))
-	reader := transform.NewReader(input, ed.NewDecoder())
-	output, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
-
 // Convert the encTextBytes to UTF-8 and return as a string
-func convertText(charsetName string, encoding string, encTextBytes []byte) (string, error) {
+func convertText(charset string, encoding string, encTextBytes []byte) (string, error) {
 	// Unpack quoted-printable or base64 first
 	var err error
 	var textBytes []byte
@@ -383,7 +336,7 @@ func convertText(charsetName string, encoding string, encTextBytes []byte) (stri
 		return "", err
 	}
 
-	return ConvertText("utf-8", charsetName, string(textBytes))
+	return ConvertToUTF8String(charset, string(textBytes))
 }
 
 func decodeQuotedPrintable(input []byte) ([]byte, error) {
