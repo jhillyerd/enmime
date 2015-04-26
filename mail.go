@@ -194,6 +194,7 @@ func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
 	for _, hkey := range AddressHeaders {
 		if strings.ToLower(hkey) == strings.ToLower(key) {
 			isAddrHeader = true
+			break
 		}
 	}
 	if !isAddrHeader {
