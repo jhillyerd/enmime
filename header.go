@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"code.google.com/p/mahonia"
 )
 
 func debug(format string, args ...interface{}) {
@@ -37,6 +35,7 @@ type headerDec struct {
 	pos      int     // Current parsing position
 	charset  string  // Character set of current encoded word
 	encoding string  // Encoding of current encoded word
+	trans    bool    // Convert other character to utf8-base64 =?UTF-8?B?==?=
 	outbuf   bytes.Buffer
 }
 
@@ -106,6 +105,28 @@ func DecodeHeader(input string) string {
 	h := &headerDec{
 		input: []byte(input),
 		state: plainSpaceState,
+	}
+
+	debug("Starting parse of: '%v'\n", input)
+
+	for h.state != nil {
+		h.state = h.state(h)
+	}
+
+	return h.outbuf.String()
+}
+
+// Decode a MIME header per RFC 2047 to =?utf-8b?
+func DecodeToUTF8Base64Header(input string) string {
+	if !strings.Contains(input, "=?") {
+		// Don't scan if there is nothing to do here
+		return input
+	}
+
+	h := &headerDec{
+		input: []byte(input),
+		state: plainSpaceState,
+		trans: true,
 	}
 
 	debug("Starting parse of: '%v'\n", input)
@@ -240,7 +261,13 @@ func encTextState(h *headerDec) stateFn {
 				text, err := convertText(h.charset, h.encoding, h.input[myStart:h.pos-2])
 				if err == nil {
 					debug("Text converted to: %q", text)
-					h.outbuf.WriteString(text)
+					if h.trans {
+						h.outbuf.WriteString("=?UTF-8?B?")
+						h.outbuf.WriteString(base64.StdEncoding.EncodeToString(([]byte)(text)))
+						h.outbuf.WriteString("?=")
+					} else {
+						h.outbuf.WriteString(text)
+					}
 					h.ignore()
 					// Entering post-word space
 					return spaceState
@@ -291,18 +318,10 @@ Loop:
 }
 
 // Convert the encTextBytes to UTF-8 and return as a string
-func convertText(charsetName string, encoding string, encTextBytes []byte) (string, error) {
-	// Setup mahonia to convert bytes to UTF-8 string
-	charset := mahonia.GetCharset(charsetName)
-	if charset == nil {
-		// Unknown charset
-		return "", fmt.Errorf("Unknown (to mahonia) charset: %q", charsetName)
-	}
-	decoder := charset.NewDecoder()
-
+func convertText(charset string, encoding string, encTextBytes []byte) (string, error) {
 	// Unpack quoted-printable or base64 first
-	var textBytes []byte
 	var err error
+	var textBytes []byte
 	switch strings.ToLower(encoding) {
 	case "b":
 		// Base64 encoded
@@ -317,7 +336,7 @@ func convertText(charsetName string, encoding string, encTextBytes []byte) (stri
 		return "", err
 	}
 
-	return decoder.ConvertString(string(textBytes)), nil
+	return ConvertToUTF8String(charset, string(textBytes))
 }
 
 func decodeQuotedPrintable(input []byte) ([]byte, error) {
