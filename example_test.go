@@ -5,7 +5,7 @@ import (
 	"net/mail"
 	"os"
 
-	"github.com/cinience/go.enmime"
+	"github.com/jhillyerd/go.enmime"
 )
 
 func Example() {

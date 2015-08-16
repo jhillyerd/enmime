@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/godeps/go.enmime"
+	"github.com/jhillyerd/go.enmime"
 	"io"
 	"net/mail"
 	"os"
