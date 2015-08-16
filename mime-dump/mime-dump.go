@@ -45,7 +45,7 @@ func dump(reader io.Reader, name string) error {
 
 	h1(name)
 	h2("Header")
-	for k, _ := range msg.Header {
+	for k := range msg.Header {
 		switch strings.ToLower(k) {
 		case "from", "to", "bcc", "subject":
 			continue

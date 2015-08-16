@@ -1,10 +1,8 @@
 package enmime
 
 import (
-	"fmt"
 	"bytes"
-	"io/ioutil"
-	"strings"
+	"fmt"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -13,6 +11,8 @@ import (
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"io/ioutil"
+	"strings"
 )
 
 /* copy from golang.org/x/net/html/charset/table.go */

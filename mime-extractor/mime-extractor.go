@@ -1,20 +1,21 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"github.com/godeps/go.enmime"
 	"io"
 	"net/mail"
 	"os"
 	"path"
 	"strings"
-	"flag"
-	"github.com/godeps/go.enmime"
 )
 
 var (
-	mimefile *string  = flag.String("f", "", "mime(eml) file")
-	outdir *string = flag.String("o", "", "output dir")
+	mimefile *string = flag.String("f", "", "mime(eml) file")
+	outdir   *string = flag.String("o", "", "output dir")
 )
+
 func main() {
 	flag.Parse()
 	if *mimefile == "" {
@@ -22,13 +23,13 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	cwd,_ := os.Getwd()
+	cwd, _ := os.Getwd()
 	if *outdir == "" {
 		outdir = &cwd
-	} 
+	}
 	fmt.Fprintf(os.Stdout, "Extract attachments in %s\n", *outdir)
-	
-	if err := os.MkdirAll(*outdir, os.ModePerm) ; err != nil {
+
+	if err := os.MkdirAll(*outdir, os.ModePerm); err != nil {
 		fmt.Fprintf(os.Stderr, "Mkdir %s failed.", *outdir)
 		os.Exit(2)
 	}
@@ -78,7 +79,7 @@ func dump(reader io.Reader, name string) error {
 	h2("Attachment List")
 	for _, a := range mime.Attachments {
 		newFileName := path.Join(*outdir, a.FileName())
-		f,err := os.Create(newFileName)
+		f, err := os.Create(newFileName)
 		if err != nil {
 			fmt.Println(err)
 		}
