@@ -65,7 +65,7 @@ func TestBreadthMatchAll(t *testing.T) {
 	ps := BreadthMatchAll(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/plain"
 	})
-	assert.Equal(t, len(ps), 2, "BreadthMatchAll should have returned two matches")
+	assert.Equal(t, 2, len(ps), "BreadthMatchAll should have returned two matches")
 	assert.True(t, ps[0].(*memMIMEPart) == a2,
 		"BreadthMatchAll should have returned a2, got %v", ps[0].FileName())
 	assert.True(t, ps[1].(*memMIMEPart) == b1,
@@ -74,7 +74,7 @@ func TestBreadthMatchAll(t *testing.T) {
 	ps = BreadthMatchAll(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/html"
 	})
-	assert.Equal(t, len(ps), 2, "BreadthMatchAll should have returned two matches")
+	assert.Equal(t, 2, len(ps), "BreadthMatchAll should have returned two matches")
 	assert.True(t, ps[0].(*memMIMEPart) == a3,
 		"BreadthMatchAll should have returned a3, got %v", ps[0].FileName())
 	assert.True(t, ps[1].(*memMIMEPart) == b2,
@@ -140,7 +140,7 @@ func TestDepthMatchAll(t *testing.T) {
 	ps := DepthMatchAll(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/plain"
 	})
-	assert.Equal(t, len(ps), 2, "DepthMatchAll should have returned two matches")
+	assert.Equal(t, 2, len(ps), "DepthMatchAll should have returned two matches")
 	assert.True(t, ps[0].(*memMIMEPart) == b1,
 		"DepthMatchAll should have returned b1, got %v", ps[0].FileName())
 	assert.True(t, ps[1].(*memMIMEPart) == a2,
@@ -149,7 +149,7 @@ func TestDepthMatchAll(t *testing.T) {
 	ps = DepthMatchAll(root, func(pt MIMEPart) bool {
 		return pt.ContentType() == "text/html"
 	})
-	assert.Equal(t, len(ps), 2, "DepthMatchAll should have returned two matches")
+	assert.Equal(t, 2, len(ps), "DepthMatchAll should have returned two matches")
 	assert.True(t, ps[0].(*memMIMEPart) == b2,
 		"DepthMatchAll should have returned b2, got %v", ps[0].FileName())
 	assert.True(t, ps[1].(*memMIMEPart) == a3,

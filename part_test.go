@@ -18,9 +18,9 @@ func TestPlainTextPart(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.Header().Get("Content-Transfer-Encoding"), "7bit",
+	assert.Equal(t, "7bit", p.Header().Get("Content-Transfer-Encoding"),
 		"Exepcted Header to have data")
-	assert.Equal(t, p.ContentType(), "text/plain", "Expected type to be set")
+	assert.Equal(t, "text/plain", p.ContentType(), "Expected type to be set")
 	assert.Contains(t, string(p.Content()), "Test of text/plain section",
 		"Expected correct data in p.Content")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
@@ -34,10 +34,10 @@ func TestQuotedPrintablePart(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.Header().Get("Content-Transfer-Encoding"), "quoted-printable",
+	assert.Equal(t, "quoted-printable", p.Header().Get("Content-Transfer-Encoding"),
 		"Exepcted Header to have data")
-	assert.Equal(t, p.ContentType(), "text/plain", "Expected type to be set")
-	assert.Equal(t, string(p.Content()), "Start=ABC=Finish",
+	assert.Equal(t, "text/plain", p.ContentType(), "Expected type to be set")
+	assert.Equal(t, "Start=ABC=Finish", string(p.Content()),
 		"Expected correct data in p.Content")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
 }
@@ -51,20 +51,20 @@ func TestMultiAlternParts(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.ContentType(), "multipart/alternative", "Expected type to be set")
-	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.Equal(t, "multipart/alternative", p.ContentType(), "Expected type to be set")
+	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
 	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
 	assert.Contains(t, string(p.Content()), "A text section", "First child contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/html", "Second child should have been html")
+	assert.Equal(t, "text/html", p.ContentType(), "Second child should have been html")
 	assert.Contains(t, string(p.Content()), "An HTML section", "Second child contains wrong content")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 }
@@ -78,20 +78,20 @@ func TestMultiMixedParts(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.ContentType(), "multipart/mixed", "Expected type to be set")
-	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.Equal(t, "multipart/mixed", p.ContentType(), "Expected type to be set")
+	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
 	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
 	assert.Contains(t, string(p.Content()), "Section one", "First child contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/plain", "Second child should have been html")
+	assert.Equal(t, "text/plain", p.ContentType(), "Second child should have been html")
 	assert.Contains(t, string(p.Content()), "Section two", "Second child contains wrong content")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 }
@@ -105,20 +105,20 @@ func TestMultiOtherParts(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.ContentType(), "multipart/x-enmime", "Expected type to be set")
-	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.Equal(t, "multipart/x-enmime", p.ContentType(), "Expected type to be set")
+	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
 	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
 	assert.Contains(t, string(p.Content()), "Section one", "First child contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/plain", "Second child should have been html")
+	assert.Equal(t, "text/plain", p.ContentType(), "Second child should have been html")
 	assert.Contains(t, string(p.Content()), "Section two", "Second child contains wrong content")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 }
@@ -132,43 +132,43 @@ func TestNestedAlternParts(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.ContentType(), "multipart/alternative", "Expected type to be set")
-	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.Equal(t, "multipart/alternative", p.ContentType(), "Expected type to be set")
+	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
 	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
 	assert.Contains(t, string(p.Content()), "A text section", "First child contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "multipart/related", "Second child should have been another multipart")
-	assert.Equal(t, len(p.Content()), 0, "Second child should not have Content")
+	assert.Equal(t, "multipart/related", p.ContentType(), "Second child should have been another multipart")
+	assert.Equal(t, 0, len(p.Content()), "Second child should not have Content")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 	assert.NotNil(t, p.FirstChild(), "Second child should have a child")
 
 	// First nested
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/html", "First nested should have been html")
+	assert.Equal(t, "text/html", p.ContentType(), "First nested should have been html")
 	assert.Contains(t, string(p.Content()), "An HTML section", "First nested contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "First nested should have a sibling")
 
 	// Second nested
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/plain", "Second nested should have been text")
-	assert.Equal(t, p.Disposition(), "inline", "Second nested should be inline disposition")
-	assert.Equal(t, p.FileName(), "attach.txt", "Second nested should have correct filename")
+	assert.Equal(t, "text/plain", p.ContentType(), "Second nested should have been text")
+	assert.Equal(t, "inline", p.Disposition(), "Second nested should be inline disposition")
+	assert.Equal(t, "attach.txt", p.FileName(), "Second nested should have correct filename")
 	assert.Contains(t, string(p.Content()), "An inline text attachment", "Second nested contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "Second nested should have a sibling")
 
 	// Third nested
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/plain", "Third nested should have been text")
-	assert.Equal(t, p.Disposition(), "inline", "Third nested should be inline disposition")
-	assert.Equal(t, p.FileName(), "attach2.txt", "Third nested should have correct filename")
+	assert.Equal(t, "text/plain", p.ContentType(), "Third nested should have been text")
+	assert.Equal(t, "inline", p.Disposition(), "Third nested should be inline disposition")
+	assert.Equal(t, "attach2.txt", p.FileName(), "Third nested should have correct filename")
 	assert.Contains(t, string(p.Content()), "Another inline text attachment",
 		"Third nested contains wrong content")
 	assert.Nil(t, p.NextSibling(), "Third nested should not have a sibling")
@@ -183,20 +183,20 @@ func TestMultiBase64Parts(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.ContentType(), "multipart/mixed", "Expected type to be set")
-	assert.Equal(t, len(p.Content()), 0, "Root should not have Content")
+	assert.Equal(t, "multipart/mixed", p.ContentType(), "Expected type to be set")
+	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
 	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
 	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
 	assert.Contains(t, string(p.Content()), "A text section", "First child contains wrong content")
 	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/html", "Second child should be html")
+	assert.Equal(t, "text/html", p.ContentType(), "Second child should be html")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 	assert.Nil(t, p.FirstChild(), "Second child should not have a child")
 	assert.Contains(t, string(p.Content()), "<html>",
@@ -212,16 +212,16 @@ func TestBadBoundaryTerm(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, p.ContentType(), "multipart/alternative", "Expected type to be set")
+	assert.Equal(t, "multipart/alternative", p.ContentType(), "Expected type to be set")
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, p.ContentType(), "text/plain", "First child should have been text")
+	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
 	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, p.ContentType(), "text/html", "Second child should have been html")
+	assert.Equal(t, "text/html", p.ContentType(), "Second child should have been html")
 	assert.Contains(t, string(p.Content()), "An HTML section", "Second child contains wrong content")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
 }

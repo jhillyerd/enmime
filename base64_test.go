@@ -14,5 +14,5 @@ func TestBase64Cleaner(t *testing.T) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(cleaner)
 
-	assert.Equal(t, buf.String(), "ABC")
+	assert.Equal(t, "ABC", buf.String())
 }
