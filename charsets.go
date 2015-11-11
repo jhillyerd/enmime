@@ -3,6 +3,12 @@ package enmime
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"regexp"
+	"strings"
+
+	"errors"
+
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -11,8 +17,6 @@ import (
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
-	"io/ioutil"
-	"strings"
 )
 
 /* copy from golang.org/x/net/html/charset/table.go */
@@ -238,19 +242,50 @@ var encodings = map[string]struct {
 	"x-user-defined":      {charmap.XUserDefined, "x-user-defined"},
 }
 
-func ConvertToUTF8String(charset, text string) (string, error) {
+var charsetRegexp *regexp.Regexp
+var errParsingCharset = errors.New("Could not find a valid charset in the HTML body")
+
+func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	if strings.ToLower(charset) == "utf-8" {
-		return text, nil
+		return string(textBytes), nil
 	}
 	item, ok := encodings[strings.ToLower(charset)]
 	if !ok {
 		return "", fmt.Errorf("Unsupport charset %s", charset)
 	}
-	input := bytes.NewReader([]byte(text))
+	input := bytes.NewReader(textBytes)
 	reader := transform.NewReader(input, item.e.NewDecoder())
 	output, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
 	return string(output), nil
+}
+
+// Look for charset in the html meta tag (v4.01 and v5)
+func charsetFromHTMLString(htmlString string) (string, error) {
+	if charsetRegexp == nil {
+		var err error
+		charsetRegexp, err = regexp.Compile(`(?i)<meta.*charset="?\s*(?P<charset>[a-zA-Z0-9_.:-]+)\s*"`)
+		if err != nil {
+			charsetRegexp = nil
+			return "", err
+		}
+	}
+
+	charsetMatches := charsetRegexp.FindAllStringSubmatch(htmlString, -1)
+
+	if len(charsetMatches) > 0 {
+		n1 := charsetRegexp.SubexpNames()
+		r2 := charsetMatches[0]
+
+		md := map[string]string{}
+		for i, n := range r2 {
+			md[n1[i]] = n
+		}
+
+		return md["charset"], nil
+	}
+
+	return "", errParsingCharset
 }
