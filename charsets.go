@@ -157,6 +157,7 @@ var encodings = map[string]struct {
 	"iso-8859-1":          {charmap.Windows1252, "windows-1252"},
 	"iso-ir-100":          {charmap.Windows1252, "windows-1252"},
 	"iso8859-1":           {charmap.Windows1252, "windows-1252"},
+	"iso8859_1":           {charmap.Windows1252, "windows-1252"},
 	"iso88591":            {charmap.Windows1252, "windows-1252"},
 	"iso_8859-1":          {charmap.Windows1252, "windows-1252"},
 	"iso_8859-1:1987":     {charmap.Windows1252, "windows-1252"},
