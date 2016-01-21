@@ -165,7 +165,22 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 		}
 		mediatype, mparams, err := mime.ParseMediaType(ctype)
 		if err != nil {
-			return err
+			// Small hack to remove harmless charset duplicate params
+			cp := strings.Split(ctype, ";")
+			mctype := ""
+			for _, p := range cp {
+				if strings.Contains(p, "charset=") {
+					if !strings.Contains(mctype, "charset=") {
+						mctype += p + ";"
+					}
+				} else {
+					mctype += p + ";"
+				}
+			}
+			mediatype, mparams, err = mime.ParseMediaType(mctype)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Insert ourselves into tree, p is enmime's mime-part
