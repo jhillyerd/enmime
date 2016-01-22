@@ -169,8 +169,9 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 			cp := strings.Split(ctype, ";")
 			mctype := ""
 			for _, p := range cp {
-				if strings.Contains(p, "charset=") {
-					if !strings.Contains(mctype, "charset=") {
+				if strings.Contains(p, "=") {
+					params := strings.Split(p, "=")
+					if !strings.Contains(mctype, params[0]+"=") {
 						mctype += p + ";"
 					}
 				} else {
