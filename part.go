@@ -128,6 +128,22 @@ func ParseMIME(reader *bufio.Reader) (MIMEPart, error) {
 	return root, nil
 }
 
+func parseBadContentType(ctype, sep string) string {
+	cp := strings.Split(ctype, sep)
+	mctype := ""
+	for _, p := range cp {
+		if strings.Contains(p, "=") {
+			params := strings.Split(p, "=")
+			if !strings.Contains(mctype, params[0]+"=") {
+				mctype += p + ";"
+			}
+		} else {
+			mctype += p + ";"
+		}
+	}
+	return mctype
+}
+
 // parseParts recursively parses a mime multipart document.
 func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 	var prevSibling *memMIMEPart
@@ -165,7 +181,20 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 		}
 		mediatype, mparams, err := mime.ParseMediaType(ctype)
 		if err != nil {
-			return err
+			// Small hack to remove harmless charset duplicate params
+			mctype := parseBadContentType(ctype, ";")
+			mediatype, mparams, err = mime.ParseMediaType(mctype)
+			if err != nil {
+				// Some badly formed content-types forget to send a ; between fields
+				mctype := parseBadContentType(ctype, " ")
+				if strings.Contains(mctype, `name=""`) {
+					mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+				}
+				mediatype, mparams, err = mime.ParseMediaType(mctype)
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		// Insert ourselves into tree, p is enmime's mime-part
