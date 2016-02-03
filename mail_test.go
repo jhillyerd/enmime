@@ -23,6 +23,11 @@ func TestIdentifyMultiPart(t *testing.T) {
 	assert.True(t, IsMultipartMessage(msg), "Failed to identify multipart MIME message")
 }
 
+func TestIdentifyUnknownMultiPart(t *testing.T) {
+	msg := readMessage("unknown-part-type.raw")
+	assert.True(t, IsMultipartMessage(msg), "Failed to identify multipart MIME message of unknown type")
+}
+
 func TestParseNonMime(t *testing.T) {
 	msg := readMessage("non-mime.raw")
 	mime, err := ParseMIMEBody(msg)
