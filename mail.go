@@ -36,8 +36,13 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 		"multipart/related",
 		"multipart/signed":
 		return true
+	default:
+		if strings.HasPrefix(mediatype, "multipart/") {
+			// according to rfc2046#section-5.1.7 all other multipart should
+			// be treated as multipart/mixed
+			return true
+		}
 	}
-
 	return false
 }
 
