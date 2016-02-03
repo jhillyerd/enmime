@@ -7,6 +7,7 @@ import (
 	"net/mail"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -225,6 +226,16 @@ func TestParseEncodedSubjectAndAddress(t *testing.T) {
 	}
 	assert.Equal(t, 1, len(toAddresses))
 	assert.Equal(t, "Mirosław Marczak", toAddresses[0].Name)
+}
+
+func TestDetectCharacterSetInHTML(t *testing.T) {
+	msg := readMessage("non-mime-missing-charset.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse non-MIME: %v", err)
+	}
+	assert.False(t, strings.ContainsRune(mime.Html, 0x80), "HTML body should not have contained a Windows CP1250 Euro Symbol")
+	assert.True(t, strings.ContainsRune(mime.Html, 0x20ac), "HTML body should have contained a Unicode Euro Symbol")
 }
 
 // readMessage is a test utility function to fetch a mail.Message object.

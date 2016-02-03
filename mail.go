@@ -65,11 +65,20 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				 *Content-Type: text/plain;\t charset="hz-gb-2312"
 				 */
 				if mparams["charset"] != "" {
-					newStr, err := ConvertToUTF8String(mparams["charset"], mimeMsg.Text)
+					newStr, err := ConvertToUTF8String(mparams["charset"], bodyBytes)
 					if err != nil {
 						return nil, err
 					}
 					mimeMsg.Text = newStr
+				} else if mediatype == "text/html" { // charset is empty, look in html body for charset
+					charset, err := charsetFromHTMLString(mimeMsg.Text)
+
+					if charset != "" && err == nil {
+						newStr, err := ConvertToUTF8String(charset, bodyBytes)
+						if err == nil {
+							mimeMsg.Text = newStr
+						}
+					}
 				}
 				if mediatype == "text/html" {
 					mimeMsg.Html = mimeMsg.Text
@@ -105,7 +114,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 			})
 			if match != nil {
 				if match.Charset() != "" {
-					newStr, err := ConvertToUTF8String(match.Charset(), string(match.Content()))
+					newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
 					if err != nil {
 						return nil, err
 					}
@@ -124,7 +133,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 					mimeMsg.Text += "\n--\n"
 				}
 				if m.Charset() != "" {
-					newStr, err := ConvertToUTF8String(m.Charset(), string(m.Content()))
+					newStr, err := ConvertToUTF8String(m.Charset(), m.Content())
 					if err != nil {
 						return nil, err
 					}
@@ -141,7 +150,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		})
 		if match != nil {
 			if match.Charset() != "" {
-				newStr, err := ConvertToUTF8String(match.Charset(), string(match.Content()))
+				newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
 				if err != nil {
 					return nil, err
 				}
