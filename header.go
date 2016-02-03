@@ -336,7 +336,7 @@ func convertText(charset string, encoding string, encTextBytes []byte) (string, 
 		return "", err
 	}
 
-	return ConvertToUTF8String(charset, textBytes)
+	return ConvertToUTF8String(charset, string(textBytes))
 }
 
 func decodeQuotedPrintable(input []byte) ([]byte, error) {
