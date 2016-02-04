@@ -243,6 +243,98 @@ func TestDetectCharacterSetInHTML(t *testing.T) {
 	assert.True(t, strings.ContainsRune(mime.Html, 0x20ac), "HTML body should have contained a Unicode Euro Symbol")
 }
 
+func TestIsAttachment(t *testing.T) {
+	var htests = []struct {
+		result bool
+		header mail.Header
+	}{
+		{
+			result: true,
+			header: mail.Header{"Content-Disposition": []string{"attachment; filename=\"test.jpg\""}},
+		},
+		{
+			result: true,
+			header: mail.Header{"Content-Disposition": []string{"ATTACHMENT; filename=\"test.jpg\""}},
+		},
+		{
+			result: true,
+			header: mail.Header{
+				"Content-Type":        []string{"image/jpg; name=\"test.jpg\""},
+				"Content-Disposition": []string{"attachment; filename=\"test.jpg\""},
+			},
+		},
+		{
+			result: false,
+			header: mail.Header{"Content-Disposition": []string{"non-attachment; filename=\"frog.jpg\""}},
+		},
+		{
+			result: false,
+			header: mail.Header{},
+		},
+	}
+
+	for _, s := range htests {
+		assert.Equal(t, s.result, IsAttachment(s.header))
+	}
+}
+
+func TestIsPlain(t *testing.T) {
+	var htests = []struct {
+		result       bool
+		header       mail.Header
+		emptyIsPlain bool
+	}{
+		{
+			result:       true,
+			header:       mail.Header{"Content-Type": []string{"text/plain"}},
+			emptyIsPlain: true,
+		},
+		{
+			result:       true,
+			header:       mail.Header{"Content-Type": []string{"text/html"}},
+			emptyIsPlain: true,
+		},
+		{
+			result:       true,
+			header:       mail.Header{"Content-Type": []string{"text/html; charset=utf-8"}},
+			emptyIsPlain: true,
+		},
+		{
+			result:       true,
+			header:       mail.Header{},
+			emptyIsPlain: true,
+		},
+		{
+			result:       false,
+			header:       mail.Header{},
+			emptyIsPlain: false,
+		},
+		{
+			result:       false,
+			header:       mail.Header{"Content-Type": []string{"image/jpeg;"}},
+			emptyIsPlain: true,
+		},
+		{
+			result:       false,
+			header:       mail.Header{"Content-Type": []string{"application/octet-stream"}},
+			emptyIsPlain: true,
+		},
+	}
+
+	for _, s := range htests {
+		assert.Equal(t, s.result, IsPlain(s.header, s.emptyIsPlain))
+	}
+}
+
+func TestAttachmentOnly(t *testing.T) {
+	msg := readMessage("attachment-only.raw")
+	m, err := ParseMIMEBody(msg)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, 1, len(m.Attachments))
+	assert.True(t, bytes.HasPrefix(m.Attachments[0].Content(), []byte{0x89, 'P', 'N', 'G'}),
+		"Content should be PNG image")
+}
+
 // readMessage is a test utility function to fetch a mail.Message object.
 func readMessage(filename string) *mail.Message {
 	// Open test email for parsing
