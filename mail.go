@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mime"
 	"net/mail"
+	"net/textproto"
 	"strings"
 )
 
@@ -46,6 +47,108 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	return false
 }
 
+// IsAttachment returns true, if the given header defines an attachment.
+// First it checks, if the Content-Disposition header defines an attachement.
+// If this test is false, the Content-Type header is checked.
+//
+// Valid Attachment-Headers:
+//
+//    Content-Disposition: attachment; filename="frog.jpg"
+//    Content-Type: attachment; filename="frog.jpg"
+//
+func IsAttachment(header mail.Header) bool {
+	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
+	if strings.ToLower(mediatype) == "attachment" {
+		return true
+	}
+
+	mediatype, _, _ = mime.ParseMediaType(header.Get("Content-Type"))
+	if strings.ToLower(mediatype) == "attachment" {
+		return true
+	}
+
+	return false
+}
+
+// IsPlain returns true, if the the mime headers define a valid
+// 'text/plain' or 'text/html part'. Ff emptyContentTypeIsPlain is set
+// to true, a missing Content-Type header will result in a positive
+// plain part detection.
+func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
+	ctype := header.Get("Content-Type")
+	if ctype == "" && emptyContentTypeIsPlain {
+		return true
+	}
+
+	mediatype, _, err := mime.ParseMediaType(ctype)
+	if err != nil {
+		return false
+	}
+	switch mediatype {
+	case "text/plain",
+		"text/html":
+		return true
+	}
+
+	return false
+
+}
+
+// IsBinaryBody returns true, if the mail header defines a binary body.
+func IsBinaryBody(mailMsg *mail.Message) bool {
+	if IsAttachment(mailMsg.Header) == true {
+		return true
+	}
+
+	return !IsPlain(mailMsg.Header, true)
+}
+
+// Returns a MIME message with only one Attachment, the parsed original mail body.
+func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
+	// Root Node of our tree
+	ctype := mailMsg.Header.Get("Content-Type")
+	mediatype, mparams, err := mime.ParseMediaType(ctype)
+	if err != nil {
+		mediatype = "attachment"
+	}
+
+	m := &MIMEBody{
+		header: mailMsg.Header,
+		Root:   NewMIMEPart(nil, mediatype),
+	}
+
+	p := NewMIMEPart(nil, mediatype)
+	p.content, err = decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// get set headers
+	p.header = make(textproto.MIMEHeader, 4)
+	// Figure out our disposition, filename
+	disposition, dparams, err := mime.ParseMediaType(mailMsg.Header.Get("Content-Disposition"))
+	if err == nil {
+		// Disposition is optional
+		p.disposition = disposition
+		p.fileName = DecodeHeader(dparams["filename"])
+	}
+	if p.fileName == "" && mparams["name"] != "" {
+		p.fileName = DecodeHeader(mparams["name"])
+	}
+	if p.fileName == "" && mparams["file"] != "" {
+		p.fileName = DecodeHeader(mparams["file"])
+	}
+	if p.charset == "" {
+		p.charset = mparams["charset"]
+	}
+
+	p.header.Set("Content-Type", mailMsg.Header.Get("Content-Type"))
+	p.header.Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
+
+	m.Attachments = append(m.Attachments, p)
+	return m, err
+}
+
 // ParseMIMEBody parses the body of the message object into a  tree of MIMEPart objects,
 // each of which is aware of its content type, filename and headers.  If the part was
 // encoded in quoted-printable or base64, it is decoded before being stored in the
@@ -54,6 +157,12 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	mimeMsg := &MIMEBody{header: mailMsg.Header}
 
 	if !IsMultipartMessage(mailMsg) {
+
+		// Attachment only?
+		if IsBinaryBody(mailMsg) {
+			return binMIME(mailMsg)
+		}
+
 		// Parse as text only
 		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"),
 			mailMsg.Body)
