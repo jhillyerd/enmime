@@ -264,6 +264,10 @@ func TestIsAttachment(t *testing.T) {
 			},
 		},
 		{
+			result: true,
+			header: mail.Header{"Content-Type": []string{"attachment; filename=\"test.jpg\""}},
+		},
+		{
 			result: false,
 			header: mail.Header{"Content-Disposition": []string{"non-attachment; filename=\"frog.jpg\""}},
 		},

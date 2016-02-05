@@ -54,12 +54,19 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 // Valid Attachment-Headers:
 //
 //    Content-Disposition: attachment; filename="frog.jpg"
+//    Content-Type: attachment; filename="frog.jpg"
 //
 func IsAttachment(header mail.Header) bool {
 	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
 	if strings.ToLower(mediatype) == "attachment" {
 		return true
 	}
+
+	mediatype, _, _ = mime.ParseMediaType(header.Get("Content-Type"))
+	if strings.ToLower(mediatype) == "attachment" {
+		return true
+	}
+
 	return false
 }
 
