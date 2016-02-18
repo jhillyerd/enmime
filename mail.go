@@ -71,7 +71,7 @@ func IsAttachment(header mail.Header) bool {
 }
 
 // IsPlain returns true, if the the mime headers define a valid
-// 'text/plain' or 'text/html part'. Ff emptyContentTypeIsPlain is set
+// 'text/plain' or 'text/html part'. If emptyContentTypeIsPlain is set
 // to true, a missing Content-Type header will result in a positive
 // plain part detection.
 func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
