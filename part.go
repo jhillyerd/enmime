@@ -20,15 +20,19 @@ import (
 // TODO Content should probably be a reader so that it does not need to be stored in
 // memory.
 type MIMEPart interface {
-	Parent() MIMEPart             // Parent of this part (can be nil)
-	FirstChild() MIMEPart         // First (top most) child of this part
-	NextSibling() MIMEPart        // Next sibling of this part
-	Header() textproto.MIMEHeader // Header as parsed by textproto package
-	ContentType() string          // Content-Type header without parameters
-	Disposition() string          // Content-Disposition header without parameters
-	FileName() string             // File Name from disposition or type header
-	Charset() string              // Content Charset
-	Content() []byte              // Decoded content of this part (can be empty)
+	Parent() MIMEPart               // Parent of this part (can be nil)
+	FirstChild() MIMEPart           // First (top most) child of this part
+	NextSibling() MIMEPart          // Next sibling of this part
+	Header() textproto.MIMEHeader   // Header as parsed by textproto package
+	SetHeader(textproto.MIMEHeader) // Sets the part MIME header
+	ContentType() string            // Content-Type header without parameters
+	SetContentType(string)          // Sets the Content-Type header
+	Disposition() string            // Content-Disposition header without parameters
+	SetDisposition(string)          // Sets the Content-Disposition header
+	FileName() string               // File Name from disposition or type header
+	SetFileName(string)             // Set file name
+	Charset() string                // Content Charset
+	Content() []byte                // Decoded content of this part (can be empty)
 }
 
 // memMIMEPart is an in-memory implementation of the MIMEPart interface.  It will likely
@@ -71,9 +75,20 @@ func (p *memMIMEPart) Header() textproto.MIMEHeader {
 	return p.header
 }
 
+// SetHeader sets a MIME part header.
+func (p *memMIMEPart) SetHeader(header textproto.MIMEHeader) {
+	p.header = header
+}
+
 // Content-Type header without parameters
 func (p *memMIMEPart) ContentType() string {
 	return p.contentType
+}
+
+// SetContentType sets the Content-Type.
+// Example: "image/jpg" or "application/octet-stream"
+func (p *memMIMEPart) SetContentType(contentType string) {
+	p.contentType = contentType
 }
 
 // Content-Disposition header without parameters
@@ -81,9 +96,20 @@ func (p *memMIMEPart) Disposition() string {
 	return p.disposition
 }
 
+// SetDisposition sets the Content-Disposition.
+// Example: "attachment" or "inline"
+func (p *memMIMEPart) SetDisposition(disposition string) {
+	p.disposition = disposition
+}
+
 // File Name from disposition or type header
 func (p *memMIMEPart) FileName() string {
 	return p.fileName
+}
+
+// SetFileName sets the parts file name.
+func (p *memMIMEPart) SetFileName(fileName string) {
+	p.fileName = fileName
 }
 
 // Content charset

@@ -3,6 +3,7 @@ package enmime
 import (
 	"bufio"
 	"fmt"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"testing"
@@ -224,6 +225,26 @@ func TestBadBoundaryTerm(t *testing.T) {
 	assert.Equal(t, "text/html", p.ContentType(), "Second child should have been html")
 	assert.Contains(t, string(p.Content()), "An HTML section", "Second child contains wrong content")
 	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+}
+
+func TestPartSetter(t *testing.T) {
+
+	m := memMIMEPart{}
+
+	h := textproto.MIMEHeader{
+		"Content-Type": {"testType"},
+	}
+	m.SetHeader(h)
+	assert.Equal(t, m.Header(), h)
+
+	m.SetContentType("application/octet-stream")
+	assert.Equal(t, m.ContentType(), "application/octet-stream")
+
+	m.SetDisposition("inline")
+	assert.Equal(t, m.Disposition(), "inline")
+
+	m.SetFileName("somefilename")
+	assert.Equal(t, m.FileName(), "somefilename")
 }
 
 // openPart is a test utility function to open a part as a reader
