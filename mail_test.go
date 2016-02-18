@@ -268,6 +268,10 @@ func TestIsAttachment(t *testing.T) {
 			header: mail.Header{"Content-Type": []string{"attachment; filename=\"test.jpg\""}},
 		},
 		{
+			result: true,
+			header: mail.Header{"Content-Disposition": []string{"inline; filename=\"frog.jpg\""}},
+		},
+		{
 			result: false,
 			header: mail.Header{"Content-Disposition": []string{"non-attachment; filename=\"frog.jpg\""}},
 		},
@@ -331,12 +335,31 @@ func TestIsPlain(t *testing.T) {
 }
 
 func TestAttachmentOnly(t *testing.T) {
-	msg := readMessage("attachment-only.raw")
-	m, err := ParseMIMEBody(msg)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, 1, len(m.Attachments))
-	assert.True(t, bytes.HasPrefix(m.Attachments[0].Content(), []byte{0x89, 'P', 'N', 'G'}),
-		"Content should be PNG image")
+	var aTests = []struct {
+		filename       string
+		attachmentsLen int
+		inlinesLen     int
+	}{
+		{filename: "attachment-only.raw", attachmentsLen: 1, inlinesLen: 0},
+		{filename: "attachment-only-inline.raw", attachmentsLen: 0, inlinesLen: 1},
+	}
+
+	for _, a := range aTests {
+		// Mail with disposition attachment
+		msg := readMessage(a.filename)
+		m, err := ParseMIMEBody(msg)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, a.attachmentsLen, len(m.Attachments))
+		assert.Equal(t, a.inlinesLen, len(m.Inlines))
+		if a.attachmentsLen > 0 {
+			assert.True(t, bytes.HasPrefix(m.Attachments[0].Content(), []byte{0x89, 'P', 'N', 'G'}),
+				"Content should be PNG image")
+		}
+		if a.inlinesLen > 0 {
+			assert.True(t, bytes.HasPrefix(m.Inlines[0].Content(), []byte{0x89, 'P', 'N', 'G'}),
+				"Content should be PNG image")
+		}
+	}
 }
 
 // readMessage is a test utility function to fetch a mail.Message object.
