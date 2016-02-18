@@ -47,18 +47,22 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	return false
 }
 
-// IsAttachment returns true, if the given header defines an attachment.
-// First it checks, if the Content-Disposition header defines an attachement.
-// If this test is false, the Content-Type header is checked.
+// IsAttachment returns true, if the given header defines an
+// attachment.  First it checks, if the Content-Disposition header
+// defines an attachement or inline attachment. If this test is false,
+// the Content-Type header is checked for attachment, but not inline.
+// Email clients use inline for there txt bodies.
 //
 // Valid Attachment-Headers:
 //
 //    Content-Disposition: attachment; filename="frog.jpg"
+//    Content-Disposition: inline; filename="frog.jpg"
 //    Content-Type: attachment; filename="frog.jpg"
 //
 func IsAttachment(header mail.Header) bool {
 	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
-	if strings.ToLower(mediatype) == "attachment" {
+	if strings.ToLower(mediatype) == "attachment" ||
+		strings.ToLower(mediatype) == "inline" {
 		return true
 	}
 
@@ -103,7 +107,8 @@ func IsBinaryBody(mailMsg *mail.Message) bool {
 	return !IsPlain(mailMsg.Header, true)
 }
 
-// Returns a MIME message with only one Attachment, the parsed original mail body.
+// Returns a MIME message with only one attachment or inline
+// attachment, the parsed original mail body.
 func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 	// Root Node of our tree
 	ctype := mailMsg.Header.Get("Content-Type")
@@ -145,7 +150,12 @@ func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 	p.header.Set("Content-Type", mailMsg.Header.Get("Content-Type"))
 	p.header.Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
 
-	m.Attachments = append(m.Attachments, p)
+	if disposition == "inline" {
+		m.Inlines = append(m.Inlines, p)
+	} else {
+		m.Attachments = append(m.Attachments, p)
+	}
+
 	return m, err
 }
 
