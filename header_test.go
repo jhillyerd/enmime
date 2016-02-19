@@ -162,3 +162,21 @@ func TestCharsets(t *testing.T) {
 			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
 	}
 }
+
+// Test re-encoding to base64
+func TestDecodeToUTF8Base64Header(t *testing.T) {
+	var testTable = []struct {
+		input, expect string
+	}{
+		{"no encoding", "no encoding"},
+		{"=?utf-8?q?abcABC_=24_=c2=a2_=e2=82=ac?=", "=?UTF-8?B?YWJjQUJDICQgwqIg4oKs?="},
+		{"=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=", "=?UTF-8?B?I8KjIGPCqSBywq4gdcK1?="},
+		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "=?UTF-8?B?77yIIO+9myDjgIg=?="},
+	}
+
+	for _, tt := range testTable {
+		result := DecodeToUTF8Base64Header(tt.input)
+		assert.Equal(t, tt.expect, result,
+			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
+	}
+}
