@@ -167,7 +167,6 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	mimeMsg := &MIMEBody{header: mailMsg.Header}
 
 	if !IsMultipartMessage(mailMsg) {
-
 		// Attachment only?
 		if IsBinaryBody(mailMsg) {
 			return binMIME(mailMsg)
@@ -179,22 +178,22 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error decoding text-only message: %v", err)
 		}
+		// Handle plain ASCII text, content-type unspecified
 		mimeMsg.Text = string(bodyBytes)
 
-		// Check for HTML at top-level, eat errors quietly
+		// Process top-level content-type
 		ctype := mailMsg.Header.Get("Content-Type")
 		if ctype != "" {
 			if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
-				/*
-				 *Content-Type: text/plain;\t charset="hz-gb-2312"
-				 */
 				if mparams["charset"] != "" {
+					// Convert plain text to UTF8 if content type specified a charset
 					newStr, err := ConvertToUTF8String(mparams["charset"], bodyBytes)
 					if err != nil {
 						return nil, err
 					}
 					mimeMsg.Text = newStr
-				} else if mediatype == "text/html" { // charset is empty, look in html body for charset
+				} else if mediatype == "text/html" {
+					// charset is empty, look in HTML body for charset
 					charset, err := charsetFromHTMLString(mimeMsg.Text)
 
 					if charset != "" && err == nil {
