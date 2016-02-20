@@ -253,7 +253,7 @@ func encTextState(h *headerDec) stateFn {
 				if err == nil {
 					debug("Text converted to: %q", text)
 					if h.trans {
-						h.outbuf.WriteString("=?UTF-8?B?")
+						h.outbuf.WriteString("=?UTF-8?b?")
 						h.outbuf.WriteString(base64.StdEncoding.EncodeToString(([]byte)(text)))
 						h.outbuf.WriteString("?=")
 					} else {
