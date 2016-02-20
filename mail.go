@@ -337,6 +337,9 @@ func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
 	if str == "" {
 		return nil, mail.ErrHeaderNotPresent
 	}
+	// These statements are handy for debugging ParseAddressList errors
+	// fmt.Println("in:  ", m.header.Get(key))
+	// fmt.Println("out: ", str)
 	ret, err := mail.ParseAddressList(str)
 	if err != nil {
 		return nil, err

@@ -6,46 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Put the quoted-printable decoder through its paces
-func TestQuotedPrintableDecoder(t *testing.T) {
-	// Test table data
-	var testTable = []struct {
-		input, expect string
-	}{
-		{"", ""},
-		{"Hello", "Hello"},
-		{"Hello_World", "Hello World"},
-		{"Hello=20World", "Hello World"},
-		{"Hello=3f", "Hello?"},
-		{"Hello=3F", "Hello?"},
-	}
-
-	for _, tt := range testTable {
-		result, err := decodeQuotedPrintable([]byte(tt.input))
-		assert.Nil(t, err)
-		assert.Equal(t, tt.expect, string(result),
-			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
-	}
-
-	// Check malformed quoted chars
-	input := []byte("Hello=")
-	_, err := decodeQuotedPrintable(input)
-	assert.NotNil(t, err)
-
-	input = []byte("Hello=3")
-	_, err = decodeQuotedPrintable(input)
-	assert.NotNil(t, err)
-}
-
-// Check the base64 decoder
-func TestBase64Decoder(t *testing.T) {
-	input := []byte("SGVsbG8gV29ybGQ=")
-	expect := []byte("Hello World")
-	result, err := decodeBase64(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-}
-
 // Ensure that a single plain text token passes unharmed
 func TestPlainSingleToken(t *testing.T) {
 	input := "Test"
