@@ -161,6 +161,18 @@ func TestParseAttachmentOctet(t *testing.T) {
 
 }
 
+func TestParseAttachmentApplication(t *testing.T) {
+	msg := readMessage("attachment-application.raw")
+	mime, err := ParseMIMEBody(msg)
+	if err != nil {
+		t.Fatalf("Failed to parse MIME: %v", err)
+	}
+
+	assert.Equal(t, 0, len(mime.Inlines), "Should have no inlines")
+	assert.Equal(t, 1, len(mime.Attachments), "Should have a single attachment")
+	assert.Equal(t, "some.doc", mime.Attachments[0].FileName(), "Attachment should have correct filename")
+}
+
 func TestParseOtherParts(t *testing.T) {
 	msg := readMessage("other-parts.raw")
 	mime, err := ParseMIMEBody(msg)
