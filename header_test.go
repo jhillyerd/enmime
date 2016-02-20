@@ -6,46 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Put the quoted-printable decoder through its paces
-func TestQuotedPrintableDecoder(t *testing.T) {
-	// Test table data
-	var testTable = []struct {
-		input, expect string
-	}{
-		{"", ""},
-		{"Hello", "Hello"},
-		{"Hello_World", "Hello World"},
-		{"Hello=20World", "Hello World"},
-		{"Hello=3f", "Hello?"},
-		{"Hello=3F", "Hello?"},
-	}
-
-	for _, tt := range testTable {
-		result, err := decodeQuotedPrintable([]byte(tt.input))
-		assert.Nil(t, err)
-		assert.Equal(t, tt.expect, string(result),
-			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
-	}
-
-	// Check malformed quoted chars
-	input := []byte("Hello=")
-	_, err := decodeQuotedPrintable(input)
-	assert.NotNil(t, err)
-
-	input = []byte("Hello=3")
-	_, err = decodeQuotedPrintable(input)
-	assert.NotNil(t, err)
-}
-
-// Check the base64 decoder
-func TestBase64Decoder(t *testing.T) {
-	input := []byte("SGVsbG8gV29ybGQ=")
-	expect := []byte("Hello World")
-	result, err := decodeBase64(input)
-	assert.Nil(t, err)
-	assert.Equal(t, string(expect), string(result))
-}
-
 // Ensure that a single plain text token passes unharmed
 func TestPlainSingleToken(t *testing.T) {
 	input := "Test"
@@ -78,14 +38,6 @@ func TestEncodingControlDetect(t *testing.T) {
 	assert.Equal(t, expect, result)
 }
 
-// Test control character detection & abort
-func TestEncTextControlDetect(t *testing.T) {
-	input := "=?US-ASCII?Q?Keith\tMoore?="
-	expect := input
-	result := DecodeHeader(input)
-	assert.Equal(t, expect, result)
-}
-
 // Test mangled termination
 func TestInvalidTermination(t *testing.T) {
 	input := "=?US-ASCII?Q?Keith_Moore?!"
@@ -112,17 +64,20 @@ func TestAsciiB64(t *testing.T) {
 
 // Try decoding an embedded ASCII quoted-printable encoded word
 func TestEmbeddedAsciiQ(t *testing.T) {
-	// This is not legal, so we expect it to fail
-	input := "ab=?US-ASCII?Q?Keith_Moore?=CD"
-	expect := input
-	result := DecodeHeader(input)
-	assert.Equal(t, expect, result)
+	var testTable = []struct {
+		input, expect string
+	}{
+		// Abutting a MIME header comment is legal
+		{"(=?US-ASCII?Q?Keith_Moore?=)", "(Keith Moore)"},
+		// The entire header does not need to be encoded
+		{"(Keith =?US-ASCII?Q?Moore?=)", "(Keith Moore)"},
+	}
 
-	// Abutting a MIME header comment is legal
-	input = "(=?US-ASCII?Q?Keith_Moore?=)"
-	expect = "(Keith Moore)"
-	result = DecodeHeader(input)
-	assert.Equal(t, expect, result)
+	for _, tt := range testTable {
+		result := DecodeHeader(tt.input)
+		assert.Equal(t, tt.expect, result,
+			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
+	}
 }
 
 // Spacing rules from RFC 2047
@@ -169,9 +124,13 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 		input, expect string
 	}{
 		{"no encoding", "no encoding"},
-		{"=?utf-8?q?abcABC_=24_=c2=a2_=e2=82=ac?=", "=?UTF-8?B?YWJjQUJDICQgwqIg4oKs?="},
-		{"=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=", "=?UTF-8?B?I8KjIGPCqSBywq4gdcK1?="},
-		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "=?UTF-8?B?77yIIO+9myDjgIg=?="},
+		{"=?utf-8?q?abcABC_=24_=c2=a2_=e2=82=ac?=", "=?UTF-8?b?YWJjQUJDICQgwqIg4oKs?="},
+		{"=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=", "=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?="},
+		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "=?UTF-8?b?77yIIO+9myDjgIg=?="},
+		// Must respect separate tokens
+		{"=?UTF-8?Q?Miros=C5=82aw?= <u@h>", "=?UTF-8?b?TWlyb3PFgmF3?= <u@h>"},
+		{"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
+			"First Last <u@h> (=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?=)"},
 	}
 
 	for _, tt := range testTable {
