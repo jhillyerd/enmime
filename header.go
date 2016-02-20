@@ -21,6 +21,11 @@ func debug(format string, args ...interface{}) {
 
 // DecodeHeader (per RFC 2047) using Golang's mime.WordDecoder
 func DecodeHeader(input string) string {
+	if !strings.Contains(input, "=?") {
+		// Don't scan if there is nothing to do here
+		return input
+	}
+
 	dec := new(mime.WordDecoder)
 	dec.CharsetReader = NewCharsetReader
 	header, err := dec.DecodeHeader(input)
