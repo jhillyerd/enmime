@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"mime"
 	"strconv"
 	"strings"
 )
@@ -95,25 +96,15 @@ func (h *headerDec) accept(valid string) bool {
 	return false
 }
 
-// Decode a MIME header per RFC 2047
+// DecodeHeader (per RFC 2047) using Golang's mime.WordDecoder
 func DecodeHeader(input string) string {
-	if !strings.Contains(input, "=?") {
-		// Don't scan if there is nothing to do here
+	dec := new(mime.WordDecoder)
+	dec.CharsetReader = NewCharsetReader
+	header, err := dec.DecodeHeader(input)
+	if err != nil {
 		return input
 	}
-
-	h := &headerDec{
-		input: []byte(input),
-		state: plainSpaceState,
-	}
-
-	debug("Starting parse of: '%v'\n", input)
-
-	for h.state != nil {
-		h.state = h.state(h)
-	}
-
-	return h.outbuf.String()
+	return header
 }
 
 // Decode a MIME header per RFC 2047 to =?utf-8b?

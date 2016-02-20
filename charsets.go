@@ -3,6 +3,7 @@ package enmime
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"regexp"
 	"strings"
@@ -246,21 +247,39 @@ var encodings = map[string]struct {
 var charsetRegexp *regexp.Regexp
 var errParsingCharset = errors.New("Could not find a valid charset in the HTML body")
 
+// ConvertToUTF8String uses the provided charset to decode a slice of bytes into a normal
+// UTF-8 string.
 func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	if strings.ToLower(charset) == "utf-8" {
 		return string(textBytes), nil
 	}
-	item, ok := encodings[strings.ToLower(charset)]
+	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
-		return "", fmt.Errorf("Unsupport charset %s", charset)
+		return "", fmt.Errorf("Unsupported charset %s", charset)
 	}
 	input := bytes.NewReader(textBytes)
-	reader := transform.NewReader(input, item.e.NewDecoder())
+	reader := transform.NewReader(input, csentry.e.NewDecoder())
 	output, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
 	return string(output), nil
+}
+
+// CharsetReader generates charset-conversion readers, converting from the provided
+// charset into UTF-8.  The CharsetReader signature is defined by Golang's
+// mime.WordDecoder
+//
+// This function is similar to: https://godoc.org/golang.org/x/net/html/charset#NewReaderLabel
+func NewCharsetReader(charset string, input io.Reader) (io.Reader, error) {
+	if strings.ToLower(charset) == "utf-8" {
+		return input, nil
+	}
+	csentry, ok := encodings[strings.ToLower(charset)]
+	if !ok {
+		return nil, fmt.Errorf("Unsupported charset %s", charset)
+	}
+	return transform.NewReader(input, csentry.e.NewDecoder()), nil
 }
 
 // Look for charset in the html meta tag (v4.01 and v5)

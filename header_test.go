@@ -78,14 +78,6 @@ func TestEncodingControlDetect(t *testing.T) {
 	assert.Equal(t, expect, result)
 }
 
-// Test control character detection & abort
-func TestEncTextControlDetect(t *testing.T) {
-	input := "=?US-ASCII?Q?Keith\tMoore?="
-	expect := input
-	result := DecodeHeader(input)
-	assert.Equal(t, expect, result)
-}
-
 // Test mangled termination
 func TestInvalidTermination(t *testing.T) {
 	input := "=?US-ASCII?Q?Keith_Moore?!"
@@ -112,16 +104,10 @@ func TestAsciiB64(t *testing.T) {
 
 // Try decoding an embedded ASCII quoted-printable encoded word
 func TestEmbeddedAsciiQ(t *testing.T) {
-	// This is not legal, so we expect it to fail
-	input := "ab=?US-ASCII?Q?Keith_Moore?=CD"
-	expect := input
-	result := DecodeHeader(input)
-	assert.Equal(t, expect, result)
-
 	// Abutting a MIME header comment is legal
-	input = "(=?US-ASCII?Q?Keith_Moore?=)"
-	expect = "(Keith Moore)"
-	result = DecodeHeader(input)
+	input := "(=?US-ASCII?Q?Keith_Moore?=)"
+	expect := "(Keith Moore)"
+	result := DecodeHeader(input)
 	assert.Equal(t, expect, result)
 }
 
