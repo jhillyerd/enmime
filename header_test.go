@@ -104,11 +104,20 @@ func TestAsciiB64(t *testing.T) {
 
 // Try decoding an embedded ASCII quoted-printable encoded word
 func TestEmbeddedAsciiQ(t *testing.T) {
-	// Abutting a MIME header comment is legal
-	input := "(=?US-ASCII?Q?Keith_Moore?=)"
-	expect := "(Keith Moore)"
-	result := DecodeHeader(input)
-	assert.Equal(t, expect, result)
+	var testTable = []struct {
+		input, expect string
+	}{
+		// Abutting a MIME header comment is legal
+		{"(=?US-ASCII?Q?Keith_Moore?=)", "(Keith Moore)"},
+		// The entire header does not need to be encoded
+		{"(Keith =?US-ASCII?Q?Moore?=)", "(Keith Moore)"},
+	}
+
+	for _, tt := range testTable {
+		result := DecodeHeader(tt.input)
+		assert.Equal(t, tt.expect, result,
+			"Expected %q, got %q for input %q", tt.expect, result, tt.input)
+	}
 }
 
 // Spacing rules from RFC 2047
@@ -160,6 +169,8 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "=?UTF-8?b?77yIIO+9myDjgIg=?="},
 		// Must respect separate tokens
 		{"=?UTF-8?Q?Miros=C5=82aw?= <u@h>", "=?UTF-8?b?TWlyb3PFgmF3?= <u@h>"},
+		{"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
+			"First Last <u@h> (=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?=)"},
 	}
 
 	for _, tt := range testTable {
