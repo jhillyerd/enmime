@@ -11,7 +11,7 @@ import (
 // MIMEBody is the outer wrapper for MIME messages.
 type MIMEBody struct {
 	Text        string      // The plain text portion of the message
-	Html        string      // The HTML portion of the message
+	HTML        string      // The HTML portion of the message
 	Root        MIMEPart    // The top-level MIMEPart
 	Attachments []MIMEPart  // All parts having a Content-Disposition of attachment
 	Inlines     []MIMEPart  // All parts having a Content-Disposition of inline
@@ -206,7 +206,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 					}
 				}
 				if mediatype == "text/html" {
-					mimeMsg.Html = mimeMsg.Text
+					mimeMsg.HTML = mimeMsg.Text
 				}
 			}
 		}
@@ -279,9 +279,9 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				if err != nil {
 					return nil, err
 				}
-				mimeMsg.Html += newStr
+				mimeMsg.HTML += newStr
 			} else {
-				mimeMsg.Html = string(match.Content())
+				mimeMsg.HTML = string(match.Content())
 			}
 
 		}

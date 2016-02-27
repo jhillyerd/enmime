@@ -36,10 +36,10 @@ func TestParseNonMime(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "This is a test mailing")
-	assert.Empty(t, mime.Html, "Expected no HTML body")
+	assert.Empty(t, mime.HTML, "Expected no HTML body")
 }
 
-func TestParseNonMimeHtml(t *testing.T) {
+func TestParseNonMimeHTML(t *testing.T) {
 	msg := readMessage("non-mime-html.raw")
 	mime, err := ParseMIMEBody(msg)
 	if err != nil {
@@ -47,7 +47,7 @@ func TestParseNonMimeHtml(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "This is a test mailing")
-	assert.Contains(t, mime.Html, "This is a test mailing")
+	assert.Contains(t, mime.HTML, "This is a test mailing")
 }
 
 func TestParseMimeTree(t *testing.T) {
@@ -112,15 +112,15 @@ func TestParseQuotedPrintableMime(t *testing.T) {
 	assert.Contains(t, mime.Text, "Nullam venenatis ante")
 }
 
-func TestParseInlineHtml(t *testing.T) {
+func TestParseInlineHTML(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
 	mime, err := ParseMIMEBody(msg)
 	if err != nil {
 		t.Fatalf("Failed to parse MIME: %v", err)
 	}
 
-	assert.Contains(t, mime.Html, "<html>")
-	assert.Contains(t, mime.Html, "Test of HTML section")
+	assert.Contains(t, mime.HTML, "<html>")
+	assert.Contains(t, mime.HTML, "Test of HTML section")
 }
 
 func TestParseAttachment(t *testing.T) {
@@ -131,7 +131,7 @@ func TestParseAttachment(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "A text section")
-	assert.Equal(t, "", mime.Html, "Html attachment is not for display")
+	assert.Equal(t, "", mime.HTML, "HTML attachment is not for display")
 	assert.Equal(t, 0, len(mime.Inlines), "Should have no inlines")
 	assert.Equal(t, 1, len(mime.Attachments), "Should have a single attachment")
 	assert.Equal(t, "test.html", mime.Attachments[0].FileName(), "Attachment should have correct filename")
@@ -151,7 +151,7 @@ func TestParseAttachmentOctet(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "A text section")
-	assert.Equal(t, "", mime.Html, "Html attachment is not for display")
+	assert.Equal(t, "", mime.HTML, "HTML attachment is not for display")
 	assert.Equal(t, 0, len(mime.Inlines), "Should have no inlines")
 	assert.Equal(t, 1, len(mime.Attachments), "Should have a single attachment")
 	assert.Equal(t, "ATTACHMENT.EXE", mime.Attachments[0].FileName(), "Attachment should have correct filename")
@@ -169,7 +169,7 @@ func TestParseOtherParts(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "A text section")
-	assert.Equal(t, "", mime.Html, "No Html attachment available")
+	assert.Equal(t, "", mime.HTML, "No HTML attachment available")
 	assert.Equal(t, 0, len(mime.Inlines), "Should have no inlines")
 	assert.Equal(t, 0, len(mime.Attachments), "Should have no attachment")
 	assert.Equal(t, 1, len(mime.OtherParts), "Should have one OtherParts")
@@ -187,7 +187,7 @@ func TestParseInline(t *testing.T) {
 	}
 
 	assert.Contains(t, mime.Text, "Test of text section", "Should have text section")
-	assert.Contains(t, mime.Html, ">Test of HTML section<", "Should have html section")
+	assert.Contains(t, mime.HTML, ">Test of HTML section<", "Should have html section")
 	assert.Equal(t, 1, len(mime.Inlines), "Should have one inline")
 	assert.Equal(t, 0, len(mime.Attachments), "Should have no attachments")
 	assert.Equal(t, "favicon.png", mime.Inlines[0].FileName(), "Inline should have correct filename")
@@ -239,8 +239,8 @@ func TestDetectCharacterSetInHTML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse non-MIME: %v", err)
 	}
-	assert.False(t, strings.ContainsRune(mime.Html, 0x80), "HTML body should not have contained a Windows CP1250 Euro Symbol")
-	assert.True(t, strings.ContainsRune(mime.Html, 0x20ac), "HTML body should have contained a Unicode Euro Symbol")
+	assert.False(t, strings.ContainsRune(mime.HTML, 0x80), "HTML body should not have contained a Windows CP1250 Euro Symbol")
+	assert.True(t, strings.ContainsRune(mime.HTML, 0x20ac), "HTML body should have contained a Unicode Euro Symbol")
 }
 
 func TestIsAttachment(t *testing.T) {

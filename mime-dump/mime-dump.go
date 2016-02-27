@@ -75,7 +75,7 @@ func dump(reader io.Reader, name string) error {
 	fmt.Println()
 
 	h2("Body HTML")
-	fmt.Println(mime.Html)
+	fmt.Println(mime.HTML)
 	fmt.Println()
 
 	h2("Attachment List")

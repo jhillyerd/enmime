@@ -22,8 +22,8 @@ func Example() {
 	// The plain text body is available as mime.Text
 	fmt.Printf("Text Body: %v chars\n", len(mime.Text))
 
-	// The HTML body is stored in mime.Html
-	fmt.Printf("HTML Body: %v chars\n", len(mime.Html))
+	// The HTML body is stored in mime.HTML
+	fmt.Printf("HTML Body: %v chars\n", len(mime.HTML))
 
 	// mime.Inlines is a slice of inlined attacments
 	fmt.Printf("Inlines: %v\n", len(mime.Inlines))
