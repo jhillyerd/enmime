@@ -21,8 +21,11 @@ import (
 // memory.
 type MIMEPart interface {
 	Parent() MIMEPart               // Parent of this part (can be nil)
+	SetParent(MIMEPart)             // Sets Parent of this part
 	FirstChild() MIMEPart           // First (top most) child of this part
+	SetFirstChild(MIMEPart)         // Sets first child of this part (we are parent)
 	NextSibling() MIMEPart          // Next sibling of this part
+	SetNextSibling(MIMEPart)        // Sets next sibling of this part (shares our parent)
 	Header() textproto.MIMEHeader   // Header as parsed by textproto package
 	SetHeader(textproto.MIMEHeader) // Sets the part MIME header
 	ContentType() string            // Content-Type header without parameters
@@ -31,8 +34,10 @@ type MIMEPart interface {
 	SetDisposition(string)          // Sets the Content-Disposition header
 	FileName() string               // File Name from disposition or type header
 	SetFileName(string)             // Set file name
-	Charset() string                // Content Charset
+	Charset() string                // Content character set label
+	SetCharset(string)              // Set content character set label
 	Content() []byte                // Decoded content of this part (can be empty)
+	SetContent([]byte)              // Set content of this part
 }
 
 // memMIMEPart is an in-memory implementation of the MIMEPart interface.  It will likely
@@ -51,7 +56,7 @@ type memMIMEPart struct {
 
 // NewMIMEPart creates a new memMIMEPart object.  It does not update the parents FirstChild
 // attribute.
-func NewMIMEPart(parent MIMEPart, contentType string) *memMIMEPart {
+func NewMIMEPart(parent MIMEPart, contentType string) MIMEPart {
 	return &memMIMEPart{parent: parent, contentType: contentType}
 }
 
@@ -60,14 +65,29 @@ func (p *memMIMEPart) Parent() MIMEPart {
 	return p.parent
 }
 
+// SetParent sets the parent of this part
+func (p *memMIMEPart) SetParent(parent MIMEPart) {
+	p.parent = parent
+}
+
 // First (top most) child of this part
 func (p *memMIMEPart) FirstChild() MIMEPart {
 	return p.firstChild
 }
 
-// Next sibling of this part
+// SetFirstChild sets the first (top most) child of this part
+func (p *memMIMEPart) SetFirstChild(child MIMEPart) {
+	p.firstChild = child
+}
+
+// NextSibling of this part
 func (p *memMIMEPart) NextSibling() MIMEPart {
 	return p.nextSibling
+}
+
+// SetNextSibling sets the next sibling (shares parent) of this part
+func (p *memMIMEPart) SetNextSibling(sibling MIMEPart) {
+	p.nextSibling = sibling
 }
 
 // Header as parsed by textproto package
@@ -91,7 +111,7 @@ func (p *memMIMEPart) SetContentType(contentType string) {
 	p.contentType = contentType
 }
 
-// Content-Disposition header without parameters
+// Dispostion returns the Content-Disposition header without parameters
 func (p *memMIMEPart) Disposition() string {
 	return p.disposition
 }
@@ -102,7 +122,7 @@ func (p *memMIMEPart) SetDisposition(disposition string) {
 	p.disposition = disposition
 }
 
-// File Name from disposition or type header
+// FileName returns the file name from disposition or type header
 func (p *memMIMEPart) FileName() string {
 	return p.fileName
 }
@@ -112,14 +132,24 @@ func (p *memMIMEPart) SetFileName(fileName string) {
 	p.fileName = fileName
 }
 
-// Content charset
+// Charset returns the content charset encoding label
 func (p *memMIMEPart) Charset() string {
 	return p.charset
 }
 
-// Decoded content of this part (can be empty)
+// SetCharset sets the charset encoding label of this content, see charsets.go
+// for examples, but you probably want "utf-8"
+func (p *memMIMEPart) SetCharset(charset string) {
+	p.charset = charset
+}
+
+// Content returns the decoded content of this part (can be empty)
 func (p *memMIMEPart) Content() []byte {
 	return p.content
+}
+
+func (p *memMIMEPart) SetContent(content []byte) {
+	p.content = content
 }
 
 // ParseMIME reads a MIME document from the provided reader and parses it into
@@ -155,8 +185,8 @@ func ParseMIME(reader *bufio.Reader) (MIMEPart, error) {
 }
 
 // parseParts recursively parses a mime multipart document.
-func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
-	var prevSibling *memMIMEPart
+func parseParts(parent MIMEPart, reader io.Reader, boundary string) error {
+	var prevSibling MIMEPart
 
 	// Loop over MIME parts
 	mr := multipart.NewReader(reader, boundary)
@@ -194,31 +224,31 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 			return err
 		}
 
-		// Insert ourselves into tree, p is enmime's mime-part
+		// Insert ourselves into tree, p is enmime's MIME part
 		p := NewMIMEPart(parent, mediatype)
-		p.header = mrp.Header
+		p.SetHeader(mrp.Header)
 		if prevSibling != nil {
-			prevSibling.nextSibling = p
+			prevSibling.SetNextSibling(p)
 		} else {
-			parent.firstChild = p
+			parent.SetFirstChild(p)
 		}
 		prevSibling = p
 
-		// Figure out our disposition, filename
+		// Determine content disposition, filename, character set
 		disposition, dparams, err := mime.ParseMediaType(mrp.Header.Get("Content-Disposition"))
 		if err == nil {
 			// Disposition is optional
-			p.disposition = disposition
-			p.fileName = DecodeHeader(dparams["filename"])
+			p.SetDisposition(disposition)
+			p.SetFileName(DecodeHeader(dparams["filename"]))
 		}
-		if p.fileName == "" && mparams["name"] != "" {
-			p.fileName = DecodeHeader(mparams["name"])
+		if p.FileName() == "" && mparams["name"] != "" {
+			p.SetFileName(DecodeHeader(mparams["name"]))
 		}
-		if p.fileName == "" && mparams["file"] != "" {
-			p.fileName = DecodeHeader(mparams["file"])
+		if p.FileName() == "" && mparams["file"] != "" {
+			p.SetFileName(DecodeHeader(mparams["file"]))
 		}
-		if p.charset == "" {
-			p.charset = mparams["charset"]
+		if p.Charset() == "" {
+			p.SetCharset(mparams["charset"])
 		}
 
 		boundary := mparams["boundary"]
@@ -234,7 +264,7 @@ func parseParts(parent *memMIMEPart, reader io.Reader, boundary string) error {
 			if err != nil {
 				return err
 			}
-			p.content = data
+			p.SetContent(data)
 		}
 	}
 

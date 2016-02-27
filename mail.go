@@ -48,11 +48,10 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	return false
 }
 
-// IsAttachment returns true, if the given header defines an
-// attachment.  First it checks, if the Content-Disposition header
-// defines an attachement or inline attachment. If this test is false,
-// the Content-Type header is checked for attachment, but not inline.
-// Email clients use inline for there txt bodies.
+// IsAttachment returns true, if the given header defines an attachment.  First
+// it checks if the Content-Disposition header defines an attachement or inline
+// attachment. If this test is false, the Content-Type header is checked for
+// attachment, but not inline.  Email clients use inline for their text bodies.
 //
 // Valid Attachment-Headers:
 //
@@ -75,10 +74,9 @@ func IsAttachment(header mail.Header) bool {
 	return false
 }
 
-// IsPlain returns true, if the the mime headers define a valid
-// 'text/plain' or 'text/html part'. If emptyContentTypeIsPlain is set
-// to true, a missing Content-Type header will result in a positive
-// plain part detection.
+// IsPlain returns true, if the the MIME headers define a valid 'text/plain' or
+// 'text/html' part. If the emptyContentTypeIsPlain argument is set to true, a
+// missing Content-Type header will result in a positive plain part detection.
 func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
 	ctype := header.Get("Content-Type")
 	if ctype == "" && emptyContentTypeIsPlain {
@@ -99,7 +97,7 @@ func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
 
 }
 
-// IsBinaryBody returns true, if the mail header defines a binary body.
+// IsBinaryBody returns true if the mail header defines a binary body.
 func IsBinaryBody(mailMsg *mail.Message) bool {
 	if IsAttachment(mailMsg.Header) == true {
 		return true
@@ -108,48 +106,51 @@ func IsBinaryBody(mailMsg *mail.Message) bool {
 	return !IsPlain(mailMsg.Header, true)
 }
 
-// Returns a MIME message with only one attachment or inline
-// attachment, the parsed original mail body.
+// binMIME handles the special case where the only content of the message is an
+// attachment.  It is called by ParseMIME when needed.
 func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
-	// Root Node of our tree
+	// Determine mediatype
 	ctype := mailMsg.Header.Get("Content-Type")
 	mediatype, mparams, err := mime.ParseMediaType(ctype)
 	if err != nil {
 		mediatype = "attachment"
 	}
 
+	// Build the MIME part representing most of this message
+	p := NewMIMEPart(nil, mediatype)
+	content, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
+	if err != nil {
+		return nil, err
+	}
+	p.SetContent(content)
+	p.SetHeader(make(textproto.MIMEHeader, 4))
+
+	// Determine and set headers for: content disposition, filename and
+	// character set
+	disposition, dparams, err := mime.ParseMediaType(mailMsg.Header.Get("Content-Disposition"))
+	if err == nil {
+		// Disposition is optional
+		p.SetDisposition(disposition)
+		p.SetFileName(DecodeHeader(dparams["filename"]))
+	}
+	if p.FileName() == "" && mparams["name"] != "" {
+		p.SetFileName(DecodeHeader(mparams["name"]))
+	}
+	if p.FileName() == "" && mparams["file"] != "" {
+		p.SetFileName(DecodeHeader(mparams["file"]))
+	}
+	if p.Charset() == "" {
+		p.SetCharset(mparams["charset"])
+	}
+
+	p.Header().Set("Content-Type", mailMsg.Header.Get("Content-Type"))
+	p.Header().Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
+
+	// Add our part to the appropriate section of MIMEBody
 	m := &MIMEBody{
 		header: mailMsg.Header,
 		Root:   NewMIMEPart(nil, mediatype),
 	}
-
-	p := NewMIMEPart(nil, mediatype)
-	p.content, err = decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// get set headers
-	p.header = make(textproto.MIMEHeader, 4)
-	// Figure out our disposition, filename
-	disposition, dparams, err := mime.ParseMediaType(mailMsg.Header.Get("Content-Disposition"))
-	if err == nil {
-		// Disposition is optional
-		p.disposition = disposition
-		p.fileName = DecodeHeader(dparams["filename"])
-	}
-	if p.fileName == "" && mparams["name"] != "" {
-		p.fileName = DecodeHeader(mparams["name"])
-	}
-	if p.fileName == "" && mparams["file"] != "" {
-		p.fileName = DecodeHeader(mparams["file"])
-	}
-	if p.charset == "" {
-		p.charset = mparams["charset"]
-	}
-
-	p.header.Set("Content-Type", mailMsg.Header.Get("Content-Type"))
-	p.header.Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
 
 	if disposition == "inline" {
 		m.Inlines = append(m.Inlines, p)
