@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	mimefile *string = flag.String("f", "", "mime(eml) file")
-	outdir   *string = flag.String("o", "", "output dir")
+	mimefile = flag.String("f", "", "mime(eml) file")
+	outdir   = flag.String("o", "", "output dir")
 )
 
 func main() {
@@ -81,10 +81,16 @@ func dump(reader io.Reader, name string) error {
 		newFileName := path.Join(*outdir, a.FileName())
 		f, err := os.Create(newFileName)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("Error creating file %q: %v\n", newFileName, err)
 		}
-		f.Write(a.Content())
-		f.Close()
+		_, err = f.Write(a.Content())
+		if err != nil {
+			fmt.Printf("Error writing file %q: %v\n", newFileName, err)
+		}
+		err = f.Close()
+		if err != nil {
+			fmt.Printf("Error closing file %q: %v\n", newFileName, err)
+		}
 		fmt.Printf("- %v (%v)\n", a.FileName(), a.ContentType())
 	}
 	fmt.Println()

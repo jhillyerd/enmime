@@ -35,7 +35,7 @@ func DecodeHeader(input string) string {
 	return header
 }
 
-// Decode a MIME header per RFC 2047, reencoding to =?utf-8b?
+// DecodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?
 func DecodeToUTF8Base64Header(input string) string {
 	if !strings.Contains(input, "=?") {
 		// Don't scan if there is nothing to do here

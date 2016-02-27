@@ -266,9 +266,9 @@ func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	return string(output), nil
 }
 
-// CharsetReader generates charset-conversion readers, converting from the provided
-// charset into UTF-8.  The CharsetReader signature is defined by Golang's
-// mime.WordDecoder
+// NewCharsetReader generates charset-conversion readers, converting from the
+// provided charset into UTF-8.  The CharsetReader signature is defined by
+// Golang's mime.WordDecoder
 //
 // This function is similar to: https://godoc.org/golang.org/x/net/html/charset#NewReaderLabel
 func NewCharsetReader(charset string, input io.Reader) (io.Reader, error) {

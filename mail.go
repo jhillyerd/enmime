@@ -19,6 +19,7 @@ type MIMEBody struct {
 	header      mail.Header // Header from original message
 }
 
+// AddressHeaders enumerates SMTP headers that contain email addresses
 var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
 
 // IsMultipartMessage returns true if the message has a recognized multipart Content-Type
@@ -159,10 +160,10 @@ func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 	return m, err
 }
 
-// ParseMIMEBody parses the body of the message object into a  tree of MIMEPart objects,
-// each of which is aware of its content type, filename and headers.  If the part was
-// encoded in quoted-printable or base64, it is decoded before being stored in the
-// MIMEPart object.
+// ParseMIMEBody parses the body of the message object into a  tree of MIMEPart
+// objects, each of which is aware of its content type, filename and headers.
+// If the part was encoded in quoted-printable or base64, it is decoded before
+// being stored in the MIMEPart object.
 func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	mimeMsg := &MIMEBody{header: mailMsg.Header}
 
@@ -315,12 +316,13 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	return mimeMsg, nil
 }
 
-// Process the specified header for RFC 2047 encoded words and return the result
+// GetHeader processes the specified header for RFC 2047 encoded words and
+// return the result
 func (m *MIMEBody) GetHeader(name string) string {
 	return DecodeHeader(m.header.Get(name))
 }
 
-// Return AddressList with RFC 2047 encoded encoded names.
+// AddressList returns a mail.Address slice with RFC 2047 encoded encoded names.
 func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
 	isAddrHeader := false
 	for _, hkey := range AddressHeaders {
