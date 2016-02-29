@@ -1,5 +1,6 @@
-enmime [![Build Status](https://travis-ci.org/jhillyerd/go.enmime.png?branch=master)](https://travis-ci.org/jhillyerd/go.enmime) [![GoDoc](https://godoc.org/github.com/jhillyerd/go.enmime?status.png)](https://godoc.org/github.com/jhillyerd/go.enmime)
+enmime [![Build Status](https://travis-ci.org/jhillyerd/go.enmime.png?branch=master)][Build Status] [![GoDoc](https://godoc.org/github.com/jhillyerd/go.enmime?status.png)][GoDoc] [![Join the chat at https://gitter.im/jhillyerd/go.enmime](https://badges.gitter.im/jhillyerd/go.enmime.svg)][Gitter Chat]
 ======
+
 
 enmime is a MIME parsing library for Go.  It's built ontop of Go's included mime/multipart
 support, but is geared towards parsing MIME encoded emails.
@@ -16,9 +17,12 @@ and it's likely the API will evolve some before an official release.
 
 About
 -----
-enmime is written in [Google Go][1].
+enmime is written in [Google Go][Golang].
 
 enmime is open source software released under the MIT License.  The latest
 version can be found at https://github.com/jhillyerd/go.enmime
 
-[1]: http://golang.org/
+[Build Status]: https://travis-ci.org/jhillyerd/go.enmime
+[GoDoc]:        https://godoc.org/github.com/jhillyerd/go.enmime
+[Golang]:       http://golang.org/
+[Gitter Chat]:  https://gitter.im/jhillyerd/go.enmime
