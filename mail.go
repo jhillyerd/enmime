@@ -2,6 +2,7 @@ package enmime
 
 import (
 	"fmt"
+	"github.com/jaytaylor/html2text"
 	"mime"
 	"net/mail"
 	"net/textproto"
@@ -10,13 +11,14 @@ import (
 
 // MIMEBody is the outer wrapper for MIME messages.
 type MIMEBody struct {
-	Text        string      // The plain text portion of the message
-	HTML        string      // The HTML portion of the message
-	Root        MIMEPart    // The top-level MIMEPart
-	Attachments []MIMEPart  // All parts having a Content-Disposition of attachment
-	Inlines     []MIMEPart  // All parts having a Content-Disposition of inline
-	OtherParts  []MIMEPart  // All parts not in Attachments and Inlines
-	header      mail.Header // Header from original message
+	Text           string      // The plain text portion of the message
+	HTML           string      // The HTML portion of the message
+	IsTextFromHTML bool        // Plain text was empty; down-converted HTML
+	Root           MIMEPart    // The top-level MIMEPart
+	Attachments    []MIMEPart  // All parts having a Content-Disposition of attachment
+	Inlines        []MIMEPart  // All parts having a Content-Disposition of inline
+	OtherParts     []MIMEPart  // All parts not in Attachments and Inlines
+	header         mail.Header // Header from original message
 }
 
 // AddressHeaders enumerates SMTP headers that contain email addresses
@@ -148,8 +150,9 @@ func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 
 	// Add our part to the appropriate section of MIMEBody
 	m := &MIMEBody{
-		header: mailMsg.Header,
-		Root:   NewMIMEPart(nil, mediatype),
+		header:         mailMsg.Header,
+		Root:           NewMIMEPart(nil, mediatype),
+		IsTextFromHTML: false,
 	}
 
 	if disposition == "inline" {
@@ -166,7 +169,10 @@ func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 // If the part was encoded in quoted-printable or base64, it is decoded before
 // being stored in the MIMEPart object.
 func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
-	mimeMsg := &MIMEBody{header: mailMsg.Header}
+	mimeMsg := &MIMEBody{
+		IsTextFromHTML: false,
+		header:         mailMsg.Header,
+	}
 
 	if !IsMultipartMessage(mailMsg) {
 		// Attachment only?
@@ -207,6 +213,8 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 				}
 				if mediatype == "text/html" {
 					mimeMsg.HTML = mimeMsg.Text
+					// Empty Text will trigger html2text conversion below
+					mimeMsg.Text = ""
 				}
 			}
 		}
@@ -312,6 +320,17 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 			return p.ContentType() != "text/plain" && p.ContentType() != "text/html"
 		})
+	}
+
+	// Down-convert HTML to text if necessary
+	if mimeMsg.Text == "" && mimeMsg.HTML != "" {
+		mimeMsg.IsTextFromHTML = true
+		var err error
+		if mimeMsg.Text, err = html2text.FromString(mimeMsg.HTML); err != nil {
+			// Fail gently
+			mimeMsg.Text = ""
+			return mimeMsg, err
+		}
 	}
 
 	return mimeMsg, nil
