@@ -49,7 +49,7 @@ func TestParseNonMimeHTML(t *testing.T) {
 	}
 
 	assert.True(t, mime.IsTextFromHTML, "Expected text-from-HTML flag to be true")
-	assert.Contains(t, mime.Text, "This is a test mailing")
+	assert.Contains(t, mime.Text, "This is *a* *test* mailing")
 	assert.Contains(t, mime.HTML, "<span>This</span>")
 }
 
