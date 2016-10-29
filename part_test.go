@@ -250,7 +250,7 @@ func TestPartSetter(t *testing.T) {
 // openPart is a test utility function to open a part as a reader
 func openPart(filename string) *bufio.Reader {
 	// Open test part for parsing
-	raw, err := os.Open(filepath.Join("test-data", "parts", filename))
+	raw, err := os.Open(filepath.Join("testdata", "parts", filename))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to open test data: %v", err))
 	}

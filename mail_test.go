@@ -430,7 +430,7 @@ func TestAttachmentOnly(t *testing.T) {
 // readMessage is a test utility function to fetch a mail.Message object.
 func readMessage(filename string) *mail.Message {
 	// Open test email for parsing
-	raw, err := os.Open(filepath.Join("test-data", "mail", filename))
+	raw, err := os.Open(filepath.Join("testdata", "mail", filename))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to open test data: %v", err))
 	}

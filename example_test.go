@@ -9,7 +9,7 @@ import (
 )
 
 func Example() {
-	file, _ := os.Open("test-data/mail/qp-utf8-header.raw")
+	file, _ := os.Open("testdata/mail/qp-utf8-header.raw")
 	msg, _ := mail.ReadMessage(file)     // Read email using Go's net/mail
 	mime, _ := enmime.ParseMIMEBody(msg) // Parse message body with enmime
 
