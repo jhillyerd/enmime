@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBase64Cleaner(t *testing.T) {
-	input := strings.NewReader("\tA B\r\nC")
-	cleaner := NewBase64Cleaner(input)
+	in := "\tA B\r\nC"
+	want := "ABC"
+	cleaner := NewBase64Cleaner(strings.NewReader(in))
 	buf := new(bytes.Buffer)
 	_, _ = buf.ReadFrom(cleaner)
 
-	assert.Equal(t, "ABC", buf.String())
+	got := buf.String()
+	if got != want {
+		t.Error("got:", got, "want:", want)
+	}
 }

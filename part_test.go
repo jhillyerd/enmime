@@ -6,41 +6,77 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPlainTextPart(t *testing.T) {
 	r := openPart("textplain.raw")
 	p, err := ParseMIME(r)
 
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "7bit", p.Header().Get("Content-Transfer-Encoding"),
-		"Exepcted Header to have data")
-	assert.Equal(t, "text/plain", p.ContentType(), "Expected type to be set")
-	assert.Contains(t, string(p.Content()), "Test of text/plain section",
-		"Expected correct data in p.Content")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "7bit"
+	got := p.Header().Get("Content-Transfer-Encoding")
+	if got != want {
+		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
+	}
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "Test of text/plain section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
 }
 
 func TestQuotedPrintablePart(t *testing.T) {
 	r := openPart("quoted-printable.raw")
 	p, err := ParseMIME(r)
 
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "quoted-printable", p.Header().Get("Content-Transfer-Encoding"),
-		"Exepcted Header to have data")
-	assert.Equal(t, "text/plain", p.ContentType(), "Expected type to be set")
-	assert.Equal(t, "Start=ABC=Finish", string(p.Content()),
-		"Expected correct data in p.Content")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "quoted-printable"
+	got := p.Header().Get("Content-Transfer-Encoding")
+	if got != want {
+		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
+	}
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "Start=ABC=Finish"
+	got = string(p.Content())
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
+
 }
 
 func TestMultiAlternParts(t *testing.T) {
@@ -48,26 +84,63 @@ func TestMultiAlternParts(t *testing.T) {
 	p, err := ParseMIME(r)
 
 	// Examine root
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "multipart/alternative", p.ContentType(), "Expected type to be set")
-	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
-	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/alternative"
+	got := p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if len(p.Content()) > 0 {
+		t.Error("Content() should have length of 0")
+	}
+	if p.FirstChild() == nil {
+		t.Error("Root should have a FirstChild")
+	}
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
-	assert.Contains(t, string(p.Content()), "A text section", "First child contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "A text section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First child should have a sibling")
+	}
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, "text/html", p.ContentType(), "Second child should have been html")
-	assert.Contains(t, string(p.Content()), "An HTML section", "Second child contains wrong content")
-	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+
+	want = "text/html"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "An HTML section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
 }
 
 func TestMultiMixedParts(t *testing.T) {
@@ -75,26 +148,63 @@ func TestMultiMixedParts(t *testing.T) {
 	p, err := ParseMIME(r)
 
 	// Examine root
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "multipart/mixed", p.ContentType(), "Expected type to be set")
-	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
-	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/mixed"
+	got := p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if len(p.Content()) > 0 {
+		t.Error("Content() should have length of 0")
+	}
+	if p.FirstChild() == nil {
+		t.Error("Root should have a FirstChild")
+	}
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
-	assert.Contains(t, string(p.Content()), "Section one", "First child contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "Section one"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First child should have a sibling")
+	}
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, "text/plain", p.ContentType(), "Second child should have been html")
-	assert.Contains(t, string(p.Content()), "Section two", "Second child contains wrong content")
-	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "Section two"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
 }
 
 func TestMultiOtherParts(t *testing.T) {
@@ -102,26 +212,63 @@ func TestMultiOtherParts(t *testing.T) {
 	p, err := ParseMIME(r)
 
 	// Examine root
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "multipart/x-enmime", p.ContentType(), "Expected type to be set")
-	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
-	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/x-enmime"
+	got := p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if len(p.Content()) > 0 {
+		t.Error("Content() should have length of 0")
+	}
+	if p.FirstChild() == nil {
+		t.Error("Root should have a FirstChild")
+	}
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
-	assert.Contains(t, string(p.Content()), "Section one", "First child contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "Section one"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First child should have a sibling")
+	}
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, "text/plain", p.ContentType(), "Second child should have been html")
-	assert.Contains(t, string(p.Content()), "Section two", "Second child contains wrong content")
-	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "Section two"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
 }
 
 func TestNestedAlternParts(t *testing.T) {
@@ -129,50 +276,141 @@ func TestNestedAlternParts(t *testing.T) {
 	p, err := ParseMIME(r)
 
 	// Examine root
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "multipart/alternative", p.ContentType(), "Expected type to be set")
-	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
-	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/alternative"
+	got := p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if len(p.Content()) > 0 {
+		t.Error("Content() should have length of 0")
+	}
+	if p.FirstChild() == nil {
+		t.Error("Root should have a FirstChild")
+	}
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
-	assert.Contains(t, string(p.Content()), "A text section", "First child contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "A text section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First child should have a sibling")
+	}
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, "multipart/related", p.ContentType(), "Second child should have been another multipart")
-	assert.Equal(t, 0, len(p.Content()), "Second child should not have Content")
-	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
-	assert.NotNil(t, p.FirstChild(), "Second child should have a child")
+
+	want = "multipart/related"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if len(p.Content()) > 0 {
+		t.Error("Content() should have length of 0")
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
+	if p.FirstChild() == nil {
+		t.Error("Second child should have a child")
+	}
 
 	// First nested
 	p = p.FirstChild()
-	assert.Equal(t, "text/html", p.ContentType(), "First nested should have been html")
-	assert.Contains(t, string(p.Content()), "An HTML section", "First nested contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "First nested should have a sibling")
+
+	want = "text/html"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "An HTML section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First nested should have a sibling")
+	}
 
 	// Second nested
 	p = p.NextSibling()
-	assert.Equal(t, "text/plain", p.ContentType(), "Second nested should have been text")
-	assert.Equal(t, "inline", p.Disposition(), "Second nested should be inline disposition")
-	assert.Equal(t, "attach.txt", p.FileName(), "Second nested should have correct filename")
-	assert.Contains(t, string(p.Content()), "An inline text attachment", "Second nested contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "Second nested should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "inline"
+	got = p.Disposition()
+	if got != want {
+		t.Errorf("Disposition() got: %q, want: %q", got, want)
+	}
+
+	want = "attach.txt"
+	got = p.FileName()
+	if got != want {
+		t.Errorf("FileName() got: %q, want: %q", got, want)
+	}
+
+	want = "An inline text attachment"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("Second nested should have a sibling")
+	}
 
 	// Third nested
 	p = p.NextSibling()
-	assert.Equal(t, "text/plain", p.ContentType(), "Third nested should have been text")
-	assert.Equal(t, "inline", p.Disposition(), "Third nested should be inline disposition")
-	assert.Equal(t, "attach2.txt", p.FileName(), "Third nested should have correct filename")
-	assert.Contains(t, string(p.Content()), "Another inline text attachment",
-		"Third nested contains wrong content")
-	assert.Nil(t, p.NextSibling(), "Third nested should not have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "inline"
+	got = p.Disposition()
+	if got != want {
+		t.Errorf("Disposition() got: %q, want: %q", got, want)
+	}
+
+	want = "attach2.txt"
+	got = p.FileName()
+	if got != want {
+		t.Errorf("FileName() got: %q, want: %q", got, want)
+	}
+
+	want = "Another inline text attachment"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
 }
 
 func TestMultiBase64Parts(t *testing.T) {
@@ -180,28 +418,66 @@ func TestMultiBase64Parts(t *testing.T) {
 	p, err := ParseMIME(r)
 
 	// Examine root
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "multipart/mixed", p.ContentType(), "Expected type to be set")
-	assert.Equal(t, 0, len(p.Content()), "Root should not have Content")
-	assert.NotNil(t, p.FirstChild(), "Root should have a FirstChild")
-	assert.Nil(t, p.NextSibling(), "Root should never have a sibling")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/mixed"
+	got := p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if len(p.Content()) > 0 {
+		t.Error("Content() should have length of 0")
+	}
+	if p.FirstChild() == nil {
+		t.Error("Root should have a FirstChild")
+	}
+	if p.NextSibling() != nil {
+		t.Error("Root should never have a sibling")
+	}
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
-	assert.Contains(t, string(p.Content()), "A text section", "First child contains wrong content")
-	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "A text section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First child should have a sibling")
+	}
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, "text/html", p.ContentType(), "Second child should be html")
-	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
-	assert.Nil(t, p.FirstChild(), "Second child should not have a child")
-	assert.Contains(t, string(p.Content()), "<html>",
-		"Second child should have <html> as decoded content")
+
+	want = "text/html"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
+	if p.FirstChild() != nil {
+		t.Error("FirstChild() should be nil")
+	}
+
+	want = "<html>"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
 }
 
 func TestBadBoundaryTerm(t *testing.T) {
@@ -209,42 +485,81 @@ func TestBadBoundaryTerm(t *testing.T) {
 	p, err := ParseMIME(r)
 
 	// Examine root
-	if !assert.Nil(t, err, "Parsing should not have generated an error") {
-		t.FailNow()
+	if err != nil {
+		t.Fatal("Parsing should not have generated an error")
 	}
-	assert.NotNil(t, p, "Root node should not be nil")
-	assert.Equal(t, "multipart/alternative", p.ContentType(), "Expected type to be set")
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/alternative"
+	got := p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
 
 	// Examine first child
 	p = p.FirstChild()
-	assert.Equal(t, "text/plain", p.ContentType(), "First child should have been text")
-	assert.NotNil(t, p.NextSibling(), "First child should have a sibling")
+
+	want = "text/plain"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+	if p.NextSibling() == nil {
+		t.Error("First child should have a sibling")
+	}
 
 	// Examine sibling
 	p = p.NextSibling()
-	assert.Equal(t, "text/html", p.ContentType(), "Second child should have been html")
-	assert.Contains(t, string(p.Content()), "An HTML section", "Second child contains wrong content")
-	assert.Nil(t, p.NextSibling(), "Second child should not have a sibling")
+
+	want = "text/html"
+	got = p.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
+
+	want = "An HTML section"
+	got = string(p.Content())
+	if !strings.Contains(got, want) {
+		t.Errorf("Content(): %q, should contain: %q", got, want)
+	}
+	if p.NextSibling() != nil {
+		t.Error("NextSibling() should be nil")
+	}
 }
 
 func TestPartSetter(t *testing.T) {
-
 	m := memMIMEPart{}
-
 	h := textproto.MIMEHeader{
 		"Content-Type": {"testType"},
 	}
+
 	m.SetHeader(h)
-	assert.Equal(t, m.Header(), h)
+	if !reflect.DeepEqual(m.Header(), h) {
+		t.Error("SetHeader() did not update Header()")
+	}
 
-	m.SetContentType("application/octet-stream")
-	assert.Equal(t, m.ContentType(), "application/octet-stream")
+	want := "application/octet-stream"
+	m.SetContentType(want)
+	got := m.ContentType()
+	if got != want {
+		t.Errorf("ContentType() got: %q, want: %q", got, want)
+	}
 
-	m.SetDisposition("inline")
-	assert.Equal(t, m.Disposition(), "inline")
+	want = "inline"
+	m.SetDisposition(want)
+	got = m.Disposition()
+	if got != want {
+		t.Errorf("Disposition() got: %q, want: %q", got, want)
+	}
 
-	m.SetFileName("somefilename")
-	assert.Equal(t, m.FileName(), "somefilename")
+	want = "somefilename"
+	m.SetFileName(want)
+	got = m.FileName()
+	if got != want {
+		t.Errorf("FileName() got: %q, want: %q", got, want)
+	}
 }
 
 // openPart is a test utility function to open a part as a reader
