@@ -18,6 +18,7 @@ type MIMEBody struct {
 	Attachments    []MIMEPart  // All parts having a Content-Disposition of attachment
 	Inlines        []MIMEPart  // All parts having a Content-Disposition of inline
 	OtherParts     []MIMEPart  // All parts not in Attachments and Inlines
+	Errors         []MIMEError // Errors encountered while parsing
 	header         mail.Header // Header from original message
 }
 
