@@ -11,15 +11,15 @@ import (
 
 // MIMEBody is the outer wrapper for MIME messages.
 type MIMEBody struct {
-	Text           string      // The plain text portion of the message
-	HTML           string      // The HTML portion of the message
-	IsTextFromHTML bool        // Plain text was empty; down-converted HTML
-	Root           MIMEPart    // The top-level MIMEPart
-	Attachments    []MIMEPart  // All parts having a Content-Disposition of attachment
-	Inlines        []MIMEPart  // All parts having a Content-Disposition of inline
-	OtherParts     []MIMEPart  // All parts not in Attachments and Inlines
-	Errors         []MIMEError // Errors encountered while parsing
-	header         mail.Header // Header from original message
+	Text           string       // The plain text portion of the message
+	HTML           string       // The HTML portion of the message
+	IsTextFromHTML bool         // Plain text was empty; down-converted HTML
+	Root           MIMEPart     // The top-level MIMEPart
+	Attachments    []MIMEPart   // All parts having a Content-Disposition of attachment
+	Inlines        []MIMEPart   // All parts having a Content-Disposition of inline
+	OtherParts     []MIMEPart   // All parts not in Attachments and Inlines
+	Errors         []*MIMEError // Errors encountered while parsing
+	header         mail.Header  // Header from original message
 }
 
 // AddressHeaders enumerates SMTP headers that contain email addresses
@@ -84,7 +84,6 @@ func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
 	}
 
 	return false
-
 }
 
 // IsBinaryBody returns true if the mail header defines a binary body.
@@ -121,6 +120,18 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		if err := parseTextOnlyBody(mailMsg, mimeMsg); err != nil {
 			return nil, err
 		}
+	}
+
+	// Copy part errors into mimeMsg
+	if mimeMsg.Root != nil {
+		_ = DepthMatchAll(mimeMsg.Root, func(part MIMEPart) bool {
+			// Using DepthMatchAll to traverse all parts, don't care about result
+			mmp := part.(*memMIMEPart)
+			for _, perr := range mmp.errors {
+				mimeMsg.Errors = append(mimeMsg.Errors, &perr)
+			}
+			return false
+		})
 	}
 
 	// Down-convert HTML to text if necessary

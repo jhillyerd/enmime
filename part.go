@@ -52,6 +52,7 @@ type memMIMEPart struct {
 	fileName    string
 	charset     string
 	content     []byte
+	errors      []MIMEError
 }
 
 // NewMIMEPart creates a new memMIMEPart object.  It does not update the parents FirstChild
@@ -201,12 +202,21 @@ func parseParts(parent MIMEPart, reader io.Reader, boundary string) error {
 			return err
 		}
 		if len(mrp.Header) == 0 {
-			// Empty header probably means the part didn't using the correct trailing "--"
-			// syntax to close its boundary.  We will let this slide if this this the
-			// last MIME part.
+			// Empty header probably means the part didn't use the correct trailing "--" syntax to
+			// close its boundary.  We will let this slide if this this the last MIME part.
 			if _, err := mr.NextPart(); err != nil {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
-					// This is what we were hoping for
+					// There are no more MIME parts, but the error belongs to our sibling or parent,
+					// because this MIMEPart doesn't actually exist.
+					merror := newWarning(
+						errorBoundaryMissing,
+						"Boundary %q was not closed correctly",
+						boundary)
+					owner := parent.(*memMIMEPart)
+					if prevSibling != nil {
+						owner = prevSibling.(*memMIMEPart)
+					}
+					owner.errors = append(owner.errors, merror)
 					break
 				} else {
 					return fmt.Errorf("Error at boundary %v: %v", boundary, err)

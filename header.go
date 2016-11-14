@@ -19,7 +19,7 @@ func debug(format string, args ...interface{}) {
 //  encoding: the character encoding type used for the encoded-text
 //  encoded-text: the text we are decoding
 
-// DecodeHeader (per RFC 2047) using Golang's mime.WordDecoder
+// DecodeHeader decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
 func DecodeHeader(input string) string {
 	if !strings.Contains(input, "=?") {
 		// Don't scan if there is nothing to do here
