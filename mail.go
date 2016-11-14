@@ -24,9 +24,8 @@ type MIMEBody struct {
 // AddressHeaders enumerates SMTP headers that contain email addresses
 var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
 
-// IsMultipartMessage returns true if the message has a recognized multipart Content-Type
-// header.  You don't need to check this before calling ParseMIMEBody, it can handle
-// non-multipart messages.
+// IsMultipartMessage returns true if the message has a recognized multipart Content-Type header.
+// You don't need to check this before calling ParseMIMEBody, it can handle non-multipart messages.
 func IsMultipartMessage(mailMsg *mail.Message) bool {
 	// Parse top-level multipart
 	ctype := mailMsg.Header.Get("Content-Type")
@@ -50,17 +49,16 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	return false
 }
 
-// IsAttachment returns true, if the given header defines an attachment.  First
-// it checks if the Content-Disposition header defines an attachement or inline
-// attachment. If this test is false, the Content-Type header is checked for
-// attachment, but not inline.  Email clients use inline for their text bodies.
+// IsAttachment returns true, if the given header defines an attachment.  First it checks if the
+// Content-Disposition header defines an attachement or inline attachment. If this test is false,
+// the Content-Type header is checked for attachment, but not inline.  Email clients use inline for
+// their text bodies.
 //
 // Valid Attachment-Headers:
 //
-//    Content-Disposition: attachment; filename="frog.jpg"
-//    Content-Disposition: inline; filename="frog.jpg"
-//    Content-Type: attachment; filename="frog.jpg"
-//
+//  - Content-Disposition: attachment; filename="frog.jpg"
+//  - Content-Disposition: inline; filename="frog.jpg"
+//  - Content-Type: attachment; filename="frog.jpg"
 func IsAttachment(header mail.Header) bool {
 	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
 	if strings.ToLower(mediatype) == "attachment" ||
@@ -76,9 +74,9 @@ func IsAttachment(header mail.Header) bool {
 	return false
 }
 
-// IsPlain returns true, if the the MIME headers define a valid 'text/plain' or
-// 'text/html' part. If the emptyContentTypeIsPlain argument is set to true, a
-// missing Content-Type header will result in a positive plain part detection.
+// IsPlain returns true, if the the MIME headers define a valid 'text/plain' or 'text/html' part. If
+// the emptyContentTypeIsPlain argument is set to true, a missing Content-Type header will result in
+// a positive plain part detection.
 func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
 	ctype := header.Get("Content-Type")
 	if ctype == "" && emptyContentTypeIsPlain {
@@ -108,9 +106,92 @@ func IsBinaryBody(mailMsg *mail.Message) bool {
 	return !IsPlain(mailMsg.Header, true)
 }
 
-// binMIME handles the special case where the only content of the message is an
-// attachment.  It is called by ParseMIME when needed.
-func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
+// ParseMIMEBody parses the body of the message object into a  tree of MIMEPart objects, each of
+// which is aware of its content type, filename and headers.  If the part was encoded in
+// quoted-printable or base64, it is decoded before being stored in the MIMEPart object.
+func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
+	mimeMsg := &MIMEBody{
+		IsTextFromHTML: false,
+		header:         mailMsg.Header,
+	}
+
+	if !IsMultipartMessage(mailMsg) {
+		// Attachment only?
+		if IsBinaryBody(mailMsg) {
+			if err := parseBinaryOnlyBody(mailMsg, mimeMsg); err != nil {
+				return nil, err
+			}
+		}
+		if err := parseTextOnlyBody(mailMsg, mimeMsg); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := parseMultiPartBody(mailMsg, mimeMsg); err != nil {
+			return nil, err
+		}
+	}
+
+	// Down-convert HTML to text if necessary
+	if mimeMsg.Text == "" && mimeMsg.HTML != "" {
+		mimeMsg.IsTextFromHTML = true
+		var err error
+		if mimeMsg.Text, err = html2text.FromString(mimeMsg.HTML); err != nil {
+			// Fail gently
+			mimeMsg.Text = ""
+			return mimeMsg, err
+		}
+	}
+
+	return mimeMsg, nil
+}
+
+// parseTextOnlyBody parses a plain text message in mailMsg that has MIME-like headers, but
+// only contains a single part - no boundaries, etc.  The result is placed in mimeMsg.
+func parseTextOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
+	bodyBytes, err := decodeSection(
+		mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
+	if err != nil {
+		return fmt.Errorf("Error decoding text-only message: %v", err)
+	}
+
+	// Handle plain ASCII text, content-type unspecified, may be reverted later
+	mimeMsg.Text = string(bodyBytes)
+
+	// Process top-level content-type
+	ctype := mailMsg.Header.Get("Content-Type")
+	if ctype != "" {
+		if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
+			if mparams["charset"] != "" {
+				// Convert plain text to UTF8 if content type specified a charset
+				newStr, err := ConvertToUTF8String(mparams["charset"], bodyBytes)
+				if err != nil {
+					return err
+				}
+				mimeMsg.Text = newStr
+			} else if mediatype == "text/html" {
+				// charset is empty, look in HTML body for charset
+				charset, err := charsetFromHTMLString(mimeMsg.Text)
+				if charset != "" && err == nil {
+					newStr, err := ConvertToUTF8String(charset, bodyBytes)
+					if err == nil {
+						mimeMsg.Text = newStr
+					}
+				}
+			}
+			if mediatype == "text/html" {
+				mimeMsg.HTML = mimeMsg.Text
+				// Empty Text should trigger html2text conversion
+				mimeMsg.Text = ""
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseBinaryOnlyBody parses a message where the only content is a binary attachment with no
+// other parts. The result is placed in mimeMsg.
+func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	// Determine mediatype
 	ctype := mailMsg.Header.Get("Content-Type")
 	mediatype, mparams, err := mime.ParseMediaType(ctype)
@@ -122,13 +203,12 @@ func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 	p := NewMIMEPart(nil, mediatype)
 	content, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	p.SetContent(content)
 	p.SetHeader(make(textproto.MIMEHeader, 4))
 
-	// Determine and set headers for: content disposition, filename and
-	// character set
+	// Determine and set headers for: content disposition, filename and character set
 	disposition, dparams, err := mime.ParseMediaType(mailMsg.Header.Get("Content-Disposition"))
 	if err == nil {
 		// Disposition is optional
@@ -149,195 +229,122 @@ func binMIME(mailMsg *mail.Message) (*MIMEBody, error) {
 	p.Header().Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
 
 	// Add our part to the appropriate section of MIMEBody
-	m := &MIMEBody{
-		header:         mailMsg.Header,
-		Root:           NewMIMEPart(nil, mediatype),
-		IsTextFromHTML: false,
-	}
+	mimeMsg.Root = NewMIMEPart(nil, mediatype)
 
 	if disposition == "inline" {
-		m.Inlines = append(m.Inlines, p)
+		mimeMsg.Inlines = append(mimeMsg.Inlines, p)
 	} else {
-		m.Attachments = append(m.Attachments, p)
+		mimeMsg.Attachments = append(mimeMsg.Attachments, p)
 	}
 
-	return m, err
+	return nil
 }
 
-// ParseMIMEBody parses the body of the message object into a  tree of MIMEPart
-// objects, each of which is aware of its content type, filename and headers.
-// If the part was encoded in quoted-printable or base64, it is decoded before
-// being stored in the MIMEPart object.
-func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
-	mimeMsg := &MIMEBody{
-		IsTextFromHTML: false,
-		header:         mailMsg.Header,
+// parseMultiPartBody parses a multipart message in mailMsg.  The result is placed in mimeMsg.
+func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
+	// Parse top-level multipart
+	ctype := mailMsg.Header.Get("Content-Type")
+	mediatype, params, err := mime.ParseMediaType(ctype)
+	if err != nil {
+		return fmt.Errorf("Unable to parse media type: %v", err)
+	}
+	if !strings.HasPrefix(mediatype, "multipart/") {
+		return fmt.Errorf("Unknown mediatype: %v", mediatype)
+	}
+	boundary := params["boundary"]
+	if boundary == "" {
+		return fmt.Errorf("Unable to locate boundary param in Content-Type header")
+	}
+	// Root Node of our tree
+	root := NewMIMEPart(nil, mediatype)
+	mimeMsg.Root = root
+	err = parseParts(root, mailMsg.Body, boundary)
+	if err != nil {
+		return err
 	}
 
-	if !IsMultipartMessage(mailMsg) {
-		// Attachment only?
-		if IsBinaryBody(mailMsg) {
-			return binMIME(mailMsg)
-		}
-
-		// Parse as text only
-		bodyBytes, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"),
-			mailMsg.Body)
-		if err != nil {
-			return nil, fmt.Errorf("Error decoding text-only message: %v", err)
-		}
-		// Handle plain ASCII text, content-type unspecified
-		mimeMsg.Text = string(bodyBytes)
-
-		// Process top-level content-type
-		ctype := mailMsg.Header.Get("Content-Type")
-		if ctype != "" {
-			if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
-				if mparams["charset"] != "" {
-					// Convert plain text to UTF8 if content type specified a charset
-					newStr, err := ConvertToUTF8String(mparams["charset"], bodyBytes)
-					if err != nil {
-						return nil, err
-					}
-					mimeMsg.Text = newStr
-				} else if mediatype == "text/html" {
-					// charset is empty, look in HTML body for charset
-					charset, err := charsetFromHTMLString(mimeMsg.Text)
-
-					if charset != "" && err == nil {
-						newStr, err := ConvertToUTF8String(charset, bodyBytes)
-						if err == nil {
-							mimeMsg.Text = newStr
-						}
-					}
-				}
-				if mediatype == "text/html" {
-					mimeMsg.HTML = mimeMsg.Text
-					// Empty Text will trigger html2text conversion below
-					mimeMsg.Text = ""
-				}
-			}
-		}
-	} else {
-		// Parse top-level multipart
-		ctype := mailMsg.Header.Get("Content-Type")
-		mediatype, params, err := mime.ParseMediaType(ctype)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to parse media type: %v", err)
-		}
-		if !strings.HasPrefix(mediatype, "multipart/") {
-			return nil, fmt.Errorf("Unknown mediatype: %v", mediatype)
-		}
-		boundary := params["boundary"]
-		if boundary == "" {
-			return nil, fmt.Errorf("Unable to locate boundary param in Content-Type header")
-		}
-		// Root Node of our tree
-		root := NewMIMEPart(nil, mediatype)
-		mimeMsg.Root = root
-		err = parseParts(root, mailMsg.Body, boundary)
-		if err != nil {
-			return nil, err
-		}
-
-		// Locate text body
-		if mediatype == "multipart/altern" {
-			match := BreadthMatchFirst(root, func(p MIMEPart) bool {
-				return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
-			})
-			if match != nil {
-				if match.Charset() != "" {
-					newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
-					if err != nil {
-						return nil, err
-					}
-					mimeMsg.Text += newStr
-				} else {
-					mimeMsg.Text += string(match.Content())
-				}
-			}
-		} else {
-			// multipart is of a mixed type
-			match := DepthMatchAll(root, func(p MIMEPart) bool {
-				return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
-			})
-			for i, m := range match {
-				if i > 0 {
-					mimeMsg.Text += "\n--\n"
-				}
-				if m.Charset() != "" {
-					newStr, err := ConvertToUTF8String(m.Charset(), m.Content())
-					if err != nil {
-						return nil, err
-					}
-					mimeMsg.Text += newStr
-				} else {
-					mimeMsg.Text += string(m.Content())
-				}
-			}
-		}
-
-		// Locate HTML body
+	// Locate text body
+	if mediatype == "multipart/altern" {
 		match := BreadthMatchFirst(root, func(p MIMEPart) bool {
-			return p.ContentType() == "text/html" && p.Disposition() != "attachment"
+			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		if match != nil {
 			if match.Charset() != "" {
 				newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
 				if err != nil {
-					return nil, err
+					return err
 				}
-				mimeMsg.HTML += newStr
+				mimeMsg.Text += newStr
 			} else {
-				mimeMsg.HTML = string(match.Content())
+				mimeMsg.Text += string(match.Content())
 			}
-
 		}
-
-		// Locate attachments
-		mimeMsg.Attachments = BreadthMatchAll(root, func(p MIMEPart) bool {
-			return p.Disposition() == "attachment" || p.ContentType() == "application/octet-stream"
+	} else {
+		// multipart is of a mixed type
+		match := DepthMatchAll(root, func(p MIMEPart) bool {
+			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
-
-		// Locate inlines
-		mimeMsg.Inlines = BreadthMatchAll(root, func(p MIMEPart) bool {
-			return p.Disposition() == "inline"
-		})
-
-		// Locate others parts not handled in "Attachments" and "inlines"
-		mimeMsg.OtherParts = BreadthMatchAll(root, func(p MIMEPart) bool {
-			if strings.HasPrefix(p.ContentType(), "multipart/") {
-				return false
+		for i, m := range match {
+			if i > 0 {
+				mimeMsg.Text += "\n--\n"
 			}
-
-			if p.Disposition() != "" {
-				return false
+			if m.Charset() != "" {
+				newStr, err := ConvertToUTF8String(m.Charset(), m.Content())
+				if err != nil {
+					return err
+				}
+				mimeMsg.Text += newStr
+			} else {
+				mimeMsg.Text += string(m.Content())
 			}
-
-			if p.ContentType() == "application/octet-stream" {
-				return false
-			}
-
-			return p.ContentType() != "text/plain" && p.ContentType() != "text/html"
-		})
-	}
-
-	// Down-convert HTML to text if necessary
-	if mimeMsg.Text == "" && mimeMsg.HTML != "" {
-		mimeMsg.IsTextFromHTML = true
-		var err error
-		if mimeMsg.Text, err = html2text.FromString(mimeMsg.HTML); err != nil {
-			// Fail gently
-			mimeMsg.Text = ""
-			return mimeMsg, err
 		}
 	}
 
-	return mimeMsg, nil
+	// Locate HTML body
+	match := BreadthMatchFirst(root, func(p MIMEPart) bool {
+		return p.ContentType() == "text/html" && p.Disposition() != "attachment"
+	})
+	if match != nil {
+		if match.Charset() != "" {
+			newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
+			if err != nil {
+				return err
+			}
+			mimeMsg.HTML += newStr
+		} else {
+			mimeMsg.HTML = string(match.Content())
+		}
+
+	}
+
+	// Locate attachments
+	mimeMsg.Attachments = BreadthMatchAll(root, func(p MIMEPart) bool {
+		return p.Disposition() == "attachment" || p.ContentType() == "application/octet-stream"
+	})
+
+	// Locate inlines
+	mimeMsg.Inlines = BreadthMatchAll(root, func(p MIMEPart) bool {
+		return p.Disposition() == "inline"
+	})
+
+	// Locate others parts not considered in attachments or inlines
+	mimeMsg.OtherParts = BreadthMatchAll(root, func(p MIMEPart) bool {
+		if strings.HasPrefix(p.ContentType(), "multipart/") {
+			return false
+		}
+		if p.Disposition() != "" {
+			return false
+		}
+		if p.ContentType() == "application/octet-stream" {
+			return false
+		}
+		return p.ContentType() != "text/plain" && p.ContentType() != "text/html"
+	})
+
+	return nil
 }
 
-// GetHeader processes the specified header for RFC 2047 encoded words and
-// return the result
+// GetHeader processes the specified header for RFC 2047 encoded words and return the result
 func (m *MIMEBody) GetHeader(name string) string {
 	return DecodeHeader(m.header.Get(name))
 }
