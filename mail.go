@@ -33,20 +33,9 @@ func IsMultipartMessage(mailMsg *mail.Message) bool {
 	if err != nil {
 		return false
 	}
-	switch mediatype {
-	case "multipart/alternative",
-		"multipart/mixed",
-		"multipart/related",
-		"multipart/signed":
-		return true
-	default:
-		if strings.HasPrefix(mediatype, "multipart/") {
-			// according to rfc2046#section-5.1.7 all other multipart should
-			// be treated as multipart/mixed
-			return true
-		}
-	}
-	return false
+	// According to rfc2046#section-5.1.7 all other multipart should
+	// be treated as multipart/mixed
+	return strings.HasPrefix(mediatype, "multipart/")
 }
 
 // IsAttachment returns true, if the given header defines an attachment.  First it checks if the
@@ -115,18 +104,20 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 		header:         mailMsg.Header,
 	}
 
-	if !IsMultipartMessage(mailMsg) {
-		// Attachment only?
+	if IsMultipartMessage(mailMsg) {
+		// Multi-part message (message with attachments, etc)
+		if err := parseMultiPartBody(mailMsg, mimeMsg); err != nil {
+			return nil, err
+		}
+	} else {
 		if IsBinaryBody(mailMsg) {
+			// Attachment only, no text
 			if err := parseBinaryOnlyBody(mailMsg, mimeMsg); err != nil {
 				return nil, err
 			}
 		}
+		// Only text, no attachments
 		if err := parseTextOnlyBody(mailMsg, mimeMsg); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := parseMultiPartBody(mailMsg, mimeMsg); err != nil {
 			return nil, err
 		}
 	}
