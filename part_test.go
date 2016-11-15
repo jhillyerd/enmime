@@ -530,7 +530,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 }
 
 func TestPartSetter(t *testing.T) {
-	m := memMIMEPart{}
+	m := MIMEPart{}
 	h := textproto.MIMEHeader{
 		"Content-Type": {"testType"},
 	}

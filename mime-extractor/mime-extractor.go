@@ -116,7 +116,7 @@ func h2(content string) {
 }
 
 // printPart pretty prints the MIMEPart tree
-func printPart(p enmime.MIMEPart, indent string) {
+func printPart(p *enmime.MIMEPart, indent string) {
 	sibling := p.NextSibling()
 	child := p.FirstChild()
 
