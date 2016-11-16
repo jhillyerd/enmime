@@ -208,7 +208,7 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 		return err
 	}
 	p.SetContent(content)
-	p.SetHeader(make(textproto.MIMEHeader, 4))
+	p.Header = make(textproto.MIMEHeader, 4)
 
 	// Determine and set headers for: content disposition, filename and character set
 	disposition, dparams, err := mime.ParseMediaType(mailMsg.Header.Get("Content-Disposition"))
@@ -227,8 +227,8 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 		p.SetCharset(mparams["charset"])
 	}
 
-	p.Header().Set("Content-Type", mailMsg.Header.Get("Content-Type"))
-	p.Header().Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
+	p.Header.Set("Content-Type", mailMsg.Header.Get("Content-Type"))
+	p.Header.Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
 
 	// Add our part to the appropriate section of MIMEBody
 	mimeMsg.Root = NewMIMEPart(nil, mediatype)

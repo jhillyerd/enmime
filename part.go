@@ -19,10 +19,10 @@ import (
 //
 // TODO Content should probably be a reader so that it does not need to be stored in memory.
 type MIMEPart struct {
+	Header      textproto.MIMEHeader
 	parent      *MIMEPart
 	firstChild  *MIMEPart
 	nextSibling *MIMEPart
-	header      textproto.MIMEHeader
 	contentType string
 	disposition string
 	fileName    string
@@ -65,16 +65,6 @@ func (p *MIMEPart) NextSibling() *MIMEPart {
 // SetNextSibling sets the next sibling (shares parent) of this part
 func (p *MIMEPart) SetNextSibling(sibling *MIMEPart) {
 	p.nextSibling = sibling
-}
-
-// Header as parsed by textproto package
-func (p *MIMEPart) Header() textproto.MIMEHeader {
-	return p.header
-}
-
-// SetHeader sets a MIME part header.
-func (p *MIMEPart) SetHeader(header textproto.MIMEHeader) {
-	p.header = header
 }
 
 // ContentType header without parameters
@@ -144,7 +134,7 @@ func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 	if err != nil {
 		return nil, err
 	}
-	root := &MIMEPart{header: header, contentType: mediatype}
+	root := &MIMEPart{Header: header, contentType: mediatype}
 
 	if strings.HasPrefix(mediatype, "multipart/") {
 		boundary := params["boundary"]
@@ -215,7 +205,7 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 
 		// Insert ourselves into tree, p is enmime's MIME part
 		p := NewMIMEPart(parent, mediatype)
-		p.SetHeader(mrp.Header)
+		p.Header = mrp.Header
 		if prevSibling != nil {
 			prevSibling.SetNextSibling(p)
 		} else {

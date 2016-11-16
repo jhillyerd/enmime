@@ -6,7 +6,6 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -23,7 +22,7 @@ func TestPlainTextPart(t *testing.T) {
 	}
 
 	want := "7bit"
-	got := p.Header().Get("Content-Transfer-Encoding")
+	got := p.Header.Get("Content-Transfer-Encoding")
 	if got != want {
 		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
 	}
@@ -57,7 +56,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 
 	want := "quoted-printable"
-	got := p.Header().Get("Content-Transfer-Encoding")
+	got := p.Header.Get("Content-Transfer-Encoding")
 	if got != want {
 		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
 	}
@@ -530,14 +529,10 @@ func TestBadBoundaryTerm(t *testing.T) {
 }
 
 func TestPartSetter(t *testing.T) {
-	m := MIMEPart{}
-	h := textproto.MIMEHeader{
-		"Content-Type": {"testType"},
-	}
-
-	m.SetHeader(h)
-	if !reflect.DeepEqual(m.Header(), h) {
-		t.Error("SetHeader() did not update Header()")
+	m := MIMEPart{
+		Header: textproto.MIMEHeader{
+			"Content-Type": {"testType"},
+		},
 	}
 
 	want := "application/octet-stream"

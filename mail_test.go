@@ -432,7 +432,7 @@ func TestParseNestedHeaders(t *testing.T) {
 		t.Error("FileName() got:", got, "want:", want)
 	}
 	want = "<8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet>"
-	got = mime.Inlines[0].Header().Get("Content-Id")
+	got = mime.Inlines[0].Header.Get("Content-Id")
 	if got != want {
 		t.Errorf("Content-Id header was: %q, want: %q", got, want)
 	}
