@@ -3,6 +3,7 @@ package enmime
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"net/textproto"
 	"os"
 	"path/filepath"
@@ -34,7 +35,11 @@ func TestPlainTextPart(t *testing.T) {
 	}
 
 	want = "Test of text/plain section"
-	got = string(p.Content())
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -68,7 +73,11 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 
 	want = "Start=ABC=Finish"
-	got = string(p.Content())
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
@@ -95,7 +104,11 @@ func TestMultiAlternParts(t *testing.T) {
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
-	if len(p.Content()) > 0 {
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
 		t.Error("Content() should have length of 0")
 	}
 	if p.FirstChild() == nil {
@@ -115,7 +128,11 @@ func TestMultiAlternParts(t *testing.T) {
 	}
 
 	want = "A text section"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -133,7 +150,11 @@ func TestMultiAlternParts(t *testing.T) {
 	}
 
 	want = "An HTML section"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -159,7 +180,11 @@ func TestMultiMixedParts(t *testing.T) {
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
-	if len(p.Content()) > 0 {
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
 		t.Error("Content() should have length of 0")
 	}
 	if p.FirstChild() == nil {
@@ -179,7 +204,11 @@ func TestMultiMixedParts(t *testing.T) {
 	}
 
 	want = "Section one"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -197,7 +226,11 @@ func TestMultiMixedParts(t *testing.T) {
 	}
 
 	want = "Section two"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -223,7 +256,11 @@ func TestMultiOtherParts(t *testing.T) {
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
-	if len(p.Content()) > 0 {
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
 		t.Error("Content() should have length of 0")
 	}
 	if p.FirstChild() == nil {
@@ -243,7 +280,11 @@ func TestMultiOtherParts(t *testing.T) {
 	}
 
 	want = "Section one"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -261,7 +302,11 @@ func TestMultiOtherParts(t *testing.T) {
 	}
 
 	want = "Section two"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -287,7 +332,11 @@ func TestNestedAlternParts(t *testing.T) {
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
-	if len(p.Content()) > 0 {
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
 		t.Error("Content() should have length of 0")
 	}
 	if p.FirstChild() == nil {
@@ -307,7 +356,11 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 
 	want = "A text section"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -323,7 +376,11 @@ func TestNestedAlternParts(t *testing.T) {
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
-	if len(p.Content()) > 0 {
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
 		t.Error("Content() should have length of 0")
 	}
 	if p.NextSibling() != nil {
@@ -343,7 +400,11 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 
 	want = "An HTML section"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -373,7 +434,11 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 
 	want = "An inline text attachment"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -403,7 +468,11 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 
 	want = "Another inline text attachment"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -429,7 +498,11 @@ func TestMultiBase64Parts(t *testing.T) {
 	if got != want {
 		t.Errorf("ContentType() got: %q, want: %q", got, want)
 	}
-	if len(p.Content()) > 0 {
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
 		t.Error("Content() should have length of 0")
 	}
 	if p.FirstChild() == nil {
@@ -449,7 +522,11 @@ func TestMultiBase64Parts(t *testing.T) {
 	}
 
 	want = "A text section"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -473,7 +550,11 @@ func TestMultiBase64Parts(t *testing.T) {
 	}
 
 	want = "<html>"
-	got = string(p.Content())
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}
@@ -519,7 +600,11 @@ func TestBadBoundaryTerm(t *testing.T) {
 	}
 
 	want = "An HTML section"
-	got = string(p.Content())
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
 	if !strings.Contains(got, want) {
 		t.Errorf("Content(): %q, should contain: %q", got, want)
 	}

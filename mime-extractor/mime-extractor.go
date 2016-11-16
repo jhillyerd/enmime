@@ -83,7 +83,7 @@ func dump(reader io.Reader, name string) error {
 		if err != nil {
 			fmt.Printf("Error creating file %q: %v\n", newFileName, err)
 		}
-		_, err = f.Write(a.Content())
+		_, err = io.Copy(f, a)
 		if err != nil {
 			fmt.Printf("Error writing file %q: %v\n", newFileName, err)
 		}

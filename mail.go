@@ -3,6 +3,8 @@ package enmime
 import (
 	"fmt"
 	"github.com/jaytaylor/html2text"
+	"io"
+	"io/ioutil"
 	"mime"
 	"net/mail"
 	"net/textproto"
@@ -271,15 +273,20 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		if match != nil {
+			var reader io.Reader
 			if match.Charset() != "" {
-				newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
+				reader, err = NewCharsetReader(match.Charset(), match)
 				if err != nil {
 					return err
 				}
-				mimeMsg.Text += newStr
 			} else {
-				mimeMsg.Text += string(match.Content())
+				reader = match
 			}
+			allBytes, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+			mimeMsg.Text += string(allBytes)
 		}
 	} else {
 		// multipart is of a mixed type
@@ -290,15 +297,21 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 			if i > 0 {
 				mimeMsg.Text += "\n--\n"
 			}
+			var reader io.Reader
 			if m.Charset() != "" {
-				newStr, err := ConvertToUTF8String(m.Charset(), m.Content())
+				reader, err = NewCharsetReader(m.Charset(), m)
 				if err != nil {
 					return err
 				}
-				mimeMsg.Text += newStr
 			} else {
-				mimeMsg.Text += string(m.Content())
+				reader = m
 			}
+			allBytes, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+			mimeMsg.Text += string(allBytes)
+
 		}
 	}
 
@@ -307,16 +320,20 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 		return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 	})
 	if match != nil {
+		var reader io.Reader
 		if match.Charset() != "" {
-			newStr, err := ConvertToUTF8String(match.Charset(), match.Content())
+			reader, err = NewCharsetReader(match.Charset(), match)
 			if err != nil {
 				return err
 			}
-			mimeMsg.HTML += newStr
 		} else {
-			mimeMsg.HTML = string(match.Content())
+			reader = match
 		}
-
+		allBytes, err := ioutil.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		mimeMsg.HTML += string(allBytes)
 	}
 
 	// Locate attachments

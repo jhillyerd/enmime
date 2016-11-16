@@ -16,8 +16,6 @@ import (
 // MIMEPart is the primary structure enmine clients will interact with.  Each MIMEPart represents a
 // node in the MIME multipart tree.  The Content-Type, Disposition and File Name are parsed out of
 // the header for easier access.
-//
-// TODO Content should probably be a reader so that it does not need to be stored in memory.
 type MIMEPart struct {
 	Header      textproto.MIMEHeader
 	parent      *MIMEPart
@@ -27,8 +25,11 @@ type MIMEPart struct {
 	disposition string
 	fileName    string
 	charset     string
-	content     []byte
 	errors      []MIMEError
+
+	// decodedReader currently just hands out content from a []byte, but will allow enmime to decode
+	// on demand in the future.
+	decodedReader io.Reader
 }
 
 // NewMIMEPart creates a new memMIMEPart object.  It does not update the parents FirstChild
@@ -112,14 +113,17 @@ func (p *MIMEPart) SetCharset(charset string) {
 	p.charset = charset
 }
 
-// Content returns the decoded content of this part (can be empty)
-func (p *MIMEPart) Content() []byte {
-	return p.content
-}
-
 // SetContent sets the content of this part (can be empty)
 func (p *MIMEPart) SetContent(content []byte) {
-	p.content = content
+	p.decodedReader = bytes.NewBuffer(content)
+}
+
+// Read implements io.Reader
+func (p *MIMEPart) Read(b []byte) (n int, err error) {
+	if p.decodedReader == nil {
+		return 0, io.EOF
+	}
+	return p.decodedReader.Read(b)
 }
 
 // ParseMIME reads a MIME document from the provided reader and parses it into
@@ -148,7 +152,7 @@ func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 		if err != nil {
 			return nil, err
 		}
-		root.content = content
+		root.SetContent(content)
 	}
 
 	return root, nil
