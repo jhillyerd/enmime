@@ -11,7 +11,7 @@ type MIMEPartMatcher func(part *MIMEPart) bool
 
 // BreadthMatchFirst performs a breadth first search of the MIMEPart tree and returns the
 // first part that causes the given matcher to return true
-func BreadthMatchFirst(p *MIMEPart, matcher MIMEPartMatcher) *MIMEPart {
+func (p *MIMEPart) BreadthMatchFirst(matcher MIMEPartMatcher) *MIMEPart {
 	q := list.New()
 	q.PushBack(p)
 
@@ -35,7 +35,7 @@ func BreadthMatchFirst(p *MIMEPart, matcher MIMEPartMatcher) *MIMEPart {
 
 // BreadthMatchAll performs a breadth first search of the MIMEPart tree and returns all parts
 // that cause the given matcher to return true
-func BreadthMatchAll(p *MIMEPart, matcher MIMEPartMatcher) []*MIMEPart {
+func (p *MIMEPart) BreadthMatchAll(matcher MIMEPartMatcher) []*MIMEPart {
 	q := list.New()
 	q.PushBack(p)
 
@@ -61,7 +61,7 @@ func BreadthMatchAll(p *MIMEPart, matcher MIMEPartMatcher) []*MIMEPart {
 
 // DepthMatchFirst performs a depth first search of the MIMEPart tree and returns the
 // first part that causes the given matcher to return true
-func DepthMatchFirst(p *MIMEPart, matcher MIMEPartMatcher) *MIMEPart {
+func (p *MIMEPart) DepthMatchFirst(matcher MIMEPartMatcher) *MIMEPart {
 	root := p
 	for {
 		if matcher(p) {
@@ -84,7 +84,7 @@ func DepthMatchFirst(p *MIMEPart, matcher MIMEPartMatcher) *MIMEPart {
 
 // DepthMatchAll performs a depth first search of the MIMEPart tree and returns all parts
 // that causes the given matcher to return true
-func DepthMatchAll(p *MIMEPart, matcher MIMEPartMatcher) []*MIMEPart {
+func (p *MIMEPart) DepthMatchAll(matcher MIMEPartMatcher) []*MIMEPart {
 	root := p
 	matches := make([]*MIMEPart, 0, 10)
 	for {

@@ -126,7 +126,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 	// Copy part errors into mimeMsg
 	if mimeMsg.Root != nil {
-		_ = DepthMatchAll(mimeMsg.Root, func(part *MIMEPart) bool {
+		_ = mimeMsg.Root.DepthMatchAll(func(part *MIMEPart) bool {
 			// Using DepthMatchAll to traverse all parts, don't care about result
 			for _, perr := range part.errors {
 				mimeMsg.Errors = append(mimeMsg.Errors, &perr)
@@ -269,7 +269,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 
 	// Locate text body
 	if mediatype == "multipart/altern" {
-		match := BreadthMatchFirst(root, func(p *MIMEPart) bool {
+		match := root.BreadthMatchFirst(func(p *MIMEPart) bool {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		if match != nil {
@@ -290,7 +290,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 		}
 	} else {
 		// multipart is of a mixed type
-		match := DepthMatchAll(root, func(p *MIMEPart) bool {
+		match := root.DepthMatchAll(func(p *MIMEPart) bool {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		for i, m := range match {
@@ -316,7 +316,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	}
 
 	// Locate HTML body
-	match := BreadthMatchFirst(root, func(p *MIMEPart) bool {
+	match := root.BreadthMatchFirst(func(p *MIMEPart) bool {
 		return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 	})
 	if match != nil {
@@ -337,17 +337,17 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	}
 
 	// Locate attachments
-	mimeMsg.Attachments = BreadthMatchAll(root, func(p *MIMEPart) bool {
+	mimeMsg.Attachments = root.BreadthMatchAll(func(p *MIMEPart) bool {
 		return p.Disposition() == "attachment" || p.ContentType() == "application/octet-stream"
 	})
 
 	// Locate inlines
-	mimeMsg.Inlines = BreadthMatchAll(root, func(p *MIMEPart) bool {
+	mimeMsg.Inlines = root.BreadthMatchAll(func(p *MIMEPart) bool {
 		return p.Disposition() == "inline"
 	})
 
 	// Locate others parts not considered in attachments or inlines
-	mimeMsg.OtherParts = BreadthMatchAll(root, func(p *MIMEPart) bool {
+	mimeMsg.OtherParts = root.BreadthMatchAll(func(p *MIMEPart) bool {
 		if strings.HasPrefix(p.ContentType(), "multipart/") {
 			return false
 		}
