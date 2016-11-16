@@ -13,14 +13,14 @@ import (
 	"strings"
 )
 
-// MIMEPart is the primary structure enmine clients will interact with.  Each MIMEPart represents a
+// Part is the primary structure enmine clients will interact with.  Each Part represents a
 // node in the MIME multipart tree.  The Content-Type, Disposition and File Name are parsed out of
 // the header for easier access.
-type MIMEPart struct {
+type Part struct {
 	Header      textproto.MIMEHeader
-	parent      *MIMEPart
-	firstChild  *MIMEPart
-	nextSibling *MIMEPart
+	parent      *Part
+	firstChild  *Part
+	nextSibling *Part
 	contentType string
 	disposition string
 	fileName    string
@@ -32,103 +32,101 @@ type MIMEPart struct {
 	decodedReader io.Reader
 }
 
-// NewMIMEPart creates a new memMIMEPart object.  It does not update the parents FirstChild
-// attribute.
-func NewMIMEPart(parent *MIMEPart, contentType string) *MIMEPart {
-	return &MIMEPart{parent: parent, contentType: contentType}
+// NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
+func NewPart(parent *Part, contentType string) *Part {
+	return &Part{parent: parent, contentType: contentType}
 }
 
 // Parent of this part (can be nil)
-func (p *MIMEPart) Parent() *MIMEPart {
+func (p *Part) Parent() *Part {
 	return p.parent
 }
 
 // SetParent sets the parent of this part
-func (p *MIMEPart) SetParent(parent *MIMEPart) {
+func (p *Part) SetParent(parent *Part) {
 	p.parent = parent
 }
 
 // FirstChild is the top most child of this part
-func (p *MIMEPart) FirstChild() *MIMEPart {
+func (p *Part) FirstChild() *Part {
 	return p.firstChild
 }
 
 // SetFirstChild sets the first (top most) child of this part
-func (p *MIMEPart) SetFirstChild(child *MIMEPart) {
+func (p *Part) SetFirstChild(child *Part) {
 	p.firstChild = child
 }
 
 // NextSibling of this part
-func (p *MIMEPart) NextSibling() *MIMEPart {
+func (p *Part) NextSibling() *Part {
 	return p.nextSibling
 }
 
 // SetNextSibling sets the next sibling (shares parent) of this part
-func (p *MIMEPart) SetNextSibling(sibling *MIMEPart) {
+func (p *Part) SetNextSibling(sibling *Part) {
 	p.nextSibling = sibling
 }
 
 // ContentType header without parameters
-func (p *MIMEPart) ContentType() string {
+func (p *Part) ContentType() string {
 	return p.contentType
 }
 
 // SetContentType sets the Content-Type.
 //
 // Example: "image/jpg" or "application/octet-stream"
-func (p *MIMEPart) SetContentType(contentType string) {
+func (p *Part) SetContentType(contentType string) {
 	p.contentType = contentType
 }
 
 // Dispostion returns the Content-Disposition header without parameters
-func (p *MIMEPart) Disposition() string {
+func (p *Part) Disposition() string {
 	return p.disposition
 }
 
 // SetDisposition sets the Content-Disposition.
 //
 // Example: "attachment" or "inline"
-func (p *MIMEPart) SetDisposition(disposition string) {
+func (p *Part) SetDisposition(disposition string) {
 	p.disposition = disposition
 }
 
 // FileName returns the file name from disposition or type header
-func (p *MIMEPart) FileName() string {
+func (p *Part) FileName() string {
 	return p.fileName
 }
 
 // SetFileName sets the parts file name.
-func (p *MIMEPart) SetFileName(fileName string) {
+func (p *Part) SetFileName(fileName string) {
 	p.fileName = fileName
 }
 
 // Charset returns the content charset encoding label
-func (p *MIMEPart) Charset() string {
+func (p *Part) Charset() string {
 	return p.charset
 }
 
 // SetCharset sets the charset encoding label of this content, see charsets.go
 // for examples, but you probably want "utf-8"
-func (p *MIMEPart) SetCharset(charset string) {
+func (p *Part) SetCharset(charset string) {
 	p.charset = charset
 }
 
 // SetContent sets the content of this part (can be empty)
-func (p *MIMEPart) SetContent(content []byte) {
+func (p *Part) SetContent(content []byte) {
 	p.decodedReader = bytes.NewBuffer(content)
 }
 
 // Read implements io.Reader
-func (p *MIMEPart) Read(b []byte) (n int, err error) {
+func (p *Part) Read(b []byte) (n int, err error) {
 	if p.decodedReader == nil {
 		return 0, io.EOF
 	}
 	return p.decodedReader.Read(b)
 }
 
-// ParseMIME reads a MIME document from the provided reader and parses it into
-// tree of MIMEPart objects.
-func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
+// ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
+func ReadParts(reader *bufio.Reader) (*Part, error) {
 	tr := textproto.NewReader(reader)
 	header, err := tr.ReadMIMEHeader()
 	if err != nil {
@@ -138,7 +136,7 @@ func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 	if err != nil {
 		return nil, err
 	}
-	root := &MIMEPart{Header: header, contentType: mediatype}
+	root := &Part{Header: header, contentType: mediatype}
 
 	if strings.HasPrefix(mediatype, "multipart/") {
 		boundary := params["boundary"]
@@ -159,8 +157,8 @@ func ParseMIME(reader *bufio.Reader) (*MIMEPart, error) {
 }
 
 // parseParts recursively parses a mime multipart document.
-func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
-	var prevSibling *MIMEPart
+func parseParts(parent *Part, reader io.Reader, boundary string) error {
+	var prevSibling *Part
 
 	// Loop over MIME parts
 	mr := multipart.NewReader(reader, boundary)
@@ -180,7 +178,7 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 			if _, err := mr.NextPart(); err != nil {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
 					// There are no more MIME parts, but the error belongs to our sibling or parent,
-					// because this MIMEPart doesn't actually exist.
+					// because this Part doesn't actually exist.
 					merror := newWarning(
 						errorBoundaryMissing,
 						"Boundary %q was not closed correctly",
@@ -208,7 +206,7 @@ func parseParts(parent *MIMEPart, reader io.Reader, boundary string) error {
 		}
 
 		// Insert ourselves into tree, p is enmime's MIME part
-		p := NewMIMEPart(parent, mediatype)
+		p := NewPart(parent, mediatype)
 		p.Header = mrp.Header
 		if prevSibling != nil {
 			prevSibling.SetNextSibling(p)

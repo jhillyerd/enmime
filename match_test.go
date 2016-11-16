@@ -13,19 +13,19 @@ func TestBreadthMatchFirst(t *testing.T) {
 	//    ├── a2
 	//    └── a3
 
-	root := &MIMEPart{contentType: "multipart/alternative", fileName: "root"}
-	a1 := &MIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
-	a2 := &MIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
-	a3 := &MIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
-	b1 := &MIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
-	b2 := &MIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
+	root := &Part{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &Part{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &Part{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &Part{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &Part{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &Part{contentType: "text/html", parent: a1, fileName: "b2"}
 	root.firstChild = a1
 	a1.nextSibling = a2
 	a2.nextSibling = a3
 	a1.firstChild = b1
 	b1.nextSibling = b2
 
-	p := root.BreadthMatchFirst(func(pt *MIMEPart) bool {
+	p := root.BreadthMatchFirst(func(pt *Part) bool {
 		return pt.ContentType() == "text/plain"
 	})
 	if p == nil {
@@ -35,7 +35,7 @@ func TestBreadthMatchFirst(t *testing.T) {
 		t.Error("BreadthMatchFirst should have returned a2, got:", p.FileName())
 	}
 
-	p = root.BreadthMatchFirst(func(pt *MIMEPart) bool {
+	p = root.BreadthMatchFirst(func(pt *Part) bool {
 		return pt.ContentType() == "text/html"
 	})
 	if p == nil {
@@ -55,19 +55,19 @@ func TestBreadthMatchAll(t *testing.T) {
 	//    ├── a2
 	//    └── a3
 
-	root := &MIMEPart{contentType: "multipart/alternative", fileName: "root"}
-	a1 := &MIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
-	a2 := &MIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
-	a3 := &MIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
-	b1 := &MIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
-	b2 := &MIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
+	root := &Part{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &Part{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &Part{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &Part{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &Part{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &Part{contentType: "text/html", parent: a1, fileName: "b2"}
 	root.firstChild = a1
 	a1.nextSibling = a2
 	a2.nextSibling = a3
 	a1.firstChild = b1
 	b1.nextSibling = b2
 
-	ps := root.BreadthMatchAll(func(pt *MIMEPart) bool {
+	ps := root.BreadthMatchAll(func(pt *Part) bool {
 		return pt.ContentType() == "text/plain"
 	})
 	if len(ps) != 2 {
@@ -80,7 +80,7 @@ func TestBreadthMatchAll(t *testing.T) {
 		t.Error("BreadthMatchAll should have returned b1, got:", ps[1].FileName())
 	}
 
-	ps = root.BreadthMatchAll(func(pt *MIMEPart) bool {
+	ps = root.BreadthMatchAll(func(pt *Part) bool {
 		return pt.ContentType() == "text/html"
 	})
 	if len(ps) != 2 {
@@ -103,19 +103,19 @@ func TestDepthMatchFirst(t *testing.T) {
 	//    ├── a2
 	//    └── a3
 
-	root := &MIMEPart{contentType: "multipart/alternative", fileName: "root"}
-	a1 := &MIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
-	a2 := &MIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
-	a3 := &MIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
-	b1 := &MIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
-	b2 := &MIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
+	root := &Part{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &Part{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &Part{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &Part{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &Part{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &Part{contentType: "text/html", parent: a1, fileName: "b2"}
 	root.firstChild = a1
 	a1.nextSibling = a2
 	a2.nextSibling = a3
 	a1.firstChild = b1
 	b1.nextSibling = b2
 
-	p := root.DepthMatchFirst(func(pt *MIMEPart) bool {
+	p := root.DepthMatchFirst(func(pt *Part) bool {
 		return pt.ContentType() == "text/plain"
 	})
 	if p == nil {
@@ -125,7 +125,7 @@ func TestDepthMatchFirst(t *testing.T) {
 		t.Error("DepthMatchFirst should have returned b1, got:", p.FileName())
 	}
 
-	p = root.DepthMatchFirst(func(pt *MIMEPart) bool {
+	p = root.DepthMatchFirst(func(pt *Part) bool {
 		return pt.ContentType() == "text/html"
 	})
 	if p != b2 {
@@ -142,19 +142,19 @@ func TestDepthMatchAll(t *testing.T) {
 	//    ├── a2
 	//    └── a3
 
-	root := &MIMEPart{contentType: "multipart/alternative", fileName: "root"}
-	a1 := &MIMEPart{contentType: "multipart/related", parent: root, fileName: "a1"}
-	a2 := &MIMEPart{contentType: "text/plain", parent: root, fileName: "a2"}
-	a3 := &MIMEPart{contentType: "text/html", parent: root, fileName: "a3"}
-	b1 := &MIMEPart{contentType: "text/plain", parent: a1, fileName: "b1"}
-	b2 := &MIMEPart{contentType: "text/html", parent: a1, fileName: "b2"}
+	root := &Part{contentType: "multipart/alternative", fileName: "root"}
+	a1 := &Part{contentType: "multipart/related", parent: root, fileName: "a1"}
+	a2 := &Part{contentType: "text/plain", parent: root, fileName: "a2"}
+	a3 := &Part{contentType: "text/html", parent: root, fileName: "a3"}
+	b1 := &Part{contentType: "text/plain", parent: a1, fileName: "b1"}
+	b2 := &Part{contentType: "text/html", parent: a1, fileName: "b2"}
 	root.firstChild = a1
 	a1.nextSibling = a2
 	a2.nextSibling = a3
 	a1.firstChild = b1
 	b1.nextSibling = b2
 
-	ps := root.DepthMatchAll(func(pt *MIMEPart) bool {
+	ps := root.DepthMatchAll(func(pt *Part) bool {
 		return pt.ContentType() == "text/plain"
 	})
 	if len(ps) != 2 {
@@ -167,7 +167,7 @@ func TestDepthMatchAll(t *testing.T) {
 		t.Error("DepthMatchAll should have returned a2, got:", ps[1].FileName())
 	}
 
-	ps = root.DepthMatchAll(func(pt *MIMEPart) bool {
+	ps = root.DepthMatchAll(func(pt *Part) bool {
 		return pt.ContentType() == "text/html"
 	})
 	if len(ps) != 2 {

@@ -16,10 +16,10 @@ type MIMEBody struct {
 	Text           string       // The plain text portion of the message
 	HTML           string       // The HTML portion of the message
 	IsTextFromHTML bool         // Plain text was empty; down-converted HTML
-	Root           *MIMEPart    // The top-level MIMEPart
-	Attachments    []*MIMEPart  // All parts having a Content-Disposition of attachment
-	Inlines        []*MIMEPart  // All parts having a Content-Disposition of inline
-	OtherParts     []*MIMEPart  // All parts not in Attachments and Inlines
+	Root           *Part        // The top-level Part
+	Attachments    []*Part      // All parts having a Content-Disposition of attachment
+	Inlines        []*Part      // All parts having a Content-Disposition of inline
+	OtherParts     []*Part      // All parts not in Attachments and Inlines
 	Errors         []*MIMEError // Errors encountered while parsing
 	header         mail.Header  // Header from original message
 }
@@ -97,9 +97,9 @@ func IsBinaryBody(mailMsg *mail.Message) bool {
 	return !IsPlain(mailMsg.Header, true)
 }
 
-// ParseMIMEBody parses the body of the message object into a  tree of MIMEPart objects, each of
+// ParseMIMEBody parses the body of the message object into a  tree of Part objects, each of
 // which is aware of its content type, filename and headers.  If the part was encoded in
-// quoted-printable or base64, it is decoded before being stored in the MIMEPart object.
+// quoted-printable or base64, it is decoded before being stored in the Part object.
 func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 	mimeMsg := &MIMEBody{
 		IsTextFromHTML: false,
@@ -126,7 +126,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 	// Copy part errors into mimeMsg
 	if mimeMsg.Root != nil {
-		_ = mimeMsg.Root.DepthMatchAll(func(part *MIMEPart) bool {
+		_ = mimeMsg.Root.DepthMatchAll(func(part *Part) bool {
 			// Using DepthMatchAll to traverse all parts, don't care about result
 			for _, perr := range part.errors {
 				mimeMsg.Errors = append(mimeMsg.Errors, &perr)
@@ -204,7 +204,7 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	}
 
 	// Build the MIME part representing most of this message
-	p := NewMIMEPart(nil, mediatype)
+	p := NewPart(nil, mediatype)
 	content, err := decodeSection(mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	p.Header.Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
 
 	// Add our part to the appropriate section of MIMEBody
-	mimeMsg.Root = NewMIMEPart(nil, mediatype)
+	mimeMsg.Root = NewPart(nil, mediatype)
 
 	if disposition == "inline" {
 		mimeMsg.Inlines = append(mimeMsg.Inlines, p)
@@ -260,7 +260,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 		return fmt.Errorf("Unable to locate boundary param in Content-Type header")
 	}
 	// Root Node of our tree
-	root := NewMIMEPart(nil, mediatype)
+	root := NewPart(nil, mediatype)
 	mimeMsg.Root = root
 	err = parseParts(root, mailMsg.Body, boundary)
 	if err != nil {
@@ -269,7 +269,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 
 	// Locate text body
 	if mediatype == "multipart/altern" {
-		match := root.BreadthMatchFirst(func(p *MIMEPart) bool {
+		match := root.BreadthMatchFirst(func(p *Part) bool {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		if match != nil {
@@ -290,7 +290,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 		}
 	} else {
 		// multipart is of a mixed type
-		match := root.DepthMatchAll(func(p *MIMEPart) bool {
+		match := root.DepthMatchAll(func(p *Part) bool {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
 		for i, m := range match {
@@ -316,7 +316,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	}
 
 	// Locate HTML body
-	match := root.BreadthMatchFirst(func(p *MIMEPart) bool {
+	match := root.BreadthMatchFirst(func(p *Part) bool {
 		return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 	})
 	if match != nil {
@@ -337,17 +337,17 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	}
 
 	// Locate attachments
-	mimeMsg.Attachments = root.BreadthMatchAll(func(p *MIMEPart) bool {
+	mimeMsg.Attachments = root.BreadthMatchAll(func(p *Part) bool {
 		return p.Disposition() == "attachment" || p.ContentType() == "application/octet-stream"
 	})
 
 	// Locate inlines
-	mimeMsg.Inlines = root.BreadthMatchAll(func(p *MIMEPart) bool {
+	mimeMsg.Inlines = root.BreadthMatchAll(func(p *Part) bool {
 		return p.Disposition() == "inline"
 	})
 
 	// Locate others parts not considered in attachments or inlines
-	mimeMsg.OtherParts = root.BreadthMatchAll(func(p *MIMEPart) bool {
+	mimeMsg.OtherParts = root.BreadthMatchAll(func(p *Part) bool {
 		if strings.HasPrefix(p.ContentType(), "multipart/") {
 			return false
 		}

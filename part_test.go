@@ -13,7 +13,7 @@ import (
 
 func TestPlainTextPart(t *testing.T) {
 	r := openPart("textplain.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	if err != nil {
 		t.Fatal("Parsing should not have generated an error")
@@ -51,7 +51,7 @@ func TestPlainTextPart(t *testing.T) {
 
 func TestQuotedPrintablePart(t *testing.T) {
 	r := openPart("quoted-printable.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	if err != nil {
 		t.Fatal("Parsing should not have generated an error")
@@ -89,7 +89,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 
 func TestMultiAlternParts(t *testing.T) {
 	r := openPart("multialtern.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -165,7 +165,7 @@ func TestMultiAlternParts(t *testing.T) {
 
 func TestMultiMixedParts(t *testing.T) {
 	r := openPart("multimixed.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -241,7 +241,7 @@ func TestMultiMixedParts(t *testing.T) {
 
 func TestMultiOtherParts(t *testing.T) {
 	r := openPart("multiother.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -317,7 +317,7 @@ func TestMultiOtherParts(t *testing.T) {
 
 func TestNestedAlternParts(t *testing.T) {
 	r := openPart("nestedmulti.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -483,7 +483,7 @@ func TestNestedAlternParts(t *testing.T) {
 
 func TestMultiBase64Parts(t *testing.T) {
 	r := openPart("multibase64.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -562,7 +562,7 @@ func TestMultiBase64Parts(t *testing.T) {
 
 func TestBadBoundaryTerm(t *testing.T) {
 	r := openPart("badboundary.raw")
-	p, err := ParseMIME(r)
+	p, err := ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -614,7 +614,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 }
 
 func TestPartSetter(t *testing.T) {
-	m := MIMEPart{
+	m := Part{
 		Header: textproto.MIMEHeader{
 			"Content-Type": {"testType"},
 		},

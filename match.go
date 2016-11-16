@@ -4,21 +4,21 @@ import (
 	"container/list"
 )
 
-// MIMEPartMatcher is a function type that you must implement to search for MIMEParts using
-// the BreadthMatch* functions.  Implementators should inspect the provided MIMEPart and
-// return true if it matches your criteria.
-type MIMEPartMatcher func(part *MIMEPart) bool
+// PartMatcher is a function type that you must implement to search for Parts using the
+// BreadthMatch* functions.  Implementators should inspect the provided Part and return true if it
+// matches your criteria.
+type PartMatcher func(part *Part) bool
 
-// BreadthMatchFirst performs a breadth first search of the MIMEPart tree and returns the
-// first part that causes the given matcher to return true
-func (p *MIMEPart) BreadthMatchFirst(matcher MIMEPartMatcher) *MIMEPart {
+// BreadthMatchFirst performs a breadth first search of the Part tree and returns the first part
+// that causes the given matcher to return true
+func (p *Part) BreadthMatchFirst(matcher PartMatcher) *Part {
 	q := list.New()
 	q.PushBack(p)
 
 	// Push children onto queue and attempt to match in that order
 	for q.Len() > 0 {
 		e := q.Front()
-		p := e.Value.(*MIMEPart)
+		p := e.Value.(*Part)
 		if matcher(p) {
 			return p
 		}
@@ -33,18 +33,18 @@ func (p *MIMEPart) BreadthMatchFirst(matcher MIMEPartMatcher) *MIMEPart {
 	return nil
 }
 
-// BreadthMatchAll performs a breadth first search of the MIMEPart tree and returns all parts
-// that cause the given matcher to return true
-func (p *MIMEPart) BreadthMatchAll(matcher MIMEPartMatcher) []*MIMEPart {
+// BreadthMatchAll performs a breadth first search of the Part tree and returns all parts that cause
+// the given matcher to return true
+func (p *Part) BreadthMatchAll(matcher PartMatcher) []*Part {
 	q := list.New()
 	q.PushBack(p)
 
-	matches := make([]*MIMEPart, 0, 10)
+	matches := make([]*Part, 0, 10)
 
 	// Push children onto queue and attempt to match in that order
 	for q.Len() > 0 {
 		e := q.Front()
-		p := e.Value.(*MIMEPart)
+		p := e.Value.(*Part)
 		if matcher(p) {
 			matches = append(matches, p)
 		}
@@ -59,9 +59,9 @@ func (p *MIMEPart) BreadthMatchAll(matcher MIMEPartMatcher) []*MIMEPart {
 	return matches
 }
 
-// DepthMatchFirst performs a depth first search of the MIMEPart tree and returns the
-// first part that causes the given matcher to return true
-func (p *MIMEPart) DepthMatchFirst(matcher MIMEPartMatcher) *MIMEPart {
+// DepthMatchFirst performs a depth first search of the Part tree and returns the first part that
+// causes the given matcher to return true
+func (p *Part) DepthMatchFirst(matcher PartMatcher) *Part {
 	root := p
 	for {
 		if matcher(p) {
@@ -82,11 +82,11 @@ func (p *MIMEPart) DepthMatchFirst(matcher MIMEPartMatcher) *MIMEPart {
 	}
 }
 
-// DepthMatchAll performs a depth first search of the MIMEPart tree and returns all parts
-// that causes the given matcher to return true
-func (p *MIMEPart) DepthMatchAll(matcher MIMEPartMatcher) []*MIMEPart {
+// DepthMatchAll performs a depth first search of the Part tree and returns all parts that causes
+// the given matcher to return true
+func (p *Part) DepthMatchAll(matcher PartMatcher) []*Part {
 	root := p
-	matches := make([]*MIMEPart, 0, 10)
+	matches := make([]*Part, 0, 10)
 	for {
 		if matcher(p) {
 			matches = append(matches, p)

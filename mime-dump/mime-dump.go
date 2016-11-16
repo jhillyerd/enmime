@@ -103,8 +103,8 @@ func h2(content string) {
 	fmt.Printf("##%v\n", content)
 }
 
-// printPart pretty prints the MIMEPart tree
-func printPart(p *enmime.MIMEPart, indent string) {
+// printPart pretty prints the Part tree
+func printPart(p *enmime.Part, indent string) {
 	sibling := p.NextSibling()
 	child := p.FirstChild()
 
