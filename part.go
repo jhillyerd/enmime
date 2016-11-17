@@ -79,7 +79,7 @@ func (p *Part) SetContentType(contentType string) {
 	p.contentType = contentType
 }
 
-// Dispostion returns the Content-Disposition header without parameters
+// Disposition returns the Content-Disposition header without parameters
 func (p *Part) Disposition() string {
 	return p.disposition
 }
@@ -175,7 +175,7 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 		if len(mrp.Header) == 0 {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.  We will let this slide if this this the last MIME part.
-			if _, err := mr.NextPart(); err != nil {
+			if _, err = mr.NextPart(); err != nil {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
 					// There are no more MIME parts, but the error belongs to our sibling or parent,
 					// because this Part doesn't actually exist.

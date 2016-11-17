@@ -246,9 +246,9 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 			} else {
 				reader = match
 			}
-			allBytes, err := ioutil.ReadAll(reader)
-			if err != nil {
-				return err
+			allBytes, ioerr := ioutil.ReadAll(reader)
+			if ioerr != nil {
+				return ioerr
 			}
 			mimeMsg.Text += string(allBytes)
 		}
@@ -270,9 +270,9 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 			} else {
 				reader = m
 			}
-			allBytes, err := ioutil.ReadAll(reader)
-			if err != nil {
-				return err
+			allBytes, ioerr := ioutil.ReadAll(reader)
+			if ioerr != nil {
+				return ioerr
 			}
 			mimeMsg.Text += string(allBytes)
 
