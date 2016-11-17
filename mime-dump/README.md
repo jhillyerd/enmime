@@ -1,7 +1,7 @@
 mime-dump
 =========
 
-mime-dump is a utility that aids in the debugging of go.enmime.  To use it type
+mime-dump is a utility that aids in the debugging of enmime.  To use it type
 `go build` in this directory, then pass it an email to parse:
 
     ./mime-dump ../test-data/mail/html-mime-inline.raw
@@ -26,7 +26,7 @@ Test of text section
 
 Body HTML
 ---------
-<html><head></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; "><font class="Apple-style-span" face="'Comic Sans MS'">Test of HTML section</font><img height="16" width="16" apple-width="yes" apple-height="yes" id="4579722f-d53d-45d0-88bc-f8209a2ca569" src="cid:8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet"></body></html>
+Test of HTML section
 
 Attachment List
 ---------------

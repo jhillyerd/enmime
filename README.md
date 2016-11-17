@@ -1,4 +1,4 @@
-enmime [![Build Status](https://travis-ci.org/jhillyerd/go.enmime.png?branch=master)][Build Status] [![GoDoc](https://godoc.org/github.com/jhillyerd/go.enmime?status.png)][GoDoc]
+enmime [![Build Status](https://travis-ci.org/jhillyerd/enmime.png?branch=master)][Build Status] [![GoDoc](https://godoc.org/github.com/jhillyerd/enmime?status.png)][GoDoc]
 ==========================================================================================
 
 
@@ -7,8 +7,7 @@ support, but is geared towards parsing MIME encoded emails.
 
 It is being developed in tandem with the [Inbucket] email service.
 
-API documentation can be found here:
-http://godoc.org/github.com/jhillyerd/go.enmime
+API documentation can be found here: http://godoc.org/github.com/jhillyerd/enmime
 
 Development Status
 ------------------
@@ -19,10 +18,10 @@ About
 -----
 enmime is written in [Google Go][Golang].
 
-enmime is open source software released under the MIT License.  The latest
-version can be found at https://github.com/jhillyerd/go.enmime
+enmime is open source software released under the MIT License.  The latest version can be found at
+https://github.com/jhillyerd/enmime
 
-[Build Status]: https://travis-ci.org/jhillyerd/go.enmime
+[Build Status]: https://travis-ci.org/jhillyerd/enmime
 [Inbucket]:     http://www.inbucket.org/
-[GoDoc]:        https://godoc.org/github.com/jhillyerd/go.enmime
+[GoDoc]:        https://godoc.org/github.com/jhillyerd/enmime
 [Golang]:       http://golang.org/

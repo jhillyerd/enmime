@@ -31,7 +31,7 @@
 // multi-gigabyte attachments.
 //
 // enmime is open source software released under the MIT License.  The latest version can be found
-// at https://github.com/jhillyerd/go.enmime
+// at https://github.com/jhillyerd/enmime
 //
 // [1]: https://github.com/jaytaylor/html2text
 package enmime
