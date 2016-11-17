@@ -11,8 +11,12 @@ import (
 	"strings"
 )
 
-// MIMEBody is the outer wrapper for MIME messages.
-type MIMEBody struct {
+// AddressHeaders enumerates SMTP headers that contain email addresses, used by
+// Envelope.AddressList()
+var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
+
+// Envelope is a simplified wrapper for MIME email messages.
+type Envelope struct {
 	Text           string       // The plain text portion of the message
 	HTML           string       // The HTML portion of the message
 	IsTextFromHTML bool         // Plain text was empty; down-converted HTML
@@ -24,95 +28,55 @@ type MIMEBody struct {
 	header         mail.Header  // Header from original message
 }
 
-// AddressHeaders enumerates SMTP headers that contain email addresses
-var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
+// GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
+// UTF-8 string
+func (m *Envelope) GetHeader(name string) string {
+	return DecodeHeader(m.header.Get(name))
+}
 
-// IsMultipartMessage returns true if the message has a recognized multipart Content-Type header.
-// You don't need to check this before calling ParseMIMEBody, it can handle non-multipart messages.
-func IsMultipartMessage(mailMsg *mail.Message) bool {
-	// Parse top-level multipart
-	ctype := mailMsg.Header.Get("Content-Type")
-	mediatype, _, err := mime.ParseMediaType(ctype)
+// AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
+func (m *Envelope) AddressList(key string) ([]*mail.Address, error) {
+	isAddrHeader := false
+	for _, hkey := range AddressHeaders {
+		if strings.ToLower(hkey) == strings.ToLower(key) {
+			isAddrHeader = true
+			break
+		}
+	}
+	if !isAddrHeader {
+		return nil, fmt.Errorf("%s is not address header", key)
+	}
+
+	str := DecodeToUTF8Base64Header(m.header.Get(key))
+	if str == "" {
+		return nil, mail.ErrHeaderNotPresent
+	}
+	// These statements are handy for debugging ParseAddressList errors
+	// fmt.Println("in:  ", m.header.Get(key))
+	// fmt.Println("out: ", str)
+	ret, err := mail.ParseAddressList(str)
 	if err != nil {
-		return false
+		return nil, err
 	}
-	// According to rfc2046#section-5.1.7 all other multipart should
-	// be treated as multipart/mixed
-	return strings.HasPrefix(mediatype, "multipart/")
+	return ret, nil
 }
 
-// IsAttachment returns true, if the given header defines an attachment.  First it checks if the
-// Content-Disposition header defines an attachement or inline attachment. If this test is false,
-// the Content-Type header is checked for attachment, but not inline.  Email clients use inline for
-// their text bodies.
-//
-// Valid Attachment-Headers:
-//
-//  - Content-Disposition: attachment; filename="frog.jpg"
-//  - Content-Disposition: inline; filename="frog.jpg"
-//  - Content-Type: attachment; filename="frog.jpg"
-func IsAttachment(header mail.Header) bool {
-	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
-	if strings.ToLower(mediatype) == "attachment" ||
-		strings.ToLower(mediatype) == "inline" {
-		return true
-	}
-
-	mediatype, _, _ = mime.ParseMediaType(header.Get("Content-Type"))
-	if strings.ToLower(mediatype) == "attachment" {
-		return true
-	}
-
-	return false
-}
-
-// IsPlain returns true, if the the MIME headers define a valid 'text/plain' or 'text/html' part. If
-// the emptyContentTypeIsPlain argument is set to true, a missing Content-Type header will result in
-// a positive plain part detection.
-func IsPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
-	ctype := header.Get("Content-Type")
-	if ctype == "" && emptyContentTypeIsPlain {
-		return true
-	}
-
-	mediatype, _, err := mime.ParseMediaType(ctype)
-	if err != nil {
-		return false
-	}
-	switch mediatype {
-	case "text/plain",
-		"text/html":
-		return true
-	}
-
-	return false
-}
-
-// IsBinaryBody returns true if the mail header defines a binary body.
-func IsBinaryBody(mailMsg *mail.Message) bool {
-	if IsAttachment(mailMsg.Header) == true {
-		return true
-	}
-
-	return !IsPlain(mailMsg.Header, true)
-}
-
-// ParseMIMEBody parses the body of the message object into a  tree of Part objects, each of
-// which is aware of its content type, filename and headers.  If the part was encoded in
-// quoted-printable or base64, it is decoded before being stored in the Part object.
-func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
-	mimeMsg := &MIMEBody{
+// EnvelopeFromMessage parses the body of the mailMsg into an Envelope, downconverting HTML to plain
+// text if needed, and sorting the attachments, inlines and other parts into their respective
+// slices.
+func EnvelopeFromMessage(mailMsg *mail.Message) (*Envelope, error) {
+	mimeMsg := &Envelope{
 		IsTextFromHTML: false,
 		header:         mailMsg.Header,
 	}
 
-	if IsMultipartMessage(mailMsg) {
+	if isMultipartMessage(mailMsg) {
 		// Multi-part message (message with attachments, etc)
 		if err := parseMultiPartBody(mailMsg, mimeMsg); err != nil {
 			return nil, err
 		}
 	} else {
-		if IsBinaryBody(mailMsg) {
+		if isBinaryBody(mailMsg) {
 			// Attachment only, no text
 			if err := parseBinaryOnlyBody(mailMsg, mimeMsg); err != nil {
 				return nil, err
@@ -151,7 +115,7 @@ func ParseMIMEBody(mailMsg *mail.Message) (*MIMEBody, error) {
 
 // parseTextOnlyBody parses a plain text message in mailMsg that has MIME-like headers, but
 // only contains a single part - no boundaries, etc.  The result is placed in mimeMsg.
-func parseTextOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
+func parseTextOnlyBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 	bodyBytes, err := decodeSection(
 		mailMsg.Header.Get("Content-Transfer-Encoding"), mailMsg.Body)
 	if err != nil {
@@ -195,7 +159,7 @@ func parseTextOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 
 // parseBinaryOnlyBody parses a message where the only content is a binary attachment with no
 // other parts. The result is placed in mimeMsg.
-func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
+func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 	// Determine mediatype
 	ctype := mailMsg.Header.Get("Content-Type")
 	mediatype, mparams, err := mime.ParseMediaType(ctype)
@@ -245,7 +209,7 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 }
 
 // parseMultiPartBody parses a multipart message in mailMsg.  The result is placed in mimeMsg.
-func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
+func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 	// Parse top-level multipart
 	ctype := mailMsg.Header.Get("Content-Type")
 	mediatype, params, err := mime.ParseMediaType(ctype)
@@ -363,34 +327,72 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *MIMEBody) error {
 	return nil
 }
 
-// GetHeader processes the specified header for RFC 2047 encoded words and return the result
-func (m *MIMEBody) GetHeader(name string) string {
-	return DecodeHeader(m.header.Get(name))
+// isMultipartMessage returns true if the message has a recognized multipart Content-Type header.
+// You don't need to check this before calling ParseMIMEBody, it can handle non-multipart messages.
+func isMultipartMessage(mailMsg *mail.Message) bool {
+	// Parse top-level multipart
+	ctype := mailMsg.Header.Get("Content-Type")
+	mediatype, _, err := mime.ParseMediaType(ctype)
+	if err != nil {
+		return false
+	}
+	// According to rfc2046#section-5.1.7 all other multipart should
+	// be treated as multipart/mixed
+	return strings.HasPrefix(mediatype, "multipart/")
 }
 
-// AddressList returns a mail.Address slice with RFC 2047 encoded encoded names.
-func (m *MIMEBody) AddressList(key string) ([]*mail.Address, error) {
-	isAddrHeader := false
-	for _, hkey := range AddressHeaders {
-		if strings.ToLower(hkey) == strings.ToLower(key) {
-			isAddrHeader = true
-			break
-		}
-	}
-	if !isAddrHeader {
-		return nil, fmt.Errorf("%s is not address header", key)
+// isAttachment returns true, if the given header defines an attachment.  First it checks if the
+// Content-Disposition header defines an attachement or inline attachment. If this test is false,
+// the Content-Type header is checked for attachment, but not inline.  Email clients use inline for
+// their text bodies.
+//
+// Valid Attachment-Headers:
+//
+//  - Content-Disposition: attachment; filename="frog.jpg"
+//  - Content-Disposition: inline; filename="frog.jpg"
+//  - Content-Type: attachment; filename="frog.jpg"
+func isAttachment(header mail.Header) bool {
+	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
+	if strings.ToLower(mediatype) == "attachment" ||
+		strings.ToLower(mediatype) == "inline" {
+		return true
 	}
 
-	str := DecodeToUTF8Base64Header(m.header.Get(key))
-	if str == "" {
-		return nil, mail.ErrHeaderNotPresent
+	mediatype, _, _ = mime.ParseMediaType(header.Get("Content-Type"))
+	if strings.ToLower(mediatype) == "attachment" {
+		return true
 	}
-	// These statements are handy for debugging ParseAddressList errors
-	// fmt.Println("in:  ", m.header.Get(key))
-	// fmt.Println("out: ", str)
-	ret, err := mail.ParseAddressList(str)
+
+	return false
+}
+
+// isPlain returns true, if the the MIME headers define a valid 'text/plain' or 'text/html' part. If
+// the emptyContentTypeIsPlain argument is set to true, a missing Content-Type header will result in
+// a positive plain part detection.
+func isPlain(header mail.Header, emptyContentTypeIsPlain bool) bool {
+	ctype := header.Get("Content-Type")
+	if ctype == "" && emptyContentTypeIsPlain {
+		return true
+	}
+
+	mediatype, _, err := mime.ParseMediaType(ctype)
 	if err != nil {
-		return nil, err
+		return false
 	}
-	return ret, nil
+	switch mediatype {
+	case "text/plain",
+		"text/html":
+		return true
+	}
+
+	return false
+}
+
+// isBinaryBody returns true if the mail header defines a binary body.
+func isBinaryBody(mailMsg *mail.Message) bool {
+	if isAttachment(mailMsg.Header) == true {
+		return true
+	}
+
+	return !isPlain(mailMsg.Header, true)
 }

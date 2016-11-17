@@ -10,8 +10,8 @@ import (
 
 func Example() {
 	file, _ := os.Open("testdata/mail/qp-utf8-header.raw")
-	msg, _ := mail.ReadMessage(file)     // Read email using Go's net/mail
-	mime, _ := enmime.ParseMIMEBody(msg) // Parse message body with enmime
+	msg, _ := mail.ReadMessage(file)           // Read email using Go's net/mail
+	mime, _ := enmime.EnvelopeFromMessage(msg) // Parse message body with enmime
 
 	// Headers are in the net/mail Message
 	fmt.Printf("From: %v\n", msg.Header.Get("From"))

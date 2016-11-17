@@ -48,7 +48,7 @@ func TestWarnings(t *testing.T) {
 	for _, tt := range files {
 		// Mail with disposition attachment
 		msg := readLowQuality(tt.filename)
-		m, err := ParseMIMEBody(msg)
+		m, err := EnvelopeFromMessage(msg)
 		if err != nil {
 			t.Error("Failed to parse MIME:", err)
 		}
