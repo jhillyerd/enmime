@@ -8,7 +8,7 @@ import (
 func TestPlainSingleToken(t *testing.T) {
 	in := "Test"
 	want := in
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -18,7 +18,7 @@ func TestPlainSingleToken(t *testing.T) {
 func TestPlainTokens(t *testing.T) {
 	in := "Testing One two 3 4"
 	want := in
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -28,7 +28,7 @@ func TestPlainTokens(t *testing.T) {
 func TestCharsetControlDetect(t *testing.T) {
 	in := "=?US\nASCII?Q?Keith_Moore?="
 	want := in
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -38,7 +38,7 @@ func TestCharsetControlDetect(t *testing.T) {
 func TestEncodingControlDetect(t *testing.T) {
 	in := "=?US-ASCII?\r?Keith_Moore?="
 	want := in
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -48,7 +48,7 @@ func TestEncodingControlDetect(t *testing.T) {
 func TestInvalidTermination(t *testing.T) {
 	in := "=?US-ASCII?Q?Keith_Moore?!"
 	want := in
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -58,7 +58,7 @@ func TestInvalidTermination(t *testing.T) {
 func TestAsciiQ(t *testing.T) {
 	in := "=?US-ASCII?Q?Keith_Moore?="
 	want := "Keith Moore"
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -68,7 +68,7 @@ func TestAsciiQ(t *testing.T) {
 func TestAsciiB64(t *testing.T) {
 	in := "=?US-ASCII?B?SGVsbG8gV29ybGQ=?="
 	want := "Hello World"
-	got := DecodeHeader(in)
+	got := decodeHeader(in)
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -86,7 +86,7 @@ func TestEmbeddedAsciiQ(t *testing.T) {
 	}
 
 	for _, tt := range testTable {
-		got := DecodeHeader(tt.in)
+		got := decodeHeader(tt.in)
 		if got != tt.want {
 			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 		}
@@ -108,7 +108,7 @@ func TestSpacing(t *testing.T) {
 	}
 
 	for _, tt := range testTable {
-		got := DecodeHeader(tt.in)
+		got := decodeHeader(tt.in)
 		if got != tt.want {
 			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 		}
@@ -126,7 +126,7 @@ func TestCharsets(t *testing.T) {
 	}
 
 	for _, tt := range testTable {
-		got := DecodeHeader(tt.in)
+		got := decodeHeader(tt.in)
 		if got != tt.want {
 			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 		}
@@ -149,7 +149,7 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 	}
 
 	for _, tt := range testTable {
-		got := DecodeToUTF8Base64Header(tt.in)
+		got := decodeToUTF8Base64Header(tt.in)
 		if got != tt.want {
 			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 		}

@@ -10,7 +10,7 @@ import (
 // Test an invalid character set with the CharsetReader
 func TestInvalidCharsetReader(t *testing.T) {
 	inputReader := strings.NewReader("unused")
-	outputReader, err := NewCharsetReader("INVALIDcharsetZZZ", inputReader)
+	outputReader, err := newCharsetReader("INVALIDcharsetZZZ", inputReader)
 	if outputReader != nil {
 		t.Error("outputReader should be nil")
 	}
@@ -33,7 +33,7 @@ func TestCharsetReader(t *testing.T) {
 
 	for _, tt := range testTable {
 		inputReader := bytes.NewReader(tt.input)
-		outputReader, err := NewCharsetReader(tt.charset, inputReader)
+		outputReader, err := newCharsetReader(tt.charset, inputReader)
 		if err != nil {
 			t.Error("err should be nil, got:", err)
 		}

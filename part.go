@@ -25,7 +25,7 @@ type Part struct {
 	disposition string
 	fileName    string
 	charset     string
-	errors      []MIMEError
+	errors      []Error
 
 	// decodedReader currently just hands out content from a []byte, but will allow enmime to decode
 	// on demand in the future.
@@ -220,13 +220,13 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 		if err == nil {
 			// Disposition is optional
 			p.SetDisposition(disposition)
-			p.SetFileName(DecodeHeader(dparams["filename"]))
+			p.SetFileName(decodeHeader(dparams["filename"]))
 		}
 		if p.FileName() == "" && mparams["name"] != "" {
-			p.SetFileName(DecodeHeader(mparams["name"]))
+			p.SetFileName(decodeHeader(mparams["name"]))
 		}
 		if p.FileName() == "" && mparams["file"] != "" {
-			p.SetFileName(DecodeHeader(mparams["file"]))
+			p.SetFileName(decodeHeader(mparams["file"]))
 		}
 		if p.Charset() == "" {
 			p.SetCharset(mparams["charset"])
@@ -263,7 +263,7 @@ func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
 	case "quoted-printable":
 		decoder = quotedprintable.NewReader(reader)
 	case "base64":
-		cleaner := NewBase64Cleaner(reader)
+		cleaner := newBase64Cleaner(reader)
 		decoder = base64.NewDecoder(base64.StdEncoding, cleaner)
 	}
 

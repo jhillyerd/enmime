@@ -247,9 +247,9 @@ var encodings = map[string]struct {
 var charsetRegexp *regexp.Regexp
 var errParsingCharset = errors.New("Could not find a valid charset in the HTML body")
 
-// ConvertToUTF8String uses the provided charset to decode a slice of bytes into a normal
+// convertToUTF8String uses the provided charset to decode a slice of bytes into a normal
 // UTF-8 string.
-func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
+func convertToUTF8String(charset string, textBytes []byte) (string, error) {
 	if strings.ToLower(charset) == "utf-8" {
 		return string(textBytes), nil
 	}
@@ -266,12 +266,11 @@ func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	return string(output), nil
 }
 
-// NewCharsetReader generates charset-conversion readers, converting from the
-// provided charset into UTF-8.  The CharsetReader signature is defined by
-// Golang's mime.WordDecoder
+// newCharsetReader generates charset-conversion readers, converting from the provided charset into
+// UTF-8.  CharsetReader is a factory signature defined by Golang's mime.WordDecoder
 //
 // This function is similar to: https://godoc.org/golang.org/x/net/html/charset#NewReaderLabel
-func NewCharsetReader(charset string, input io.Reader) (io.Reader, error) {
+func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	if strings.ToLower(charset) == "utf-8" {
 		return input, nil
 	}

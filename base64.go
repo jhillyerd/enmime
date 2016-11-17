@@ -4,23 +4,23 @@ import (
 	"io"
 )
 
-// Base64Cleaner helps work around bugs in Go's built-in base64 decoder by stripping out
+// base64Cleaner helps work around bugs in Go's built-in base64 decoder by stripping out
 // whitespace that would cause Go to lose count of things and issue an "illegal base64 data at
 // input byte..." error
-type Base64Cleaner struct {
+type base64Cleaner struct {
 	in  io.Reader
 	buf [1024]byte
 	//count int64
 }
 
-// NewBase64Cleaner returns a Base64Cleaner object for the specified reader.  Base64Cleaner
+// newBase64Cleaner returns a Base64Cleaner object for the specified reader.  Base64Cleaner
 // implements the io.Reader interface.
-func NewBase64Cleaner(r io.Reader) *Base64Cleaner {
-	return &Base64Cleaner{in: r}
+func newBase64Cleaner(r io.Reader) *base64Cleaner {
+	return &base64Cleaner{in: r}
 }
 
 // Read method for io.Reader interface.
-func (qp *Base64Cleaner) Read(p []byte) (n int, err error) {
+func (qp *base64Cleaner) Read(p []byte) (n int, err error) {
 	// Size our slice to theirs
 	size := len(qp.buf)
 	if len(p) < size {

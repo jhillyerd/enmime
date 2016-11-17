@@ -17,21 +17,21 @@ var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-
 
 // Envelope is a simplified wrapper for MIME email messages.
 type Envelope struct {
-	Text           string       // The plain text portion of the message
-	HTML           string       // The HTML portion of the message
-	IsTextFromHTML bool         // Plain text was empty; down-converted HTML
-	Root           *Part        // The top-level Part
-	Attachments    []*Part      // All parts having a Content-Disposition of attachment
-	Inlines        []*Part      // All parts having a Content-Disposition of inline
-	OtherParts     []*Part      // All parts not in Attachments and Inlines
-	Errors         []*MIMEError // Errors encountered while parsing
-	header         mail.Header  // Header from original message
+	Text           string      // The plain text portion of the message
+	HTML           string      // The HTML portion of the message
+	IsTextFromHTML bool        // Plain text was empty; down-converted HTML
+	Root           *Part       // The top-level Part
+	Attachments    []*Part     // All parts having a Content-Disposition of attachment
+	Inlines        []*Part     // All parts having a Content-Disposition of inline
+	OtherParts     []*Part     // All parts not in Attachments and Inlines
+	Errors         []*Error    // Errors encountered while parsing
+	header         mail.Header // Header from original message
 }
 
 // GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
 // UTF-8 string
 func (m *Envelope) GetHeader(name string) string {
-	return DecodeHeader(m.header.Get(name))
+	return decodeHeader(m.header.Get(name))
 }
 
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
@@ -47,7 +47,7 @@ func (m *Envelope) AddressList(key string) ([]*mail.Address, error) {
 		return nil, fmt.Errorf("%s is not address header", key)
 	}
 
-	str := DecodeToUTF8Base64Header(m.header.Get(key))
+	str := decodeToUTF8Base64Header(m.header.Get(key))
 	if str == "" {
 		return nil, mail.ErrHeaderNotPresent
 	}
@@ -131,7 +131,7 @@ func parseTextOnlyBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 		if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
 			if mparams["charset"] != "" {
 				// Convert plain text to UTF8 if content type specified a charset
-				newStr, err := ConvertToUTF8String(mparams["charset"], bodyBytes)
+				newStr, err := convertToUTF8String(mparams["charset"], bodyBytes)
 				if err != nil {
 					return err
 				}
@@ -140,7 +140,7 @@ func parseTextOnlyBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 				// charset is empty, look in HTML body for charset
 				charset, err := charsetFromHTMLString(mimeMsg.Text)
 				if charset != "" && err == nil {
-					newStr, err := ConvertToUTF8String(charset, bodyBytes)
+					newStr, err := convertToUTF8String(charset, bodyBytes)
 					if err == nil {
 						mimeMsg.Text = newStr
 					}
@@ -181,13 +181,13 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 	if err == nil {
 		// Disposition is optional
 		p.SetDisposition(disposition)
-		p.SetFileName(DecodeHeader(dparams["filename"]))
+		p.SetFileName(decodeHeader(dparams["filename"]))
 	}
 	if p.FileName() == "" && mparams["name"] != "" {
-		p.SetFileName(DecodeHeader(mparams["name"]))
+		p.SetFileName(decodeHeader(mparams["name"]))
 	}
 	if p.FileName() == "" && mparams["file"] != "" {
-		p.SetFileName(DecodeHeader(mparams["file"]))
+		p.SetFileName(decodeHeader(mparams["file"]))
 	}
 	if p.Charset() == "" {
 		p.SetCharset(mparams["charset"])
@@ -239,7 +239,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 		if match != nil {
 			var reader io.Reader
 			if match.Charset() != "" {
-				reader, err = NewCharsetReader(match.Charset(), match)
+				reader, err = newCharsetReader(match.Charset(), match)
 				if err != nil {
 					return err
 				}
@@ -263,7 +263,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 			}
 			var reader io.Reader
 			if m.Charset() != "" {
-				reader, err = NewCharsetReader(m.Charset(), m)
+				reader, err = newCharsetReader(m.Charset(), m)
 				if err != nil {
 					return err
 				}
@@ -286,7 +286,7 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 	if match != nil {
 		var reader io.Reader
 		if match.Charset() != "" {
-			reader, err = NewCharsetReader(match.Charset(), match)
+			reader, err = newCharsetReader(match.Charset(), match)
 			if err != nil {
 				return err
 			}

@@ -10,7 +10,7 @@ import (
 )
 
 func TestStringConversion(t *testing.T) {
-	e := &MIMEError{
+	e := &Error{
 		Name:   "WarnName",
 		Detail: "Warn Details",
 		Severe: false,
@@ -22,7 +22,7 @@ func TestStringConversion(t *testing.T) {
 		t.Error("got:", got, "want:", want)
 	}
 
-	e = &MIMEError{
+	e = &Error{
 		Name:   "ErrorName",
 		Detail: "Error Details",
 		Severe: true,

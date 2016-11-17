@@ -1,7 +1,7 @@
 // Package enmime implements a MIME parsing library for Go.  It's built ontop of Go's included
 // mime/multipart support, but is geared towards parsing MIME encoded emails.
 //
-// The basics:
+// The Basics
 //
 // Calling EnvelopeFromMessage causes enmime to parse the body of the message object into a tree of
 // Part objects, each of which is aware of its content type, filename and headers.  If the part was

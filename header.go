@@ -19,15 +19,15 @@ func debug(format string, args ...interface{}) {
 //  encoding: the character encoding type used for the encoded-text
 //  encoded-text: the text we are decoding
 
-// DecodeHeader decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
-func DecodeHeader(input string) string {
+// decodeHeader decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
+func decodeHeader(input string) string {
 	if !strings.Contains(input, "=?") {
 		// Don't scan if there is nothing to do here
 		return input
 	}
 
 	dec := new(mime.WordDecoder)
-	dec.CharsetReader = NewCharsetReader
+	dec.CharsetReader = newCharsetReader
 	header, err := dec.DecodeHeader(input)
 	if err != nil {
 		return input
@@ -35,8 +35,8 @@ func DecodeHeader(input string) string {
 	return header
 }
 
-// DecodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?
-func DecodeToUTF8Base64Header(input string) string {
+// decodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?
+func decodeToUTF8Base64Header(input string) string {
 	if !strings.Contains(input, "=?") {
 		// Don't scan if there is nothing to do here
 		return input
@@ -59,7 +59,7 @@ func DecodeToUTF8Base64Header(input string) string {
 				token = token[:len(token)-1]
 			}
 			// Base64 encode token
-			output[i] = prefix + mime.BEncoding.Encode("UTF-8", DecodeHeader(token)) + suffix
+			output[i] = prefix + mime.BEncoding.Encode("UTF-8", decodeHeader(token)) + suffix
 		} else {
 			output[i] = token
 		}
