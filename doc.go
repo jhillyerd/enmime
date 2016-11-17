@@ -3,13 +3,13 @@
 //
 // The basics:
 //
-// Calling ParseMIMEBody causes enmime to parse the body of the message object into a tree of Part
-// objects, each of which is aware of its content type, filename and headers.  If the part was
+// Calling EnvelopeFromMessage causes enmime to parse the body of the message object into a tree of
+// Part objects, each of which is aware of its content type, filename and headers.  If the part was
 // encoded in quoted-printable or base64, it is decoded before being stored in the Part object.
 //
-// ParseMIMEBody returns a MIMEBody struct.  The struct contains both the plain text and HTML
+// EnvelopeFromMessage returns an Envelope struct.  The struct contains both the plain text and HTML
 // portions of the email (if available).  The root of the tree, as well as slices of the email's
-// inlines and attachments are available in the struct.
+// inlines and attachments are also available.
 //
 // If you need to locate a particular Part, you can pass a custom PartMatcher function into
 // BreadthMatchFirst() or DepthMatchFirst() to search the Part tree.  BreadthMatchAll() and

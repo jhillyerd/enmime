@@ -13,8 +13,14 @@ func Example() {
 	msg, _ := mail.ReadMessage(file)           // Read email using Go's net/mail
 	mime, _ := enmime.EnvelopeFromMessage(msg) // Parse message body with enmime
 
-	// Headers are in the net/mail Message
+	// Raw headers are available in the net/mail Message struct
 	fmt.Printf("From: %v\n", msg.Header.Get("From"))
+
+	// Address-type headers can be parsed into a list of decoded mail.Address structs
+	alist, _ := mime.AddressList("To")
+	for _, addr := range alist {
+		fmt.Printf("To: %s <%s>\n", addr.Name, addr.Address)
+	}
 
 	// enmime can decode quoted-printable headers
 	fmt.Printf("Subject: %v\n", mime.GetHeader("Subject"))
@@ -33,6 +39,7 @@ func Example() {
 
 	// Output:
 	// From: James Hillyerd <jamehi03@jamehi03lx.noa.com>
+	// To: Mirosław Marczak <marczak@inbucket.com>
 	// Subject: MIME UTF8 Test ¢ More Text
 	// Text Body: 1300 chars
 	// HTML Body: 1736 chars

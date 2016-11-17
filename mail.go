@@ -196,7 +196,7 @@ func parseBinaryOnlyBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 	p.Header.Set("Content-Type", mailMsg.Header.Get("Content-Type"))
 	p.Header.Set("Content-Disposition", mailMsg.Header.Get("Content-Disposition"))
 
-	// Add our part to the appropriate section of MIMEBody
+	// Add our part to the appropriate section of the Envelope
 	mimeMsg.Root = NewPart(nil, mediatype)
 
 	if disposition == "inline" {
@@ -328,7 +328,6 @@ func parseMultiPartBody(mailMsg *mail.Message, mimeMsg *Envelope) error {
 }
 
 // isMultipartMessage returns true if the message has a recognized multipart Content-Type header.
-// You don't need to check this before calling ParseMIMEBody, it can handle non-multipart messages.
 func isMultipartMessage(mailMsg *mail.Message) bool {
 	// Parse top-level multipart
 	ctype := mailMsg.Header.Get("Content-Type")

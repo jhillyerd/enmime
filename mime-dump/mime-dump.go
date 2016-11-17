@@ -40,7 +40,7 @@ func dump(reader io.Reader, name string) error {
 	// Parse message body with enmime
 	mime, err := enmime.EnvelopeFromMessage(msg)
 	if err != nil {
-		return fmt.Errorf("During enmime.ParseMIMEBody: %v", err)
+		return fmt.Errorf("During enmime.EnvelopeFromMessage: %v", err)
 	}
 
 	h1(name)
