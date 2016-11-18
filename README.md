@@ -9,6 +9,9 @@ It is being developed in tandem with the [Inbucket] email service.
 
 API documentation can be found here: http://godoc.org/github.com/jhillyerd/enmime
 
+A brief guide to migrating from the old go.enmime API is available here:
+https://github.com/jhillyerd/enmime/wiki/Enmime-Migration-Guide
+
 Development Status
 ------------------
 enmime is alpha quality: it works but has not been tested with a wide variety of source data,
