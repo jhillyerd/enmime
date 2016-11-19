@@ -1,9 +1,8 @@
 package enmime
 
 import (
-	"bufio"
 	"fmt"
-	"net/mail"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +47,7 @@ func TestWarnings(t *testing.T) {
 	for _, tt := range files {
 		// Mail with disposition attachment
 		msg := readLowQuality(tt.filename)
-		m, err := EnvelopeFromMessage(msg)
+		m, err := ReadEnvelope(msg)
 		if err != nil {
 			t.Error("Failed to parse MIME:", err)
 		}
@@ -66,19 +65,11 @@ func TestWarnings(t *testing.T) {
 }
 
 // readMessage is a test utility function to fetch a mail.Message object.
-func readLowQuality(filename string) *mail.Message {
+func readLowQuality(filename string) io.Reader {
 	// Open test email for parsing
-	raw, err := os.Open(filepath.Join("testdata", "low-quality", filename))
+	r, err := os.Open(filepath.Join("testdata", "low-quality", filename))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to open test data: %v", err))
 	}
-
-	// Parse email into a mail.Message object like we do
-	reader := bufio.NewReader(raw)
-	msg, err := mail.ReadMessage(reader)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read message: %v", err))
-	}
-
-	return msg
+	return r
 }

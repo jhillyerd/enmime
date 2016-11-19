@@ -67,10 +67,16 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	return ret, nil
 }
 
-// EnvelopeFromMessage parses the body of the mailMsg into an Envelope, downconverting HTML to plain
-// text if needed, and sorting the attachments, inlines and other parts into their respective
+// ReadEnvelope parses the content of the provided reader into an Envelope, downconverting HTML to
+// plain text if needed, and sorting the attachments, inlines and other parts into their respective
 // slices.
-func EnvelopeFromMessage(mailMsg *mail.Message) (*Envelope, error) {
+func ReadEnvelope(r io.Reader) (*Envelope, error) {
+	// Temporarily load in mail.Message, this will be removed as part of issue #3
+	mailMsg, err := mail.ReadMessage(r)
+	if err != nil {
+		return nil, err
+	}
+
 	e := &Envelope{
 		IsTextFromHTML: false,
 		header:         &mailMsg.Header,

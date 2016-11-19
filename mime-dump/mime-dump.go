@@ -34,33 +34,30 @@ func main() {
 }
 
 func dump(reader io.Reader, name string) error {
-	// Read email using Go's net/mail
-	msg, err := mail.ReadMessage(reader)
-	if err != nil {
-		return fmt.Errorf("During mail.ReadMessage: %v", err)
-	}
-
 	// Parse message body with enmime
-	mime, err := enmime.EnvelopeFromMessage(msg)
+	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
-		return fmt.Errorf("During enmime.EnvelopeFromMessage: %v", err)
+		return fmt.Errorf("During enmime.ReadEnvelope: %v", err)
 	}
 
 	h1(name)
 
-	h2("Header")
-	for k := range msg.Header {
-		switch strings.ToLower(k) {
-		case "from", "to", "bcc", "subject":
-			continue
-		}
-		fmt.Printf("- %v: `%v`\n", k, mime.GetHeader(k))
-	}
-	br()
+	// TODO The below code can be re-enabled once the Root Part contains the message
+	// headers
+
+	// h2("Header")
+	// for k := range msg.Header {
+	// 	switch strings.ToLower(k) {
+	// 	case "from", "to", "bcc", "subject":
+	// 		continue
+	// 	}
+	// 	fmt.Printf("- %v: `%v`\n", k, mime.GetHeader(k))
+	// }
+	// br()
 
 	h2("Envelope")
 	for _, hkey := range addressHeaders {
-		addrlist, err := mime.AddressList(hkey)
+		addrlist, err := e.AddressList(hkey)
 		if err != nil {
 			if err == mail.ErrHeaderNotPresent {
 				continue
@@ -73,28 +70,28 @@ func dump(reader io.Reader, name string) error {
 		}
 		br()
 	}
-	fmt.Printf("### Subject\n%v\n", mime.GetHeader("Subject"))
+	fmt.Printf("### Subject\n%v\n", e.GetHeader("Subject"))
 	br()
 
 	h2("Body Text")
-	fmt.Println(mime.Text)
+	fmt.Println(e.Text)
 	fmt.Println()
 
 	h2("Body HTML")
-	fmt.Println(mime.HTML)
+	fmt.Println(e.HTML)
 	fmt.Println()
 
 	h2("Attachment List")
-	for _, a := range mime.Attachments {
+	for _, a := range e.Attachments {
 		fmt.Printf("- %v (%v)\n", a.FileName(), a.ContentType())
 	}
 	fmt.Println()
 
 	h2("MIME Part Tree")
-	if mime.Root == nil {
+	if e.Root == nil {
 		fmt.Println("Message was not MIME encoded")
 	} else {
-		printPart(mime.Root, "    ")
+		printPart(e.Root, "    ")
 	}
 
 	return nil
