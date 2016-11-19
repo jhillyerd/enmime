@@ -1,8 +1,8 @@
 package enmime
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/textproto"
 	"os"
@@ -16,7 +16,7 @@ func TestPlainTextPart(t *testing.T) {
 	p, err := ReadParts(r)
 
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -54,7 +54,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	p, err := ReadParts(r)
 
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -93,7 +93,7 @@ func TestMultiAlternParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -169,7 +169,7 @@ func TestMultiMixedParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -245,7 +245,7 @@ func TestMultiOtherParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -321,7 +321,7 @@ func TestNestedAlternParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -487,7 +487,7 @@ func TestMultiBase64Parts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -566,7 +566,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Parsing should not have generated an error")
+		t.Fatal("Unexpected parse error:", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -643,13 +643,11 @@ func TestPartSetter(t *testing.T) {
 }
 
 // openPart is a test utility function to open a part as a reader
-func openPart(filename string) *bufio.Reader {
+func openPart(filename string) io.Reader {
 	// Open test part for parsing
 	raw, err := os.Open(filepath.Join("testdata", "parts", filename))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to open test data: %v", err))
 	}
-
-	// Wrap in a buffer
-	return bufio.NewReader(raw)
+	return raw
 }

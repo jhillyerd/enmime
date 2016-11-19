@@ -126,8 +126,11 @@ func (p *Part) Read(b []byte) (n int, err error) {
 }
 
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
-func ReadParts(reader *bufio.Reader) (*Part, error) {
-	tr := textproto.NewReader(reader)
+func ReadParts(r io.Reader) (*Part, error) {
+	br := bufio.NewReader(r)
+
+	// Read header
+	tr := textproto.NewReader(br)
 	header, err := tr.ReadMIMEHeader()
 	if err != nil {
 		return nil, err
@@ -139,14 +142,15 @@ func ReadParts(reader *bufio.Reader) (*Part, error) {
 	root := &Part{Header: header, contentType: mediatype}
 
 	if strings.HasPrefix(mediatype, "multipart/") {
+		// Content is multipart, parse it
 		boundary := params["boundary"]
-		err = parseParts(root, reader, boundary)
+		err = parseParts(root, br, boundary)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// Content is text or data, decode it
-		content, err := decodeSection(header.Get("Content-Transfer-Encoding"), reader)
+		content, err := decodeSection(header.Get("Content-Transfer-Encoding"), br)
 		if err != nil {
 			return nil, err
 		}
