@@ -36,196 +36,196 @@ func TestIdentifyUnknownMultiPart(t *testing.T) {
 func TestParseNonMime(t *testing.T) {
 	want := "This is a test mailing"
 	msg := readMessage("non-mime.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Expected %q to contain %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Expected %q to contain %q", e.Text, want)
 	}
-	if mime.HTML != "" {
-		t.Errorf("Expected no HTML body, got %q", mime.HTML)
+	if e.HTML != "" {
+		t.Errorf("Expected no HTML body, got %q", e.HTML)
 	}
 }
 
 func TestParseNonMimeHTML(t *testing.T) {
 	msg := readMessage("non-mime-html.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
-	if !mime.IsTextFromHTML {
+	if !e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be true")
 	}
 
 	want := "This is *a* *test* mailing"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Expected %q to contain %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Expected %q to contain %q", e.Text, want)
 	}
 
 	want = "<span>This</span>"
-	if !strings.Contains(mime.HTML, want) {
-		t.Errorf("Expected %q to contain %q", mime.HTML, want)
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("Expected %q to contain %q", e.HTML, want)
 	}
 }
 
 func TestParseMimeTree(t *testing.T) {
 	msg := readMessage("attachment.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
-	if mime.Root == nil {
+	if e.Root == nil {
 		t.Error("Message should have a root node")
 	}
 }
 
 func TestParseInlineText(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Test of text section"
-	if mime.Text != want {
-		t.Error("got:", mime.Text, "want:", want)
+	if e.Text != want {
+		t.Error("got:", e.Text, "want:", want)
 	}
 }
 
 func TestParseMultiMixedText(t *testing.T) {
 	msg := readMessage("mime-mixed.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Section one\n\n--\nSection two"
-	if mime.Text != want {
-		t.Error("Text parts should concatenate, got:", mime.Text, "want:", want)
+	if e.Text != want {
+		t.Error("Text parts should concatenate, got:", e.Text, "want:", want)
 	}
 }
 
 func TestParseMultiSignedText(t *testing.T) {
 	msg := readMessage("mime-signed.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Section one\n\n--\nSection two"
-	if mime.Text != want {
-		t.Error("Text parts should concatenate, got:", mime.Text, "want:", want)
+	if e.Text != want {
+		t.Error("Text parts should concatenate, got:", e.Text, "want:", want)
 	}
 }
 
 func TestParseQuotedPrintable(t *testing.T) {
 	msg := readMessage("quoted-printable.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Phasellus sit amet arcu"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
 	}
 }
 
 func TestParseQuotedPrintableMime(t *testing.T) {
 	msg := readMessage("quoted-printable-mime.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Nullam venenatis ante"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
 	}
 }
 
 func TestParseInlineHTML(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
 	want := "<html>"
-	if !strings.Contains(mime.HTML, want) {
-		t.Errorf("HTML: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain: %q", e.Text, want)
 	}
 
 	want = "Test of HTML section"
-	if !strings.Contains(mime.HTML, want) {
-		t.Errorf("HTML: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain: %q", e.Text, want)
 	}
 }
 
 func TestParseAttachment(t *testing.T) {
 	msg := readMessage("attachment.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "A text section"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
 	}
-	if mime.HTML != "" {
-		t.Error("mime.HTML should be empty, attachment is not for display, got:", mime.HTML)
+	if e.HTML != "" {
+		t.Error("mime.HTML should be empty, attachment is not for display, got:", e.HTML)
 	}
-	if len(mime.Inlines) > 0 {
-		t.Error("Should have no inlines, got:", len(mime.Inlines))
+	if len(e.Inlines) > 0 {
+		t.Error("Should have no inlines, got:", len(e.Inlines))
 	}
-	if len(mime.Attachments) != 1 {
-		t.Fatal("Should have a single attachment, got:", len(mime.Attachments))
+	if len(e.Attachments) != 1 {
+		t.Fatal("Should have a single attachment, got:", len(e.Attachments))
 	}
 
 	want = "test.html"
-	got := mime.Attachments[0].FileName()
+	got := e.Attachments[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
 
 	want = "<html>"
-	allBytes, err := ioutil.ReadAll(mime.Attachments[0])
+	allBytes, err := ioutil.ReadAll(e.Attachments[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,31 +237,31 @@ func TestParseAttachment(t *testing.T) {
 
 func TestParseAttachmentOctet(t *testing.T) {
 	msg := readMessage("attachment-octet.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "A text section"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
 	}
-	if mime.HTML != "" {
-		t.Error("mime.HTML should be empty, attachment is not for display, got:", mime.HTML)
+	if e.HTML != "" {
+		t.Error("mime.HTML should be empty, attachment is not for display, got:", e.HTML)
 	}
-	if len(mime.Inlines) > 0 {
-		t.Error("Should have no inlines, got:", len(mime.Inlines))
+	if len(e.Inlines) > 0 {
+		t.Error("Should have no inlines, got:", len(e.Inlines))
 	}
-	if len(mime.Attachments) != 1 {
-		t.Fatal("Should have a single attachment, got:", len(mime.Attachments))
+	if len(e.Attachments) != 1 {
+		t.Fatal("Should have a single attachment, got:", len(e.Attachments))
 	}
 
 	want = "ATTACHMENT.EXE"
-	got := mime.Attachments[0].FileName()
+	got := e.Attachments[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
@@ -273,7 +273,7 @@ func TestParseAttachmentOctet(t *testing.T) {
 		0xa2, 0xb2, 0xc0, 0x90, 0x59, 0xe3, 0x35, 0xf8, 0x60, 0xb7, 0xb1, 0x63, 0x77, 0xd7,
 		0x5f, 0x92, 0x58, 0xa8, 0x75,
 	}
-	allBytes, err := ioutil.ReadAll(mime.Attachments[0])
+	allBytes, err := ioutil.ReadAll(e.Attachments[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,20 +284,20 @@ func TestParseAttachmentOctet(t *testing.T) {
 
 func TestParseAttachmentApplication(t *testing.T) {
 	msg := readMessage("attachment-application.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if len(mime.Inlines) > 0 {
-		t.Error("Should have no inlines, got:", len(mime.Inlines))
+	if len(e.Inlines) > 0 {
+		t.Error("Should have no inlines, got:", len(e.Inlines))
 	}
-	if len(mime.Attachments) != 1 {
-		t.Fatal("Should have a single attachment, got:", len(mime.Attachments))
+	if len(e.Attachments) != 1 {
+		t.Fatal("Should have a single attachment, got:", len(e.Attachments))
 	}
 
 	want := "some.doc"
-	got := mime.Attachments[0].FileName()
+	got := e.Attachments[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
@@ -305,30 +305,30 @@ func TestParseAttachmentApplication(t *testing.T) {
 
 func TestParseOtherParts(t *testing.T) {
 	msg := readMessage("other-parts.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
 	want := "A text section"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
 	}
-	if mime.HTML != "" {
-		t.Error("mime.HTML should be empty, attachment is not for display, got:", mime.HTML)
+	if e.HTML != "" {
+		t.Error("mime.HTML should be empty, attachment is not for display, got:", e.HTML)
 	}
-	if len(mime.Inlines) > 0 {
-		t.Error("Should have no inlines, got:", len(mime.Inlines))
+	if len(e.Inlines) > 0 {
+		t.Error("Should have no inlines, got:", len(e.Inlines))
 	}
-	if len(mime.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(mime.Attachments))
+	if len(e.Attachments) > 0 {
+		t.Fatal("Should have no attachments, got:", len(e.Attachments))
 	}
-	if len(mime.OtherParts) != 1 {
-		t.Fatal("Should have one other part, got:", len(mime.OtherParts))
+	if len(e.OtherParts) != 1 {
+		t.Fatal("Should have one other part, got:", len(e.OtherParts))
 	}
 
 	want = "B05.gif"
-	got := mime.OtherParts[0].FileName()
+	got := e.OtherParts[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
@@ -343,7 +343,7 @@ func TestParseOtherParts(t *testing.T) {
 		0x80, 0xf1, 0x18, 0x84, 0xc0, 0x9e, 0xd0, 0xe8, 0xf2, 0x1, 0xb5, 0x19, 0xad, 0x41,
 		0x53, 0x33, 0x9b, 0x0, 0x0, 0x3b,
 	}
-	allBytes, err := ioutil.ReadAll(mime.OtherParts[0])
+	allBytes, err := ioutil.ReadAll(e.OtherParts[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -354,38 +354,38 @@ func TestParseOtherParts(t *testing.T) {
 
 func TestParseInline(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if mime.IsTextFromHTML {
+	if e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Test of text section"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
 	}
 
 	want = ">Test of HTML section<"
-	if !strings.Contains(mime.HTML, want) {
-		t.Errorf("HTML: %q should contain %q", mime.HTML, want)
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain %q", e.HTML, want)
 	}
 
-	if len(mime.Inlines) != 1 {
-		t.Error("Should one inline, got:", len(mime.Inlines))
+	if len(e.Inlines) != 1 {
+		t.Error("Should one inline, got:", len(e.Inlines))
 	}
-	if len(mime.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(mime.Attachments))
+	if len(e.Attachments) > 0 {
+		t.Fatal("Should have no attachments, got:", len(e.Attachments))
 	}
 
 	want = "favicon.png"
-	got := mime.Inlines[0].FileName()
+	got := e.Inlines[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
-	allBytes, err := ioutil.ReadAll(mime.Inlines[0])
+	allBytes, err := ioutil.ReadAll(e.Inlines[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,38 +396,38 @@ func TestParseInline(t *testing.T) {
 
 func TestParseHTMLOnlyInline(t *testing.T) {
 	msg := readMessage("html-only-inline.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if !mime.IsTextFromHTML {
+	if !e.IsTextFromHTML {
 		t.Error("Expected text-from-HTML flag to be true")
 	}
 
 	want := "Test of HTML section"
-	if !strings.Contains(mime.Text, want) {
-		t.Errorf("Downconverted Text: %q should contain: %q", mime.Text, want)
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Downconverted Text: %q should contain: %q", e.Text, want)
 	}
 
 	want = ">Test of HTML section<"
-	if !strings.Contains(mime.HTML, want) {
-		t.Errorf("HTML: %q should contain %q", mime.HTML, want)
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain %q", e.HTML, want)
 	}
 
-	if len(mime.Inlines) != 1 {
-		t.Error("Should one inline, got:", len(mime.Inlines))
+	if len(e.Inlines) != 1 {
+		t.Error("Should one inline, got:", len(e.Inlines))
 	}
-	if len(mime.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(mime.Attachments))
+	if len(e.Attachments) > 0 {
+		t.Fatal("Should have no attachments, got:", len(e.Attachments))
 	}
 
 	want = "favicon.png"
-	got := mime.Inlines[0].FileName()
+	got := e.Inlines[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
-	allBytes, err := ioutil.ReadAll(mime.Inlines[0])
+	allBytes, err := ioutil.ReadAll(e.Inlines[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -438,22 +438,22 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 
 func TestParseNestedHeaders(t *testing.T) {
 	msg := readMessage("html-mime-inline.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if len(mime.Inlines) != 1 {
-		t.Error("Should one inline, got:", len(mime.Inlines))
+	if len(e.Inlines) != 1 {
+		t.Error("Should one inline, got:", len(e.Inlines))
 	}
 
 	want := "favicon.png"
-	got := mime.Inlines[0].FileName()
+	got := e.Inlines[0].FileName()
 	if got != want {
 		t.Error("FileName() got:", got, "want:", want)
 	}
 	want = "<8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet>"
-	got = mime.Inlines[0].Header.Get("Content-Id")
+	got = e.Inlines[0].Header.Get("Content-Id")
 	if got != want {
 		t.Errorf("Content-Id header was: %q, want: %q", got, want)
 	}
@@ -463,26 +463,26 @@ func TestParseEncodedSubject(t *testing.T) {
 	// Even non-MIME messages should support encoded-words in headers
 	// Also, encoded addresses should be suppored
 	msg := readMessage("qp-ascii-header.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
 
 	want := "Test QP Subject!"
-	got := mime.GetHeader("Subject")
+	got := e.GetHeader("Subject")
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
 	}
 
 	// Test UTF-8 subject line
 	msg = readMessage("qp-utf8-header.raw")
-	mime, err = EnvelopeFromMessage(msg)
+	e, err = EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
 	want = "MIME UTF8 Test \u00a2 More Text"
-	got = mime.GetHeader("Subject")
+	got = e.GetHeader("Subject")
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
 	}
@@ -490,17 +490,17 @@ func TestParseEncodedSubject(t *testing.T) {
 
 func TestParseEncodedAddressList(t *testing.T) {
 	msg := readMessage("qp-utf8-header.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	_, err = mime.AddressList("Subject")
+	_, err = e.AddressList("Subject")
 	if err == nil {
 		t.Error("AddressList(\"Subject\") should have returned err, got nil")
 	}
 
-	toAddresses, err := mime.AddressList("To")
+	toAddresses, err := e.AddressList("To")
 	if err != nil {
 		t.Fatal("Failed to parse To list:", err)
 	}
@@ -518,14 +518,14 @@ func TestParseEncodedAddressList(t *testing.T) {
 
 func TestDetectCharacterSetInHTML(t *testing.T) {
 	msg := readMessage("non-mime-missing-charset.raw")
-	mime, err := EnvelopeFromMessage(msg)
+	e, err := EnvelopeFromMessage(msg)
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
-	if strings.ContainsRune(mime.HTML, 0x80) {
+	if strings.ContainsRune(e.HTML, 0x80) {
 		t.Error("HTML body should not have contained a Windows CP1250 Euro Symbol")
 	}
-	if !strings.ContainsRune(mime.HTML, 0x20ac) {
+	if !strings.ContainsRune(e.HTML, 0x20ac) {
 		t.Error("HTML body should have contained a Unicode Euro Symbol")
 	}
 }
@@ -645,15 +645,15 @@ func TestAttachmentOnly(t *testing.T) {
 	for _, a := range aTests {
 		// Mail with disposition attachment
 		msg := readMessage(a.filename)
-		m, err := EnvelopeFromMessage(msg)
+		e, err := EnvelopeFromMessage(msg)
 		if err != nil {
 			t.Fatal("Failed to parse MIME:", err)
 		}
-		if len(m.Attachments) != a.attachmentsLen {
-			t.Fatal("len(Attachments) got:", len(m.Attachments), "want:", a.attachmentsLen)
+		if len(e.Attachments) != a.attachmentsLen {
+			t.Fatal("len(Attachments) got:", len(e.Attachments), "want:", a.attachmentsLen)
 		}
 		if a.attachmentsLen > 0 {
-			allBytes, err := ioutil.ReadAll(m.Attachments[0])
+			allBytes, err := ioutil.ReadAll(e.Attachments[0])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -661,11 +661,11 @@ func TestAttachmentOnly(t *testing.T) {
 				t.Error("Content should be PNG image")
 			}
 		}
-		if len(m.Inlines) != a.inlinesLen {
-			t.Fatal("len(Inlines) got:", len(m.Inlines), "want:", a.inlinesLen)
+		if len(e.Inlines) != a.inlinesLen {
+			t.Fatal("len(Inlines) got:", len(e.Inlines), "want:", a.inlinesLen)
 		}
 		if a.inlinesLen > 0 {
-			allBytes, err := ioutil.ReadAll(m.Inlines[0])
+			allBytes, err := ioutil.ReadAll(e.Inlines[0])
 			if err != nil {
 				t.Fatal(err)
 			}
