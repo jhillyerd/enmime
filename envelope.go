@@ -11,9 +11,16 @@ import (
 	"strings"
 )
 
-// AddressHeaders enumerates SMTP headers that contain email addresses, used by
-// Envelope.AddressList()
-var AddressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
+// AddressHeaders is the set of SMTP headers that contain email addresses, used by
+// Envelope.AddressList().  Key characters must be all lowercase.
+var AddressHeaders = map[string]bool{
+	"bcc":          true,
+	"cc":           true,
+	"delivered-to": true,
+	"from":         true,
+	"reply-to":     true,
+	"to":           true,
+}
 
 // Envelope is a simplified wrapper for MIME email messages.
 type Envelope struct {
@@ -36,15 +43,8 @@ func (m *Envelope) GetHeader(name string) string {
 
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
 func (m *Envelope) AddressList(key string) ([]*mail.Address, error) {
-	isAddrHeader := false
-	for _, hkey := range AddressHeaders {
-		if strings.ToLower(hkey) == strings.ToLower(key) {
-			isAddrHeader = true
-			break
-		}
-	}
-	if !isAddrHeader {
-		return nil, fmt.Errorf("%s is not address header", key)
+	if !AddressHeaders[strings.ToLower(key)] {
+		return nil, fmt.Errorf("%s is not an address header", key)
 	}
 
 	str := decodeToUTF8Base64Header(m.header.Get(key))

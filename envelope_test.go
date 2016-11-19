@@ -459,7 +459,7 @@ func TestParseNestedHeaders(t *testing.T) {
 	}
 }
 
-func TestParseEncodedSubjectAndAddress(t *testing.T) {
+func TestParseEncodedSubject(t *testing.T) {
 	// Even non-MIME messages should support encoded-words in headers
 	// Also, encoded addresses should be suppored
 	msg := readMessage("qp-ascii-header.raw")
@@ -486,6 +486,19 @@ func TestParseEncodedSubjectAndAddress(t *testing.T) {
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
 	}
+}
+
+func TestParseEncodedAddressList(t *testing.T) {
+	msg := readMessage("qp-utf8-header.raw")
+	mime, err := EnvelopeFromMessage(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	_, err = mime.AddressList("Subject")
+	if err == nil {
+		t.Error("AddressList(\"Subject\") should have returned err, got nil")
+	}
 
 	toAddresses, err := mime.AddressList("To")
 	if err != nil {
@@ -495,8 +508,9 @@ func TestParseEncodedSubjectAndAddress(t *testing.T) {
 		t.Fatalf("len(toAddresses) == %v, want: %v", len(toAddresses), 1)
 	}
 
-	want = "Mirosław Marczak"
-	got = toAddresses[0].Name
+	// Confirm address name was decoded properly
+	want := "Mirosław Marczak"
+	got := toAddresses[0].Name
 	if got != want {
 		t.Errorf("To was: %q, want: %q", got, want)
 	}

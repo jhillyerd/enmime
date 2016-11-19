@@ -11,6 +11,9 @@ import (
 	"github.com/jhillyerd/enmime"
 )
 
+// AddressHeaders enumerates SMTP headers that contain email addresses
+var addressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-To"}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "Missing filename argument")
@@ -44,17 +47,19 @@ func dump(reader io.Reader, name string) error {
 	}
 
 	h1(name)
+
 	h2("Header")
 	for k := range msg.Header {
 		switch strings.ToLower(k) {
 		case "from", "to", "bcc", "subject":
 			continue
 		}
-		fmt.Printf("%v: %v  \n", k, mime.GetHeader(k))
+		fmt.Printf("- %v: `%v`\n", k, mime.GetHeader(k))
 	}
+	br()
 
 	h2("Envelope")
-	for _, hkey := range enmime.AddressHeaders {
+	for _, hkey := range addressHeaders {
 		addrlist, err := mime.AddressList(hkey)
 		if err != nil {
 			if err == mail.ErrHeaderNotPresent {
@@ -64,11 +69,12 @@ func dump(reader io.Reader, name string) error {
 		}
 		fmt.Println("### " + hkey)
 		for _, addr := range addrlist {
-			fmt.Printf("%v <%v>\n", addr.Name, addr.Address)
+			fmt.Printf("- %v `<%v>`\n", addr.Name, addr.Address)
 		}
+		br()
 	}
-
-	fmt.Printf("### Subject\n %v\n", mime.GetHeader("Subject"))
+	fmt.Printf("### Subject\n%v\n", mime.GetHeader("Subject"))
+	br()
 
 	h2("Body Text")
 	fmt.Println(mime.Text)
@@ -96,11 +102,15 @@ func dump(reader io.Reader, name string) error {
 
 func h1(content string) {
 	bar := strings.Repeat("-", len(content))
-	fmt.Printf("#%v\n%v\n\n", content, bar)
+	fmt.Printf("%v\n%v\n\n", content, bar)
 }
 
 func h2(content string) {
-	fmt.Printf("##%v\n", content)
+	fmt.Printf("## %v\n", content)
+}
+
+func br() {
+	fmt.Println("")
 }
 
 // printPart pretty prints the Part tree
