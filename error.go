@@ -7,7 +7,8 @@ import (
 type errorName string
 
 const (
-	errorBoundaryMissing errorName = "Boundary Missing"
+	errorBoundaryMissing    errorName = "Boundary Missing"
+	errorContentTypeMissing errorName = "Content-Type Missing"
 )
 
 // Error describes an error encountered while parsing.

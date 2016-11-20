@@ -135,11 +135,20 @@ func ReadParts(r io.Reader) (*Part, error) {
 	if err != nil {
 		return nil, err
 	}
+	root := &Part{Header: header}
+
+	// Content-Type
+	contentType := header.Get("Content-Type")
+	if contentType == "" {
+		root.errors = append(
+			root.errors,
+			newWarning(errorContentTypeMissing, "MIME parts should have a Content-Type header"))
+	}
 	mediatype, params, err := mime.ParseMediaType(header.Get("Content-Type"))
-	if err != nil {
+	if contentType != "" && err != nil {
 		return nil, err
 	}
-	root := &Part{Header: header, contentType: mediatype}
+	root.contentType = mediatype
 
 	if strings.HasPrefix(mediatype, "multipart/") {
 		// Content is multipart, parse it

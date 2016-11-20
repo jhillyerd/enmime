@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/mail"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +14,7 @@ import (
 
 func TestIdentifySinglePart(t *testing.T) {
 	r := readMessage("non-mime.raw")
-	msg, err := mail.ReadMessage(r)
+	msg, err := ReadParts(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestIdentifySinglePart(t *testing.T) {
 
 func TestIdentifyMultiPart(t *testing.T) {
 	r := readMessage("html-mime-inline.raw")
-	msg, err := mail.ReadMessage(r)
+	msg, err := ReadParts(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,13 +38,34 @@ func TestIdentifyMultiPart(t *testing.T) {
 
 func TestIdentifyUnknownMultiPart(t *testing.T) {
 	r := readMessage("unknown-part-type.raw")
-	msg, err := mail.ReadMessage(r)
+	msg, err := ReadParts(r)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !isMultipartMessage(msg) {
 		t.Error("Failed to identify multipart MIME message of unknown type")
+	}
+}
+
+func TestIdentifyBinaryBody(t *testing.T) {
+	ttable := []struct {
+		filename    string
+		disposition string
+	}{
+		{filename: "attachment-only.raw", disposition: "attachment"},
+		{filename: "attachment-only-inline.raw", disposition: "inline"},
+	}
+	for _, tt := range ttable {
+		r := readMessage(tt.filename)
+		root, err := ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !isBinaryBody(root) {
+			t.Errorf("Failed to identify binary body %s in %q", tt.disposition, tt.filename)
+		}
 	}
 }
 
@@ -548,43 +569,43 @@ func TestDetectCharacterSetInHTML(t *testing.T) {
 func TestIsAttachment(t *testing.T) {
 	var htests = []struct {
 		want   bool
-		header mail.Header
+		header textproto.MIMEHeader
 	}{
 		{
 			want: true,
-			header: mail.Header{
+			header: textproto.MIMEHeader{
 				"Content-Disposition": []string{"attachment; filename=\"test.jpg\""}},
 		},
 		{
 			want: true,
-			header: mail.Header{
+			header: textproto.MIMEHeader{
 				"Content-Disposition": []string{"ATTACHMENT; filename=\"test.jpg\""}},
 		},
 		{
 			want: true,
-			header: mail.Header{
+			header: textproto.MIMEHeader{
 				"Content-Type":        []string{"image/jpg; name=\"test.jpg\""},
 				"Content-Disposition": []string{"attachment; filename=\"test.jpg\""},
 			},
 		},
 		{
 			want: true,
-			header: mail.Header{
+			header: textproto.MIMEHeader{
 				"Content-Type": []string{"attachment; filename=\"test.jpg\""}},
 		},
 		{
 			want: true,
-			header: mail.Header{
+			header: textproto.MIMEHeader{
 				"Content-Disposition": []string{"inline; filename=\"frog.jpg\""}},
 		},
 		{
 			want: false,
-			header: mail.Header{
+			header: textproto.MIMEHeader{
 				"Content-Disposition": []string{"non-attachment; filename=\"frog.jpg\""}},
 		},
 		{
 			want:   false,
-			header: mail.Header{},
+			header: textproto.MIMEHeader{},
 		},
 	}
 
@@ -599,42 +620,42 @@ func TestIsAttachment(t *testing.T) {
 func TestIsPlain(t *testing.T) {
 	var htests = []struct {
 		want         bool
-		header       mail.Header
+		header       textproto.MIMEHeader
 		emptyIsPlain bool
 	}{
 		{
 			want:         true,
-			header:       mail.Header{"Content-Type": []string{"text/plain"}},
+			header:       textproto.MIMEHeader{"Content-Type": []string{"text/plain"}},
 			emptyIsPlain: true,
 		},
 		{
 			want:         true,
-			header:       mail.Header{"Content-Type": []string{"text/html"}},
+			header:       textproto.MIMEHeader{"Content-Type": []string{"text/html"}},
 			emptyIsPlain: true,
 		},
 		{
 			want:         true,
-			header:       mail.Header{"Content-Type": []string{"text/html; charset=utf-8"}},
+			header:       textproto.MIMEHeader{"Content-Type": []string{"text/html; charset=utf-8"}},
 			emptyIsPlain: true,
 		},
 		{
 			want:         true,
-			header:       mail.Header{},
+			header:       textproto.MIMEHeader{},
 			emptyIsPlain: true,
 		},
 		{
 			want:         false,
-			header:       mail.Header{},
+			header:       textproto.MIMEHeader{},
 			emptyIsPlain: false,
 		},
 		{
 			want:         false,
-			header:       mail.Header{"Content-Type": []string{"image/jpeg;"}},
+			header:       textproto.MIMEHeader{"Content-Type": []string{"image/jpeg;"}},
 			emptyIsPlain: true,
 		},
 		{
 			want:         false,
-			header:       mail.Header{"Content-Type": []string{"application/octet-stream"}},
+			header:       textproto.MIMEHeader{"Content-Type": []string{"application/octet-stream"}},
 			emptyIsPlain: true,
 		},
 	}
@@ -673,7 +694,7 @@ func TestAttachmentOnly(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.HasPrefix(allBytes, []byte{0x89, 'P', 'N', 'G'}) {
-				t.Error("Content should be PNG image")
+				t.Errorf("Content should be PNG image, got: %v", allBytes)
 			}
 		}
 		if len(e.Inlines) != a.inlinesLen {
@@ -685,7 +706,7 @@ func TestAttachmentOnly(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.HasPrefix(allBytes, []byte{0x89, 'P', 'N', 'G'}) {
-				t.Error("Content should be PNG image")
+				t.Errorf("Content should be PNG image, got: %v", allBytes)
 			}
 		}
 	}
