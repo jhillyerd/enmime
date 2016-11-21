@@ -42,18 +42,15 @@ func dump(reader io.Reader, name string) error {
 
 	h1(name)
 
-	// TODO The below code can be re-enabled once the Root Part contains the message
-	// headers
-
-	// h2("Header")
-	// for k := range msg.Header {
-	// 	switch strings.ToLower(k) {
-	// 	case "from", "to", "bcc", "subject":
-	// 		continue
-	// 	}
-	// 	fmt.Printf("- %v: `%v`\n", k, mime.GetHeader(k))
-	// }
-	// br()
+	h2("Header")
+	for k := range e.Root.Header {
+		switch strings.ToLower(k) {
+		case "from", "to", "cc", "bcc", "reply-to", "subject":
+			continue
+		}
+		fmt.Printf("    %v: %v\n", k, e.GetHeader(k))
+	}
+	br()
 
 	h2("Envelope")
 	for _, hkey := range addressHeaders {
@@ -92,6 +89,14 @@ func dump(reader io.Reader, name string) error {
 		fmt.Println("Message was not MIME encoded")
 	} else {
 		printPart(e.Root, "    ")
+	}
+
+	if len(e.Errors) > 0 {
+		br()
+		h2("Errors")
+		for _, perr := range e.Errors {
+			fmt.Println("-", perr)
+		}
 	}
 
 	return nil
@@ -135,13 +140,17 @@ func printPart(p *enmime.Part, indent string) {
 	}
 	disposition := ""
 	if p.Disposition() != "" {
-		disposition = ", disposition: " + p.Disposition()
+		disposition = fmt.Sprintf(", disposition: %s", p.Disposition())
 	}
 	filename := ""
 	if p.FileName() != "" {
-		filename = ", filename: \"" + p.FileName() + "\""
+		filename = fmt.Sprintf(", filename: %q", p.FileName())
 	}
-	fmt.Printf("%s%s%s%s\n", myindent, ctype, disposition, filename)
+	errors := ""
+	if len(p.Errors()) > 0 {
+		errors = fmt.Sprintf(" (errors: %v)", len(p.Errors()))
+	}
+	fmt.Printf("%s%s%s%s%s\n", myindent, ctype, disposition, filename, errors)
 
 	// Recurse
 	if child != nil {

@@ -171,7 +171,8 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 					// Successful conversion
 					e.HTML = convHTML
 				} else {
-					// TODO unknown charset warning
+					// Conversion failed
+					root.addWarning(errorCharsetConversion, err.Error())
 				}
 			}
 		}

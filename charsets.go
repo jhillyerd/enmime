@@ -282,10 +282,13 @@ func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 }
 
 // Look for charset in the html meta tag (v4.01 and v5)
+// TODO Write tests for this function
 func charsetFromHTMLString(htmlString string) (string, error) {
 	if charsetRegexp == nil {
 		var err error
-		charsetRegexp, err = regexp.Compile(`(?i)<meta.*charset="?\s*(?P<charset>[a-zA-Z0-9_.:-]+)\s*"`)
+		// TODO Migrate to regexp.MustCompile global
+		charsetRegexp, err =
+			regexp.Compile(`(?i)<meta.*charset="?\s*(?P<charset>[a-zA-Z0-9_.:-]+)\s*"`)
 		if err != nil {
 			charsetRegexp = nil
 			return "", err

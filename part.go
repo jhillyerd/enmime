@@ -117,6 +117,11 @@ func (p *Part) SetContent(content []byte) {
 	p.decodedReader = bytes.NewBuffer(content)
 }
 
+// Errors returns a slice of Errors encountered while parsing this Part
+func (p *Part) Errors() []Error {
+	return p.errors
+}
+
 // Read implements io.Reader
 func (p *Part) Read(b []byte) (n int, err error) {
 	if p.decodedReader == nil {
@@ -140,9 +145,9 @@ func ReadParts(r io.Reader) (*Part, error) {
 	// Content-Type
 	contentType := header.Get("Content-Type")
 	if contentType == "" {
-		root.errors = append(
-			root.errors,
-			newWarning(errorContentTypeMissing, "MIME parts should have a Content-Type header"))
+		root.addWarning(
+			errorMissingContentType,
+			"MIME parts should have a Content-Type header")
 	}
 	mediatype, params, err := mime.ParseMediaType(header.Get("Content-Type"))
 	if contentType != "" && err != nil {
@@ -192,15 +197,14 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
 					// There are no more MIME parts, but the error belongs to our sibling or parent,
 					// because this Part doesn't actually exist.
-					merror := newWarning(
-						errorBoundaryMissing,
-						"Boundary %q was not closed correctly",
-						boundary)
 					owner := parent
 					if prevSibling != nil {
 						owner = prevSibling
 					}
-					owner.errors = append(owner.errors, merror)
+					owner.addWarning(
+						errorMissingBoundary,
+						"Boundary %q was not closed correctly",
+						boundary)
 					break
 				} else {
 					return fmt.Errorf("Error at boundary %v: %v", boundary, err)
