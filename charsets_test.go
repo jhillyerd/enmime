@@ -47,3 +47,23 @@ func TestCharsetReader(t *testing.T) {
 		}
 	}
 }
+
+// Search for character set info inside of HTML
+func TestFindCharsetInHTML(t *testing.T) {
+	var ttable = []struct {
+		input, want string
+	}{
+		{`<meta charset="UTF-8">`, "UTF-8"},
+		{`<meta attrib="value" charset="us-ascii"/>`, "us-ascii"},
+		{`<meta charset=big5 other=value>`, "big5"},
+		{`<meta charset=us-ascii>`, "us-ascii"},
+		{`<meta charset=windows-1250/>`, "windows-1250"},
+	}
+
+	for _, tt := range ttable {
+		got := findCharsetInHTML(tt.input)
+		if got != tt.want {
+			t.Errorf("Got: %q, want: %q, for: %q", got, tt.want, tt.input)
+		}
+	}
+}

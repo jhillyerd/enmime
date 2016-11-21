@@ -34,33 +34,27 @@ func main() {
 }
 
 func dump(reader io.Reader, name string) error {
-	// Read email using Go's net/mail
-	msg, err := mail.ReadMessage(reader)
-	if err != nil {
-		return fmt.Errorf("During mail.ReadMessage: %v", err)
-	}
-
 	// Parse message body with enmime
-	mime, err := enmime.EnvelopeFromMessage(msg)
+	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
-		return fmt.Errorf("During enmime.EnvelopeFromMessage: %v", err)
+		return fmt.Errorf("During enmime.ReadEnvelope: %v", err)
 	}
 
 	h1(name)
 
 	h2("Header")
-	for k := range msg.Header {
+	for k := range e.Root.Header {
 		switch strings.ToLower(k) {
-		case "from", "to", "bcc", "subject":
+		case "from", "to", "cc", "bcc", "reply-to", "subject":
 			continue
 		}
-		fmt.Printf("- %v: `%v`\n", k, mime.GetHeader(k))
+		fmt.Printf("    %v: %v\n", k, e.GetHeader(k))
 	}
 	br()
 
 	h2("Envelope")
 	for _, hkey := range addressHeaders {
-		addrlist, err := mime.AddressList(hkey)
+		addrlist, err := e.AddressList(hkey)
 		if err != nil {
 			if err == mail.ErrHeaderNotPresent {
 				continue
@@ -73,28 +67,36 @@ func dump(reader io.Reader, name string) error {
 		}
 		br()
 	}
-	fmt.Printf("### Subject\n%v\n", mime.GetHeader("Subject"))
+	fmt.Printf("### Subject\n%v\n", e.GetHeader("Subject"))
 	br()
 
 	h2("Body Text")
-	fmt.Println(mime.Text)
+	fmt.Println(e.Text)
 	fmt.Println()
 
 	h2("Body HTML")
-	fmt.Println(mime.HTML)
+	fmt.Println(e.HTML)
 	fmt.Println()
 
 	h2("Attachment List")
-	for _, a := range mime.Attachments {
+	for _, a := range e.Attachments {
 		fmt.Printf("- %v (%v)\n", a.FileName(), a.ContentType())
 	}
 	fmt.Println()
 
 	h2("MIME Part Tree")
-	if mime.Root == nil {
+	if e.Root == nil {
 		fmt.Println("Message was not MIME encoded")
 	} else {
-		printPart(mime.Root, "    ")
+		printPart(e.Root, "    ")
+	}
+
+	if len(e.Errors) > 0 {
+		br()
+		h2("Errors")
+		for _, perr := range e.Errors {
+			fmt.Println("-", perr)
+		}
 	}
 
 	return nil
@@ -138,13 +140,17 @@ func printPart(p *enmime.Part, indent string) {
 	}
 	disposition := ""
 	if p.Disposition() != "" {
-		disposition = ", disposition: " + p.Disposition()
+		disposition = fmt.Sprintf(", disposition: %s", p.Disposition())
 	}
 	filename := ""
 	if p.FileName() != "" {
-		filename = ", filename: \"" + p.FileName() + "\""
+		filename = fmt.Sprintf(", filename: %q", p.FileName())
 	}
-	fmt.Printf("%s%s%s%s\n", myindent, ctype, disposition, filename)
+	errors := ""
+	if len(p.Errors()) > 0 {
+		errors = fmt.Sprintf(" (errors: %v)", len(p.Errors()))
+	}
+	fmt.Printf("%s%s%s%s%s\n", myindent, ctype, disposition, filename, errors)
 
 	// Recurse
 	if child != nil {

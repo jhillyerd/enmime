@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jhillyerd/enmime"
 	"io"
-	"net/mail"
 	"os"
 	"path"
 	"strings"
@@ -48,36 +47,30 @@ func main() {
 }
 
 func dump(reader io.Reader, name string) error {
-	// Read email using Go's net/mail
-	msg, err := mail.ReadMessage(reader)
-	if err != nil {
-		return fmt.Errorf("During mail.ReadMessage: %v", err)
-	}
-
 	// Parse message body with enmime
-	mime, err := enmime.EnvelopeFromMessage(msg)
+	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
-		return fmt.Errorf("During enmime.EnvelopeFromMessage: %v", err)
+		return fmt.Errorf("During enmime.ReadEnvelope: %v", err)
 	}
 
 	h1(name)
 
 	h2("Envelope")
-	fmt.Printf("From: %v  \n", mime.GetHeader("From"))
-	fmt.Printf("To: %v  \n", mime.GetHeader("To"))
-	fmt.Printf("Subject: %v  \n", mime.GetHeader("Subject"))
+	fmt.Printf("From: %v  \n", e.GetHeader("From"))
+	fmt.Printf("To: %v  \n", e.GetHeader("To"))
+	fmt.Printf("Subject: %v  \n", e.GetHeader("Subject"))
 	fmt.Println()
 
 	h2("Body Text")
-	fmt.Println(mime.Text)
+	fmt.Println(e.Text)
 	fmt.Println()
 
 	h2("Body HTML")
-	fmt.Println(mime.HTML)
+	fmt.Println(e.HTML)
 	fmt.Println()
 
 	h2("Attachment List")
-	for _, a := range mime.Attachments {
+	for _, a := range e.Attachments {
 		newFileName := path.Join(*outdir, a.FileName())
 		f, err := os.Create(newFileName)
 		if err != nil {
@@ -96,10 +89,10 @@ func dump(reader io.Reader, name string) error {
 	fmt.Println()
 
 	h2("MIME Part Tree")
-	if mime.Root == nil {
+	if e.Root == nil {
 		fmt.Println("Message was not MIME encoded")
 	} else {
-		printPart(mime.Root, "    ")
+		printPart(e.Root, "    ")
 	}
 
 	return nil

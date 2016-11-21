@@ -7,7 +7,10 @@ import (
 type errorName string
 
 const (
-	errorBoundaryMissing errorName = "Boundary Missing"
+	errorMissingBoundary    errorName = "Missing Boundary"
+	errorMissingContentType errorName = "Missing Content-Type"
+	errorCharsetConversion  errorName = "Character Set Conversion"
+	errorContentEncoding    errorName = "Content Encoding"
 )
 
 // Error describes an error encountered while parsing.
@@ -17,28 +20,33 @@ type Error struct {
 	Severe bool   // Indicates that a portion of the message was lost during parsing
 }
 
-// Create a new Error with Severe=false
-func newWarning(name errorName, detailFmt string, args ...interface{}) Error {
-	return Error{
-		string(name),
-		fmt.Sprintf(detailFmt, args...),
-		false,
-	}
-}
-
-// Create a new Error with Severe=true
-func newError(name errorName, detailFmt string, args ...interface{}) Error {
-	return Error{
-		string(name),
-		fmt.Sprintf(detailFmt, args...),
-		true,
-	}
-}
-
+// String formats the enmime.Error as a string
 func (e *Error) String() string {
 	sev := "W"
 	if e.Severe {
 		sev = "E"
 	}
 	return fmt.Sprintf("[%s] %s: %s", sev, e.Name, e.Detail)
+}
+
+// addWarning builds a severe Error and appends to the Part error slice
+func (p *Part) addError(name errorName, detailFmt string, args ...interface{}) {
+	p.errors = append(
+		p.errors,
+		Error{
+			string(name),
+			fmt.Sprintf(detailFmt, args...),
+			true,
+		})
+}
+
+// addWarning builds a non-severe Error and appends to the Part error slice
+func (p *Part) addWarning(name errorName, detailFmt string, args ...interface{}) {
+	p.errors = append(
+		p.errors,
+		Error{
+			string(name),
+			fmt.Sprintf(detailFmt, args...),
+			false,
+		})
 }

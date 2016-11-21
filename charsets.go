@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	"errors"
-
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -244,8 +242,18 @@ var encodings = map[string]struct {
 	"x-user-defined":      {charmap.XUserDefined, "x-user-defined"},
 }
 
-var charsetRegexp *regexp.Regexp
-var errParsingCharset = errors.New("Could not find a valid charset in the HTML body")
+var metaTagCharsetRegexp = regexp.MustCompile(
+	`(?i)<meta.*charset="?\s*(?P<charset>[a-zA-Z0-9_.:-]+)\s*"?`)
+var metaTagCharsetIndex int
+
+func init() {
+	// Find the submatch index for charset
+	for i, name := range metaTagCharsetRegexp.SubexpNames() {
+		if name == "charset" {
+			metaTagCharsetIndex = i
+		}
+	}
+}
 
 // convertToUTF8String uses the provided charset to decode a slice of bytes into a normal
 // UTF-8 string.
@@ -282,29 +290,11 @@ func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 }
 
 // Look for charset in the html meta tag (v4.01 and v5)
-func charsetFromHTMLString(htmlString string) (string, error) {
-	if charsetRegexp == nil {
-		var err error
-		charsetRegexp, err = regexp.Compile(`(?i)<meta.*charset="?\s*(?P<charset>[a-zA-Z0-9_.:-]+)\s*"`)
-		if err != nil {
-			charsetRegexp = nil
-			return "", err
-		}
-	}
-
-	charsetMatches := charsetRegexp.FindAllStringSubmatch(htmlString, -1)
-
+func findCharsetInHTML(html string) string {
+	charsetMatches := metaTagCharsetRegexp.FindAllStringSubmatch(html, -1)
 	if len(charsetMatches) > 0 {
-		n1 := charsetRegexp.SubexpNames()
-		r2 := charsetMatches[0]
-
-		md := map[string]string{}
-		for i, n := range r2 {
-			md[n1[i]] = n
-		}
-
-		return md["charset"], nil
+		return charsetMatches[0][metaTagCharsetIndex]
 	}
 
-	return "", errParsingCharset
+	return ""
 }
