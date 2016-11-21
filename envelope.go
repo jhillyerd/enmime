@@ -152,7 +152,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 		e.HTML = rawHTML
 		if charset == "" {
 			// Search for charset in HTML metadata
-			if charset, _ = charsetFromHTMLString(rawHTML); charset != "" {
+			if charset = findCharsetInHTML(rawHTML); charset != "" {
 				// Found charset in HTML
 				if convHTML, err := convertToUTF8String(charset, bodyBytes); err == nil {
 					// Successful conversion

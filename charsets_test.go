@@ -61,10 +61,7 @@ func TestFindCharsetInHTML(t *testing.T) {
 	}
 
 	for _, tt := range ttable {
-		got, err := charsetFromHTMLString(tt.input)
-		if err != nil {
-			t.Fatalf("Got error %q for input %q", err, tt.input)
-		}
+		got := findCharsetInHTML(tt.input)
 		if got != tt.want {
 			t.Errorf("Got: %q, want: %q, for: %q", got, tt.want, tt.input)
 		}
