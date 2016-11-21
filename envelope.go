@@ -180,28 +180,13 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 		mediatype = "attachment"
 	}
 
-	// TODO Find a way to share the duplicated code below with parseParts()
 	// Determine and set headers for: content disposition, filename and character set
-	disposition, dparams, err := mime.ParseMediaType(root.Header.Get("Content-Disposition"))
-	if err == nil {
-		// Disposition is optional
-		root.SetDisposition(disposition)
-		root.SetFileName(decodeHeader(dparams["filename"]))
-	}
-	if root.FileName() == "" && mparams["name"] != "" {
-		root.SetFileName(decodeHeader(mparams["name"]))
-	}
-	if root.FileName() == "" && mparams["file"] != "" {
-		root.SetFileName(decodeHeader(mparams["file"]))
-	}
-	if root.Charset() == "" {
-		root.SetCharset(mparams["charset"])
-	}
+	root.setupContentHeaders(mparams)
 
 	// Add our part to the appropriate section of the Envelope
 	e.Root = NewPart(nil, mediatype)
 
-	if disposition == "inline" {
+	if root.disposition == "inline" {
 		e.Inlines = append(e.Inlines, root)
 	} else {
 		e.Attachments = append(e.Attachments, root)

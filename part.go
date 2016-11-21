@@ -124,6 +124,27 @@ func (p *Part) Read(b []byte) (n int, err error) {
 	return p.utf8Reader.Read(b)
 }
 
+// setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
+// the disposition, filename, and charset fields.
+func (p *Part) setupContentHeaders(mediaParams map[string]string) {
+	// Determine content disposition, filename, character set
+	disposition, dparams, err := mime.ParseMediaType(p.Header.Get("Content-Disposition"))
+	if err == nil {
+		// Disposition is optional
+		p.SetDisposition(disposition)
+		p.SetFileName(decodeHeader(dparams["filename"]))
+	}
+	if p.FileName() == "" && mediaParams["name"] != "" {
+		p.SetFileName(decodeHeader(mediaParams["name"]))
+	}
+	if p.FileName() == "" && mediaParams["file"] != "" {
+		p.SetFileName(decodeHeader(mediaParams["file"]))
+	}
+	if p.Charset() == "" {
+		p.SetCharset(mediaParams["charset"])
+	}
+}
+
 // buildContentReaders sets up the decodedReader and ut8Reader based on the Part headers.  If no
 // translation is required at a particular stage, the reader will be the same as its predecessor.
 // If the content encoding type is not recognized, no effort will be made to do character set
@@ -277,22 +298,8 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 		}
 		prevSibling = p
 
-		// Determine content disposition, filename, character set
-		disposition, dparams, err := mime.ParseMediaType(mrp.Header.Get("Content-Disposition"))
-		if err == nil {
-			// Disposition is optional
-			p.SetDisposition(disposition)
-			p.SetFileName(decodeHeader(dparams["filename"]))
-		}
-		if p.FileName() == "" && mparams["name"] != "" {
-			p.SetFileName(decodeHeader(mparams["name"]))
-		}
-		if p.FileName() == "" && mparams["file"] != "" {
-			p.SetFileName(decodeHeader(mparams["file"]))
-		}
-		if p.Charset() == "" {
-			p.SetCharset(mparams["charset"])
-		}
+		// Set disposition, filename, charset if available
+		p.setupContentHeaders(mparams)
 
 		boundary := mparams["boundary"]
 		if boundary != "" {
