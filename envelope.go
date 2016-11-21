@@ -141,27 +141,14 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 		}
 	}
 
-	// Setup character set transcoding
-	var cr io.Reader
-	if charset == "" {
-		// No character set information, treat as UTF-8
-		cr = root
-	} else {
-		// Convert text to UTF8 if content type specified a charset
-		var err error
-		if cr, err = newCharsetReader(charset, root); err != nil {
-			return err
-		}
-	}
-
 	// Read transcoded text
-	bodyBytes, err := ioutil.ReadAll(cr)
+	bodyBytes, err := ioutil.ReadAll(root)
 	if err != nil {
 		return err
 	}
 	if isHTML {
 		rawHTML := string(bodyBytes)
-		// Empty e.Text will trigger html2text conversion
+		// Note: Empty e.Text will trigger html2text conversion
 		e.HTML = rawHTML
 		if charset == "" {
 			// Search for charset in HTML metadata
@@ -241,20 +228,11 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate text body
 	if mediatype == "multipart/altern" {
-		match := root.BreadthMatchFirst(func(p *Part) bool {
+		p := root.BreadthMatchFirst(func(p *Part) bool {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
-		if match != nil {
-			var reader io.Reader
-			if match.Charset() != "" {
-				reader, err = newCharsetReader(match.Charset(), match)
-				if err != nil {
-					return err
-				}
-			} else {
-				reader = match
-			}
-			allBytes, ioerr := ioutil.ReadAll(reader)
+		if p != nil {
+			allBytes, ioerr := ioutil.ReadAll(p)
 			if ioerr != nil {
 				return ioerr
 			}
@@ -262,23 +240,14 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 		}
 	} else {
 		// multipart is of a mixed type
-		match := root.DepthMatchAll(func(p *Part) bool {
+		parts := root.DepthMatchAll(func(p *Part) bool {
 			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
 		})
-		for i, m := range match {
+		for i, p := range parts {
 			if i > 0 {
 				e.Text += "\n--\n"
 			}
-			var reader io.Reader
-			if m.Charset() != "" {
-				reader, err = newCharsetReader(m.Charset(), m)
-				if err != nil {
-					return err
-				}
-			} else {
-				reader = m
-			}
-			allBytes, ioerr := ioutil.ReadAll(reader)
+			allBytes, ioerr := ioutil.ReadAll(p)
 			if ioerr != nil {
 				return ioerr
 			}
@@ -287,22 +256,13 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	}
 
 	// Locate HTML body
-	match := root.BreadthMatchFirst(func(p *Part) bool {
+	p := root.BreadthMatchFirst(func(p *Part) bool {
 		return p.ContentType() == "text/html" && p.Disposition() != "attachment"
 	})
-	if match != nil {
-		var reader io.Reader
-		if match.Charset() != "" {
-			reader, err = newCharsetReader(match.Charset(), match)
-			if err != nil {
-				return err
-			}
-		} else {
-			reader = match
-		}
-		allBytes, err := ioutil.ReadAll(reader)
-		if err != nil {
-			return err
+	if p != nil {
+		allBytes, ioerr := ioutil.ReadAll(p)
+		if ioerr != nil {
+			return ioerr
 		}
 		e.HTML += string(allBytes)
 	}

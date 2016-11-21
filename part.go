@@ -17,19 +17,18 @@ import (
 // node in the MIME multipart tree.  The Content-Type, Disposition and File Name are parsed out of
 // the header for easier access.
 type Part struct {
-	Header      textproto.MIMEHeader
-	parent      *Part
-	firstChild  *Part
-	nextSibling *Part
-	contentType string
-	disposition string
-	fileName    string
-	charset     string
-	errors      []Error
-
-	// decodedReader currently just hands out content from a []byte, but will allow enmime to decode
-	// on demand in the future.
-	decodedReader io.Reader
+	Header        textproto.MIMEHeader // Header for this Part
+	parent        *Part
+	firstChild    *Part
+	nextSibling   *Part
+	contentType   string
+	disposition   string
+	fileName      string
+	charset       string
+	errors        []Error   // Errors encountered while parsing this part
+	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
+	decodedReader io.Reader // The content decoded from quoted-printable or base64
+	utf8Reader    io.Reader // The decoded content converted to UTF-8
 }
 
 // NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
@@ -112,11 +111,6 @@ func (p *Part) SetCharset(charset string) {
 	p.charset = charset
 }
 
-// SetContent sets the content of this part (can be empty)
-func (p *Part) SetContent(content []byte) {
-	p.decodedReader = bytes.NewBuffer(content)
-}
-
 // Errors returns a slice of Errors encountered while parsing this Part
 func (p *Part) Errors() []Error {
 	return p.errors
@@ -124,10 +118,63 @@ func (p *Part) Errors() []Error {
 
 // Read implements io.Reader
 func (p *Part) Read(b []byte) (n int, err error) {
-	if p.decodedReader == nil {
+	if p.utf8Reader == nil {
 		return 0, io.EOF
 	}
-	return p.decodedReader.Read(b)
+	return p.utf8Reader.Read(b)
+}
+
+// buildContentReaders sets up the decodedReader and ut8Reader based on the Part headers.  If no
+// translation is required at a particular stage, the reader will be the same as its predecessor.
+// If the content encoding type is not recognized, no effort will be made to do character set
+// conversion.
+func (p *Part) buildContentReaders(r io.Reader) error {
+	// Read bytes into buffer
+	// TODO Try this without loading content into a buffer
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(r); err != nil {
+		return err
+	}
+
+	var contentReader io.Reader = buf
+	valid := true
+
+	// Raw content reader
+	p.rawReader = buf
+
+	// Build content decoding reader
+	encoding := p.Header.Get("Content-Transfer-Encoding")
+	switch strings.ToLower(encoding) {
+	case "quoted-printable":
+		contentReader = quotedprintable.NewReader(contentReader)
+	case "base64":
+		contentReader = newBase64Cleaner(contentReader)
+		contentReader = base64.NewDecoder(base64.StdEncoding, contentReader)
+	case "8bit", "7bit", "binary", "":
+		// No decoding required
+	default:
+		// Unknown encoding
+		valid = false
+		p.addWarning(
+			errorContentEncoding,
+			"Unrecognized Content-Transfer-Encoding type %q",
+			encoding)
+	}
+	p.decodedReader = contentReader
+
+	if valid {
+		// decodedReader is good; build character set conversion reader
+		if p.Charset() != "" {
+			if reader, err := newCharsetReader(p.Charset(), contentReader); err == nil {
+				contentReader = reader
+			} else {
+				// Failed to get a conversion reader
+				p.addWarning(errorCharsetConversion, err.Error())
+			}
+		}
+	}
+	p.utf8Reader = contentReader
+	return nil
 }
 
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
@@ -154,6 +201,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 		return nil, err
 	}
 	root.contentType = mediatype
+	root.charset = params["charset"]
 
 	if strings.HasPrefix(mediatype, "multipart/") {
 		// Content is multipart, parse it
@@ -163,12 +211,10 @@ func ReadParts(r io.Reader) (*Part, error) {
 			return nil, err
 		}
 	} else {
-		// Content is text or data, decode it
-		content, err := decodeSection(header.Get("Content-Transfer-Encoding"), br)
-		if err != nil {
+		// Content is text or data, build content reader pipeline
+		if err := root.buildContentReaders(br); err != nil {
 			return nil, err
 		}
-		root.SetContent(content)
 	}
 
 	return root, nil
@@ -257,38 +303,12 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 				return err
 			}
 		} else {
-			// Content is text or data, decode it
-			data, err := decodeSection(mrp.Header.Get("Content-Transfer-Encoding"), mrp)
-			if err != nil {
+			// Content is text or data, build content reader pipeline
+			if err := p.buildContentReaders(mrp); err != nil {
 				return err
 			}
-			p.SetContent(data)
 		}
 	}
 
 	return nil
-}
-
-// decodeSection attempts to decode the data from reader using the algorithm listed in
-// the Content-Transfer-Encoding header, returning the raw data if it does not known
-// the encoding type.
-func decodeSection(encoding string, reader io.Reader) ([]byte, error) {
-	// Default is to just read input into bytes
-	decoder := reader
-
-	switch strings.ToLower(encoding) {
-	case "quoted-printable":
-		decoder = quotedprintable.NewReader(reader)
-	case "base64":
-		cleaner := newBase64Cleaner(reader)
-		decoder = base64.NewDecoder(base64.StdEncoding, cleaner)
-	}
-
-	// Read bytes into buffer
-	buf := new(bytes.Buffer)
-	_, err := buf.ReadFrom(decoder)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }

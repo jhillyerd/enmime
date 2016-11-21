@@ -10,6 +10,7 @@ const (
 	errorMissingBoundary    errorName = "Missing Boundary"
 	errorMissingContentType errorName = "Missing Content-Type"
 	errorCharsetConversion  errorName = "Character Set Conversion"
+	errorContentEncoding    errorName = "Content Encoding"
 )
 
 // Error describes an error encountered while parsing.

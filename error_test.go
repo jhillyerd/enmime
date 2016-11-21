@@ -43,6 +43,7 @@ func TestWarnings(t *testing.T) {
 	}{
 		{"bad-final-boundary.raw", errorMissingBoundary},
 		{"missing-content-type.raw", errorMissingContentType},
+		{"unk-encoding-part.raw", errorContentEncoding},
 		// {"unk-charset-html-only.raw", errorCharsetConversion},
 		// {"unk-charset-part.raw", errorCharsetConversion},
 	}
