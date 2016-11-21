@@ -129,8 +129,7 @@ func (p *Part) Read(b []byte) (n int, err error) {
 // If the content encoding type is not recognized, no effort will be made to do character set
 // conversion.
 func (p *Part) buildContentReaders(r io.Reader) error {
-	// Read bytes into buffer
-	// TODO Try this without loading content into a buffer
+	// Read raw content into buffer
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(r); err != nil {
 		return err
@@ -140,7 +139,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	valid := true
 
 	// Raw content reader
-	p.rawReader = buf
+	p.rawReader = contentReader
 
 	// Build content decoding reader
 	encoding := p.Header.Get("Content-Transfer-Encoding")
