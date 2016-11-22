@@ -11,6 +11,7 @@ const (
 	errorMissingContentType errorName = "Missing Content-Type"
 	errorCharsetConversion  errorName = "Character Set Conversion"
 	errorContentEncoding    errorName = "Content Encoding"
+	errorPlainTextFromHTML  errorName = "Plain Text from HTML"
 )
 
 // Error describes an error encountered while parsing.

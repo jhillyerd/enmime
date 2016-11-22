@@ -77,9 +77,6 @@ func TestParseNonMime(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
-	}
 	if !strings.Contains(e.Text, want) {
 		t.Errorf("Expected %q to contain %q", e.Text, want)
 	}
@@ -95,8 +92,14 @@ func TestParseNonMimeHTML(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
-	if !e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be true")
+	if len(e.Errors) == 1 {
+		want := string(errorPlainTextFromHTML)
+		got := e.Errors[0].Name
+		if got != want {
+			t.Errorf("e.Errors[0] got: %v, want: %v", got, want)
+		}
+	} else {
+		t.Errorf("len(e.Errors) got: %v, want: 1", len(e.Errors))
 	}
 
 	want := "This is *a* *test* mailing"
@@ -117,9 +120,6 @@ func TestParseMimeTree(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
-	}
 	if e.Root == nil {
 		t.Error("Message should have a root node")
 	}
@@ -131,9 +131,6 @@ func TestParseInlineText(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
-	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Test of text section"
@@ -149,9 +146,6 @@ func TestParseMultiMixedText(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
-	}
 
 	want := "Section one\n\n--\nSection two"
 	if e.Text != want {
@@ -165,9 +159,6 @@ func TestParseMultiSignedText(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
-	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Section one\n\n--\nSection two"
@@ -183,9 +174,6 @@ func TestParseQuotedPrintable(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
-	}
 
 	want := "Phasellus sit amet arcu"
 	if !strings.Contains(e.Text, want) {
@@ -199,9 +187,6 @@ func TestParseQuotedPrintableMime(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
-	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "Nullam venenatis ante"
@@ -235,9 +220,6 @@ func TestParseAttachment(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
-	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "A text section"
@@ -277,9 +259,6 @@ func TestParseAttachmentOctet(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
-	}
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
 	}
 
 	want := "A text section"
@@ -395,10 +374,6 @@ func TestParseInline(t *testing.T) {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be false")
-	}
-
 	want := "Test of text section"
 	if !strings.Contains(e.Text, want) {
 		t.Errorf("Text: %q should contain: %q", e.Text, want)
@@ -437,8 +412,14 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if !e.IsTextFromHTML {
-		t.Error("Expected text-from-HTML flag to be true")
+	if len(e.Errors) == 1 {
+		want := string(errorPlainTextFromHTML)
+		got := e.Errors[0].Name
+		if got != want {
+			t.Errorf("e.Errors[0] got: %v, want: %v", got, want)
+		}
+	} else {
+		t.Errorf("len(e.Errors) got: %v, want: 1", len(e.Errors))
 	}
 
 	want := "Test of HTML section"

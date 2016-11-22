@@ -24,15 +24,14 @@ var AddressHeaders = map[string]bool{
 
 // Envelope is a simplified wrapper for MIME email messages.
 type Envelope struct {
-	Text           string                // The plain text portion of the message
-	HTML           string                // The HTML portion of the message
-	IsTextFromHTML bool                  // Plain text was empty; down-converted HTML
-	Root           *Part                 // The top-level Part
-	Attachments    []*Part               // All parts having a Content-Disposition of attachment
-	Inlines        []*Part               // All parts having a Content-Disposition of inline
-	OtherParts     []*Part               // All parts not in Attachments and Inlines
-	Errors         []*Error              // Errors encountered while parsing
-	header         *textproto.MIMEHeader // Header from original message
+	Text        string                // The plain text portion of the message
+	HTML        string                // The HTML portion of the message
+	Root        *Part                 // The top-level Part
+	Attachments []*Part               // All parts having a Content-Disposition of attachment
+	Inlines     []*Part               // All parts having a Content-Disposition of inline
+	OtherParts  []*Part               // All parts not in Attachments and Inlines
+	Errors      []*Error              // Errors encountered while parsing
+	header      *textproto.MIMEHeader // Header from original message
 }
 
 // GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
@@ -101,6 +100,24 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 		}
 	}
 
+	// Down-convert HTML to text if necessary
+	if e.Text == "" && e.HTML != "" {
+		// We always warn when this happens
+		e.Root.addWarning(
+			errorPlainTextFromHTML,
+			"Message did not contain a text/plain part")
+		var err error
+		if e.Text, err = html2text.FromString(e.HTML); err != nil {
+			// Downcoversion shouldn't fail
+			e.Text = ""
+			p := e.Root.BreadthMatchFirst(matchHTMLBodyPart)
+			p.addError(
+				errorPlainTextFromHTML,
+				"Failed to downconvert HTML: %v",
+				err)
+		}
+	}
+
 	// Copy part errors into Envelope
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
@@ -110,17 +127,6 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 			}
 			return false
 		})
-	}
-
-	// Down-convert HTML to text if necessary
-	if e.Text == "" && e.HTML != "" {
-		e.IsTextFromHTML = true
-		var err error
-		if e.Text, err = html2text.FromString(e.HTML); err != nil {
-			// Fail gently
-			e.Text = ""
-			return e, err
-		}
 	}
 
 	return e, nil
@@ -241,9 +247,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	}
 
 	// Locate HTML body
-	p := root.BreadthMatchFirst(func(p *Part) bool {
-		return p.ContentType == "text/html" && p.Disposition != "attachment"
-	})
+	p := root.BreadthMatchFirst(matchHTMLBodyPart)
 	if p != nil {
 		allBytes, ioerr := ioutil.ReadAll(p)
 		if ioerr != nil {
@@ -346,4 +350,9 @@ func isBinaryBody(root *Part) bool {
 	}
 
 	return !isPlain(root.Header, true)
+}
+
+// Used by Part matchers to locate the HTML body.  Not inlined because it's used in multiple places.
+func matchHTMLBodyPart(p *Part) bool {
+	return p.ContentType == "text/html" && p.Disposition != "attachment"
 }
