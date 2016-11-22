@@ -255,9 +255,9 @@ func TestParseAttachment(t *testing.T) {
 	}
 
 	want = "test.html"
-	got := e.Attachments[0].FileName()
+	got := e.Attachments[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 
 	want = "<html>"
@@ -297,9 +297,9 @@ func TestParseAttachmentOctet(t *testing.T) {
 	}
 
 	want = "ATTACHMENT.EXE"
-	got := e.Attachments[0].FileName()
+	got := e.Attachments[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 
 	wantBytes := []byte{
@@ -333,9 +333,9 @@ func TestParseAttachmentApplication(t *testing.T) {
 	}
 
 	want := "some.doc"
-	got := e.Attachments[0].FileName()
+	got := e.Attachments[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 }
 
@@ -364,9 +364,9 @@ func TestParseOtherParts(t *testing.T) {
 	}
 
 	want = "B05.gif"
-	got := e.OtherParts[0].FileName()
+	got := e.OtherParts[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 	wantBytes := []byte{
 		0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0xf, 0x0, 0xf, 0x0, 0xa2, 0x5, 0x0, 0xde, 0xeb,
@@ -417,9 +417,9 @@ func TestParseInline(t *testing.T) {
 	}
 
 	want = "favicon.png"
-	got := e.Inlines[0].FileName()
+	got := e.Inlines[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 	allBytes, err := ioutil.ReadAll(e.Inlines[0])
 	if err != nil {
@@ -459,9 +459,9 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 	}
 
 	want = "favicon.png"
-	got := e.Inlines[0].FileName()
+	got := e.Inlines[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 	allBytes, err := ioutil.ReadAll(e.Inlines[0])
 	if err != nil {
@@ -484,9 +484,9 @@ func TestParseNestedHeaders(t *testing.T) {
 	}
 
 	want := "favicon.png"
-	got := e.Inlines[0].FileName()
+	got := e.Inlines[0].FileName
 	if got != want {
-		t.Error("FileName() got:", got, "want:", want)
+		t.Error("FileName got:", got, "want:", want)
 	}
 	want = "<8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet>"
 	got = e.Inlines[0].Header.Get("Content-Id")

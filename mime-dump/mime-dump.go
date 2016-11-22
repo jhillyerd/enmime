@@ -80,7 +80,7 @@ func dump(reader io.Reader, name string) error {
 
 	h2("Attachment List")
 	for _, a := range e.Attachments {
-		fmt.Printf("- %v (%v)\n", a.FileName(), a.ContentType())
+		fmt.Printf("- %v (%v)\n", a.FileName, a.ContentType)
 	}
 	fmt.Println()
 
@@ -117,8 +117,8 @@ func br() {
 
 // printPart pretty prints the Part tree
 func printPart(p *enmime.Part, indent string) {
-	sibling := p.NextSibling()
-	child := p.FirstChild()
+	sibling := p.NextSibling
+	child := p.FirstChild
 
 	// Compute indent strings
 	myindent := indent + "`-- "
@@ -127,7 +127,7 @@ func printPart(p *enmime.Part, indent string) {
 		myindent = indent + "|-- "
 		childindent = indent + "|   "
 	}
-	if p.Parent() == nil {
+	if p.Parent == nil {
 		// Root shouldn't be decorated, has no siblings
 		myindent = indent
 		childindent = indent
@@ -135,20 +135,20 @@ func printPart(p *enmime.Part, indent string) {
 
 	// Format and print this node
 	ctype := "MISSING TYPE"
-	if p.ContentType() != "" {
-		ctype = p.ContentType()
+	if p.ContentType != "" {
+		ctype = p.ContentType
 	}
 	disposition := ""
-	if p.Disposition() != "" {
-		disposition = fmt.Sprintf(", disposition: %s", p.Disposition())
+	if p.Disposition != "" {
+		disposition = fmt.Sprintf(", disposition: %s", p.Disposition)
 	}
 	filename := ""
-	if p.FileName() != "" {
-		filename = fmt.Sprintf(", filename: %q", p.FileName())
+	if p.FileName != "" {
+		filename = fmt.Sprintf(", filename: %q", p.FileName)
 	}
 	errors := ""
-	if len(p.Errors()) > 0 {
-		errors = fmt.Sprintf(" (errors: %v)", len(p.Errors()))
+	if len(p.Errors) > 0 {
+		errors = fmt.Sprintf(" (errors: %v)", len(p.Errors))
 	}
 	fmt.Printf("%s%s%s%s%s\n", myindent, ctype, disposition, filename, errors)
 

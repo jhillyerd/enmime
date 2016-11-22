@@ -105,7 +105,7 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
 			// Using DepthMatchAll to traverse all parts, don't care about result
-			for _, perr := range part.errors {
+			for _, perr := range part.Errors {
 				e.Errors = append(e.Errors, &perr)
 			}
 			return false
@@ -186,7 +186,7 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 	// Add our part to the appropriate section of the Envelope
 	e.Root = NewPart(nil, mediatype)
 
-	if root.disposition == "inline" {
+	if root.Disposition == "inline" {
 		e.Inlines = append(e.Inlines, root)
 	} else {
 		e.Attachments = append(e.Attachments, root)
@@ -214,7 +214,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	// Locate text body
 	if mediatype == "multipart/altern" {
 		p := root.BreadthMatchFirst(func(p *Part) bool {
-			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
+			return p.ContentType == "text/plain" && p.Disposition != "attachment"
 		})
 		if p != nil {
 			allBytes, ioerr := ioutil.ReadAll(p)
@@ -226,7 +226,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	} else {
 		// multipart is of a mixed type
 		parts := root.DepthMatchAll(func(p *Part) bool {
-			return p.ContentType() == "text/plain" && p.Disposition() != "attachment"
+			return p.ContentType == "text/plain" && p.Disposition != "attachment"
 		})
 		for i, p := range parts {
 			if i > 0 {
@@ -242,7 +242,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate HTML body
 	p := root.BreadthMatchFirst(func(p *Part) bool {
-		return p.ContentType() == "text/html" && p.Disposition() != "attachment"
+		return p.ContentType == "text/html" && p.Disposition != "attachment"
 	})
 	if p != nil {
 		allBytes, ioerr := ioutil.ReadAll(p)
@@ -254,26 +254,26 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate attachments
 	e.Attachments = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition() == "attachment" || p.ContentType() == "application/octet-stream"
+		return p.Disposition == "attachment" || p.ContentType == "application/octet-stream"
 	})
 
 	// Locate inlines
 	e.Inlines = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition() == "inline"
+		return p.Disposition == "inline"
 	})
 
 	// Locate others parts not considered in attachments or inlines
 	e.OtherParts = root.BreadthMatchAll(func(p *Part) bool {
-		if strings.HasPrefix(p.ContentType(), "multipart/") {
+		if strings.HasPrefix(p.ContentType, "multipart/") {
 			return false
 		}
-		if p.Disposition() != "" {
+		if p.Disposition != "" {
 			return false
 		}
-		if p.ContentType() == "application/octet-stream" {
+		if p.ContentType == "application/octet-stream" {
 			return false
 		}
-		return p.ContentType() != "text/plain" && p.ContentType() != "text/html"
+		return p.ContentType != "text/plain" && p.ContentType != "text/html"
 	})
 
 	return nil

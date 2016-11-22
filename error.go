@@ -31,8 +31,8 @@ func (e *Error) String() string {
 
 // addWarning builds a severe Error and appends to the Part error slice
 func (p *Part) addError(name errorName, detailFmt string, args ...interface{}) {
-	p.errors = append(
-		p.errors,
+	p.Errors = append(
+		p.Errors,
 		Error{
 			string(name),
 			fmt.Sprintf(detailFmt, args...),
@@ -42,8 +42,8 @@ func (p *Part) addError(name errorName, detailFmt string, args ...interface{}) {
 
 // addWarning builds a non-severe Error and appends to the Part error slice
 func (p *Part) addWarning(name errorName, detailFmt string, args ...interface{}) {
-	p.errors = append(
-		p.errors,
+	p.Errors = append(
+		p.Errors,
 		Error{
 			string(name),
 			fmt.Sprintf(detailFmt, args...),

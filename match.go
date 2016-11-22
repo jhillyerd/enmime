@@ -23,10 +23,10 @@ func (p *Part) BreadthMatchFirst(matcher PartMatcher) *Part {
 			return p
 		}
 		q.Remove(e)
-		c := p.FirstChild()
+		c := p.FirstChild
 		for c != nil {
 			q.PushBack(c)
-			c = c.NextSibling()
+			c = c.NextSibling
 		}
 	}
 
@@ -49,10 +49,10 @@ func (p *Part) BreadthMatchAll(matcher PartMatcher) []*Part {
 			matches = append(matches, p)
 		}
 		q.Remove(e)
-		c := p.FirstChild()
+		c := p.FirstChild
 		for c != nil {
 			q.PushBack(c)
-			c = c.NextSibling()
+			c = c.NextSibling
 		}
 	}
 
@@ -67,17 +67,17 @@ func (p *Part) DepthMatchFirst(matcher PartMatcher) *Part {
 		if matcher(p) {
 			return p
 		}
-		c := p.FirstChild()
+		c := p.FirstChild
 		if c != nil {
 			p = c
 		} else {
-			for p.NextSibling() == nil {
+			for p.NextSibling == nil {
 				if p == root {
 					return nil
 				}
-				p = p.Parent()
+				p = p.Parent
 			}
-			p = p.NextSibling()
+			p = p.NextSibling
 		}
 	}
 }
@@ -91,17 +91,17 @@ func (p *Part) DepthMatchAll(matcher PartMatcher) []*Part {
 		if matcher(p) {
 			matches = append(matches, p)
 		}
-		c := p.FirstChild()
+		c := p.FirstChild
 		if c != nil {
 			p = c
 		} else {
-			for p.NextSibling() == nil {
+			for p.NextSibling == nil {
 				if p == root {
 					return matches
 				}
-				p = p.Parent()
+				p = p.Parent
 			}
-			p = p.NextSibling()
+			p = p.NextSibling
 		}
 	}
 }

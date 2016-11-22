@@ -17,15 +17,16 @@ import (
 // node in the MIME multipart tree.  The Content-Type, Disposition and File Name are parsed out of
 // the header for easier access.
 type Part struct {
-	Header        textproto.MIMEHeader // Header for this Part
-	parent        *Part
-	firstChild    *Part
-	nextSibling   *Part
-	contentType   string
-	disposition   string
-	fileName      string
-	charset       string
-	errors        []Error   // Errors encountered while parsing this part
+	Header      textproto.MIMEHeader // Header for this Part
+	Parent      *Part                // Parent of this part (can be nil)
+	FirstChild  *Part                // FirstChild is the top most child of this part
+	NextSibling *Part                // NextSibling of this part
+	ContentType string               // ContentType header without parameters
+	Disposition string               // Content-Disposition header without parameters
+	FileName    string               // The file-name from disposition or type header
+	Charset     string               // The content charset encoding label
+	Errors      []Error              // Errors encountered while parsing this part
+
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader // The content decoded from quoted-printable or base64
 	utf8Reader    io.Reader // The decoded content converted to UTF-8
@@ -33,90 +34,10 @@ type Part struct {
 
 // NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
 func NewPart(parent *Part, contentType string) *Part {
-	return &Part{parent: parent, contentType: contentType}
+	return &Part{Parent: parent, ContentType: contentType}
 }
 
-// Parent of this part (can be nil)
-func (p *Part) Parent() *Part {
-	return p.parent
-}
-
-// SetParent sets the parent of this part
-func (p *Part) SetParent(parent *Part) {
-	p.parent = parent
-}
-
-// FirstChild is the top most child of this part
-func (p *Part) FirstChild() *Part {
-	return p.firstChild
-}
-
-// SetFirstChild sets the first (top most) child of this part
-func (p *Part) SetFirstChild(child *Part) {
-	p.firstChild = child
-}
-
-// NextSibling of this part
-func (p *Part) NextSibling() *Part {
-	return p.nextSibling
-}
-
-// SetNextSibling sets the next sibling (shares parent) of this part
-func (p *Part) SetNextSibling(sibling *Part) {
-	p.nextSibling = sibling
-}
-
-// ContentType header without parameters
-func (p *Part) ContentType() string {
-	return p.contentType
-}
-
-// SetContentType sets the Content-Type.
-//
-// Example: "image/jpg" or "application/octet-stream"
-func (p *Part) SetContentType(contentType string) {
-	p.contentType = contentType
-}
-
-// Disposition returns the Content-Disposition header without parameters
-func (p *Part) Disposition() string {
-	return p.disposition
-}
-
-// SetDisposition sets the Content-Disposition.
-//
-// Example: "attachment" or "inline"
-func (p *Part) SetDisposition(disposition string) {
-	p.disposition = disposition
-}
-
-// FileName returns the file name from disposition or type header
-func (p *Part) FileName() string {
-	return p.fileName
-}
-
-// SetFileName sets the parts file name.
-func (p *Part) SetFileName(fileName string) {
-	p.fileName = fileName
-}
-
-// Charset returns the content charset encoding label
-func (p *Part) Charset() string {
-	return p.charset
-}
-
-// SetCharset sets the charset encoding label of this content, see charsets.go
-// for examples, but you probably want "utf-8"
-func (p *Part) SetCharset(charset string) {
-	p.charset = charset
-}
-
-// Errors returns a slice of Errors encountered while parsing this Part
-func (p *Part) Errors() []Error {
-	return p.errors
-}
-
-// Read implements io.Reader
+// Read returns the decoded & UTF-8 converted content; implements io.Reader.
 func (p *Part) Read(b []byte) (n int, err error) {
 	if p.utf8Reader == nil {
 		return 0, io.EOF
@@ -131,17 +52,17 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	disposition, dparams, err := mime.ParseMediaType(p.Header.Get("Content-Disposition"))
 	if err == nil {
 		// Disposition is optional
-		p.SetDisposition(disposition)
-		p.SetFileName(decodeHeader(dparams["filename"]))
+		p.Disposition = disposition
+		p.FileName = decodeHeader(dparams["filename"])
 	}
-	if p.FileName() == "" && mediaParams["name"] != "" {
-		p.SetFileName(decodeHeader(mediaParams["name"]))
+	if p.FileName == "" && mediaParams["name"] != "" {
+		p.FileName = decodeHeader(mediaParams["name"])
 	}
-	if p.FileName() == "" && mediaParams["file"] != "" {
-		p.SetFileName(decodeHeader(mediaParams["file"]))
+	if p.FileName == "" && mediaParams["file"] != "" {
+		p.FileName = decodeHeader(mediaParams["file"])
 	}
-	if p.Charset() == "" {
-		p.SetCharset(mediaParams["charset"])
+	if p.Charset == "" {
+		p.Charset = mediaParams["charset"]
 	}
 }
 
@@ -184,8 +105,8 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 
 	if valid {
 		// decodedReader is good; build character set conversion reader
-		if p.Charset() != "" {
-			if reader, err := newCharsetReader(p.Charset(), contentReader); err == nil {
+		if p.Charset != "" {
+			if reader, err := newCharsetReader(p.Charset, contentReader); err == nil {
 				contentReader = reader
 			} else {
 				// Failed to get a conversion reader
@@ -220,8 +141,8 @@ func ReadParts(r io.Reader) (*Part, error) {
 	if contentType != "" && err != nil {
 		return nil, err
 	}
-	root.contentType = mediatype
-	root.charset = params["charset"]
+	root.ContentType = mediatype
+	root.Charset = params["charset"]
 
 	if strings.HasPrefix(mediatype, "multipart/") {
 		// Content is multipart, parse it
@@ -292,9 +213,9 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 		p := NewPart(parent, mediatype)
 		p.Header = mrp.Header
 		if prevSibling != nil {
-			prevSibling.SetNextSibling(p)
+			prevSibling.NextSibling = p
 		} else {
-			parent.SetFirstChild(p)
+			parent.FirstChild = p
 		}
 		prevSibling = p
 

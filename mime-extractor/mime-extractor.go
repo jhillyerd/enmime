@@ -71,7 +71,7 @@ func dump(reader io.Reader, name string) error {
 
 	h2("Attachment List")
 	for _, a := range e.Attachments {
-		newFileName := path.Join(*outdir, a.FileName())
+		newFileName := path.Join(*outdir, a.FileName)
 		f, err := os.Create(newFileName)
 		if err != nil {
 			fmt.Printf("Error creating file %q: %v\n", newFileName, err)
@@ -84,7 +84,7 @@ func dump(reader io.Reader, name string) error {
 		if err != nil {
 			fmt.Printf("Error closing file %q: %v\n", newFileName, err)
 		}
-		fmt.Printf("- %v (%v)\n", a.FileName(), a.ContentType())
+		fmt.Printf("- %v (%v)\n", a.FileName, a.ContentType)
 	}
 	fmt.Println()
 
@@ -110,8 +110,8 @@ func h2(content string) {
 
 // printPart pretty prints the Part tree
 func printPart(p *enmime.Part, indent string) {
-	sibling := p.NextSibling()
-	child := p.FirstChild()
+	sibling := p.NextSibling
+	child := p.FirstChild
 
 	// Compute indent strings
 	myindent := indent + "`-- "
@@ -120,7 +120,7 @@ func printPart(p *enmime.Part, indent string) {
 		myindent = indent + "|-- "
 		childindent = indent + "|   "
 	}
-	if p.Parent() == nil {
+	if p.Parent == nil {
 		// Root shouldn't be decorated, has no siblings
 		myindent = indent
 		childindent = indent
@@ -128,16 +128,16 @@ func printPart(p *enmime.Part, indent string) {
 
 	// Format and print this node
 	ctype := "MISSING TYPE"
-	if p.ContentType() != "" {
-		ctype = p.ContentType()
+	if p.ContentType != "" {
+		ctype = p.ContentType
 	}
 	disposition := ""
-	if p.Disposition() != "" {
-		disposition = ", disposition: " + p.Disposition()
+	if p.Disposition != "" {
+		disposition = ", disposition: " + p.Disposition
 	}
 	filename := ""
-	if p.FileName() != "" {
-		filename = ", filename: \"" + p.FileName() + "\""
+	if p.FileName != "" {
+		filename = ", filename: \"" + p.FileName + "\""
 	}
 	fmt.Printf("%s%s%s%s\n", myindent, ctype, disposition, filename)
 
