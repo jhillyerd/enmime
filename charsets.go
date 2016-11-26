@@ -247,10 +247,11 @@ var metaTagCharsetRegexp = regexp.MustCompile(
 var metaTagCharsetIndex int
 
 func init() {
-	// Find the submatch index for charset
+	// Find the submatch index for charset in metaTagCharsetRegexp
 	for i, name := range metaTagCharsetRegexp.SubexpNames() {
 		if name == "charset" {
 			metaTagCharsetIndex = i
+			break
 		}
 	}
 }

@@ -49,20 +49,20 @@ func (p *Part) Read(b []byte) (n int, err error) {
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	// Determine content disposition, filename, character set
-	disposition, dparams, err := mime.ParseMediaType(p.Header.Get("Content-Disposition"))
+	disposition, dparams, err := mime.ParseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
-		p.FileName = decodeHeader(dparams["filename"])
+		p.FileName = decodeHeader(dparams[hpFilename])
 	}
-	if p.FileName == "" && mediaParams["name"] != "" {
-		p.FileName = decodeHeader(mediaParams["name"])
+	if p.FileName == "" && mediaParams[hpName] != "" {
+		p.FileName = decodeHeader(mediaParams[hpName])
 	}
-	if p.FileName == "" && mediaParams["file"] != "" {
-		p.FileName = decodeHeader(mediaParams["file"])
+	if p.FileName == "" && mediaParams[hpFile] != "" {
+		p.FileName = decodeHeader(mediaParams[hpFile])
 	}
 	if p.Charset == "" {
-		p.Charset = mediaParams["charset"]
+		p.Charset = mediaParams[hpCharset]
 	}
 }
 
@@ -84,7 +84,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	p.rawReader = contentReader
 
 	// Build content decoding reader
-	encoding := p.Header.Get("Content-Transfer-Encoding")
+	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
 	case "quoted-printable":
 		contentReader = quotedprintable.NewReader(contentReader)
@@ -131,22 +131,22 @@ func ReadParts(r io.Reader) (*Part, error) {
 	root := &Part{Header: header}
 
 	// Content-Type
-	contentType := header.Get("Content-Type")
+	contentType := header.Get(hnContentType)
 	if contentType == "" {
 		root.addWarning(
 			errorMissingContentType,
 			"MIME parts should have a Content-Type header")
 	}
-	mediatype, params, err := mime.ParseMediaType(header.Get("Content-Type"))
+	mediatype, params, err := mime.ParseMediaType(header.Get(hnContentType))
 	if contentType != "" && err != nil {
 		return nil, err
 	}
 	root.ContentType = mediatype
-	root.Charset = params["charset"]
+	root.Charset = params[hpCharset]
 
-	if strings.HasPrefix(mediatype, "multipart/") {
+	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
-		boundary := params["boundary"]
+		boundary := params[hpBoundary]
 		err = parseParts(root, br, boundary)
 		if err != nil {
 			return nil, err
@@ -200,7 +200,7 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 
 			return fmt.Errorf("Empty header at boundary %v", boundary)
 		}
-		ctype := mrp.Header.Get("Content-Type")
+		ctype := mrp.Header.Get(hnContentType)
 		if ctype == "" {
 			return fmt.Errorf("Missing Content-Type at boundary %v", boundary)
 		}
@@ -222,7 +222,7 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 		// Set disposition, filename, charset if available
 		p.setupContentHeaders(mparams)
 
-		boundary := mparams["boundary"]
+		boundary := mparams[hpBoundary]
 		if boundary != "" {
 			// Content is another multipart
 			err = parseParts(p, mrp, boundary)

@@ -11,17 +11,6 @@ import (
 	"strings"
 )
 
-// AddressHeaders is the set of SMTP headers that contain email addresses, used by
-// Envelope.AddressList().  Key characters must be all lowercase.
-var AddressHeaders = map[string]bool{
-	"bcc":          true,
-	"cc":           true,
-	"delivered-to": true,
-	"from":         true,
-	"reply-to":     true,
-	"to":           true,
-}
-
 // Envelope is a simplified wrapper for MIME email messages.
 type Envelope struct {
 	Text        string                // The plain text portion of the message
@@ -138,11 +127,11 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 	// Determine character set
 	var charset string
 	var isHTML bool
-	if ctype := root.Header.Get("Content-Type"); ctype != "" {
+	if ctype := root.Header.Get(hnContentType); ctype != "" {
 		if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
-			isHTML = (mediatype == "text/html")
-			if mparams["charset"] != "" {
-				charset = mparams["charset"]
+			isHTML = (mediatype == ctTextHTML)
+			if mparams[hpCharset] != "" {
+				charset = mparams[hpCharset]
 			}
 		}
 	}
@@ -180,10 +169,10 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 // other parts. The result is placed in e.
 func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 	// Determine mediatype
-	ctype := root.Header.Get("Content-Type")
+	ctype := root.Header.Get(hnContentType)
 	mediatype, mparams, err := mime.ParseMediaType(ctype)
 	if err != nil {
-		mediatype = "attachment"
+		mediatype = cdAttachment
 	}
 
 	// Determine and set headers for: content disposition, filename and character set
@@ -192,7 +181,7 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 	// Add our part to the appropriate section of the Envelope
 	e.Root = NewPart(nil, mediatype)
 
-	if root.Disposition == "inline" {
+	if root.Disposition == cdInline {
 		e.Inlines = append(e.Inlines, root)
 	} else {
 		e.Attachments = append(e.Attachments, root)
@@ -204,23 +193,23 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 // parseMultiPartBody parses a multipart message in root.  The result is placed in e.
 func parseMultiPartBody(root *Part, e *Envelope) error {
 	// Parse top-level multipart
-	ctype := root.Header.Get("Content-Type")
+	ctype := root.Header.Get(hnContentType)
 	mediatype, params, err := mime.ParseMediaType(ctype)
 	if err != nil {
 		return fmt.Errorf("Unable to parse media type: %v", err)
 	}
-	if !strings.HasPrefix(mediatype, "multipart/") {
+	if !strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		return fmt.Errorf("Unknown mediatype: %v", mediatype)
 	}
-	boundary := params["boundary"]
+	boundary := params[hpBoundary]
 	if boundary == "" {
 		return fmt.Errorf("Unable to locate boundary param in Content-Type header")
 	}
 
 	// Locate text body
-	if mediatype == "multipart/altern" {
+	if mediatype == ctMultipartAltern {
 		p := root.BreadthMatchFirst(func(p *Part) bool {
-			return p.ContentType == "text/plain" && p.Disposition != "attachment"
+			return p.ContentType == ctTextPlain && p.Disposition != cdAttachment
 		})
 		if p != nil {
 			allBytes, ioerr := ioutil.ReadAll(p)
@@ -232,7 +221,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	} else {
 		// multipart is of a mixed type
 		parts := root.DepthMatchAll(func(p *Part) bool {
-			return p.ContentType == "text/plain" && p.Disposition != "attachment"
+			return p.ContentType == ctTextPlain && p.Disposition != cdAttachment
 		})
 		for i, p := range parts {
 			if i > 0 {
@@ -258,26 +247,26 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate attachments
 	e.Attachments = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition == "attachment" || p.ContentType == "application/octet-stream"
+		return p.Disposition == cdAttachment || p.ContentType == ctAppOctetStream
 	})
 
 	// Locate inlines
 	e.Inlines = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition == "inline"
+		return p.Disposition == cdInline
 	})
 
 	// Locate others parts not considered in attachments or inlines
 	e.OtherParts = root.BreadthMatchAll(func(p *Part) bool {
-		if strings.HasPrefix(p.ContentType, "multipart/") {
+		if strings.HasPrefix(p.ContentType, ctMultipartPrefix) {
 			return false
 		}
 		if p.Disposition != "" {
 			return false
 		}
-		if p.ContentType == "application/octet-stream" {
+		if p.ContentType == ctAppOctetStream {
 			return false
 		}
-		return p.ContentType != "text/plain" && p.ContentType != "text/html"
+		return p.ContentType != ctTextPlain && p.ContentType != ctTextHTML
 	})
 
 	return nil
@@ -286,14 +275,14 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 // isMultipartMessage returns true if the message has a recognized multipart Content-Type header.
 func isMultipartMessage(root *Part) bool {
 	// Parse top-level multipart
-	ctype := root.Header.Get("Content-Type")
+	ctype := root.Header.Get(hnContentType)
 	mediatype, _, err := mime.ParseMediaType(ctype)
 	if err != nil {
 		return false
 	}
 	// According to rfc2046#section-5.1.7 all other multipart should
 	// be treated as multipart/mixed
-	return strings.HasPrefix(mediatype, "multipart/")
+	return strings.HasPrefix(mediatype, ctMultipartPrefix)
 }
 
 // isAttachment returns true, if the given header defines an attachment.  First it checks if the
@@ -307,14 +296,14 @@ func isMultipartMessage(root *Part) bool {
 //  - Content-Disposition: inline; filename="frog.jpg"
 //  - Content-Type: attachment; filename="frog.jpg"
 func isAttachment(header textproto.MIMEHeader) bool {
-	mediatype, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
-	if strings.ToLower(mediatype) == "attachment" ||
-		strings.ToLower(mediatype) == "inline" {
+	mediatype, _, _ := mime.ParseMediaType(header.Get(hnContentDisposition))
+	if strings.ToLower(mediatype) == cdAttachment ||
+		strings.ToLower(mediatype) == cdInline {
 		return true
 	}
 
-	mediatype, _, _ = mime.ParseMediaType(header.Get("Content-Type"))
-	if strings.ToLower(mediatype) == "attachment" {
+	mediatype, _, _ = mime.ParseMediaType(header.Get(hnContentType))
+	if strings.ToLower(mediatype) == cdAttachment {
 		return true
 	}
 
@@ -325,7 +314,7 @@ func isAttachment(header textproto.MIMEHeader) bool {
 // the emptyContentTypeIsPlain argument is set to true, a missing Content-Type header will result in
 // a positive plain part detection.
 func isPlain(header textproto.MIMEHeader, emptyContentTypeIsPlain bool) bool {
-	ctype := header.Get("Content-Type")
+	ctype := header.Get(hnContentType)
 	if ctype == "" && emptyContentTypeIsPlain {
 		return true
 	}
@@ -335,8 +324,7 @@ func isPlain(header textproto.MIMEHeader, emptyContentTypeIsPlain bool) bool {
 		return false
 	}
 	switch mediatype {
-	case "text/plain",
-		"text/html":
+	case ctTextPlain, ctTextHTML:
 		return true
 	}
 
@@ -354,5 +342,5 @@ func isBinaryBody(root *Part) bool {
 
 // Used by Part matchers to locate the HTML body.  Not inlined because it's used in multiple places.
 func matchHTMLBodyPart(p *Part) bool {
-	return p.ContentType == "text/html" && p.Disposition != "attachment"
+	return p.ContentType == ctTextHTML && p.Disposition != cdAttachment
 }

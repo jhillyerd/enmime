@@ -6,6 +6,42 @@ import (
 	"strings"
 )
 
+const (
+	// Standard MIME content dispositions
+	cdAttachment = "attachment"
+	cdInline     = "inline"
+
+	// Standard MIME content types
+	ctAppOctetStream  = "application/octet-stream"
+	ctMultipartAltern = "multipart/altern"
+	ctMultipartPrefix = "multipart/"
+	ctTextPlain       = "text/plain"
+	ctTextHTML        = "text/html"
+
+	// Standard MIME header names
+	hnContentDisposition = "Content-Disposition"
+	hnContentEncoding    = "Content-Transfer-Encoding"
+	hnContentType        = "Content-Type"
+
+	// Standard MIME header parameters
+	hpBoundary = "boundary"
+	hpCharset  = "charset"
+	hpFile     = "file"
+	hpFilename = "filename"
+	hpName     = "name"
+)
+
+// AddressHeaders is the set of SMTP headers that contain email addresses, used by
+// Envelope.AddressList().  Key characters must be all lowercase.
+var AddressHeaders = map[string]bool{
+	"bcc":          true,
+	"cc":           true,
+	"delivered-to": true,
+	"from":         true,
+	"reply-to":     true,
+	"to":           true,
+}
+
 func debug(format string, args ...interface{}) {
 	if false {
 		fmt.Printf(format, args...)
