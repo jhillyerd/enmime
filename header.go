@@ -1,8 +1,11 @@
 package enmime
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"mime"
+	"net/textproto"
 	"strings"
 )
 
@@ -54,6 +57,31 @@ func debug(format string, args ...interface{}) {
 //  charset: the character set portion of the encoded word
 //  encoding: the character encoding type used for the encoded-text
 //  encoded-text: the text we are decoding
+
+// readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
+// Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
+func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
+	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
+	buf := &bytes.Buffer{}
+
+	for {
+		lineBuf, err := r.ReadSlice('\n')
+		if err != nil {
+			return nil, err
+		}
+		if len(lineBuf) == 0 || lineBuf[0] == '\r' || lineBuf[0] == '\n' {
+			// End of headers
+			break
+		}
+		buf.Write(lineBuf)
+	}
+	buf.Write([]byte{'\r', '\n'})
+
+	// Parse the massaged header using textproto package
+	tr := textproto.NewReader(bufio.NewReader(buf))
+	header, err := tr.ReadMIMEHeader()
+	return header, err
+}
 
 // decodeHeader decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
 func decodeHeader(input string) string {

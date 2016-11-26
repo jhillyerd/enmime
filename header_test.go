@@ -1,6 +1,8 @@
 package enmime
 
 import (
+	"bufio"
+	"strings"
 	"testing"
 )
 
@@ -153,5 +155,48 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 		}
+	}
+}
+
+func TestReadHeader(t *testing.T) {
+	input := `To: address
+From: somebody
+
+Part body
+`
+
+	// Reader we will share with readHeader()
+	r := bufio.NewReader(strings.NewReader(input))
+
+	p := &Part{}
+	header, err := readHeader(r, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "address"
+	got := header.Get("To")
+	if got != want {
+		t.Errorf("To header got: %q, want: %q", got, want)
+	}
+
+	want = "somebody"
+	got = header.Get("From")
+	if got != want {
+		t.Errorf("From header got: %q, want: %q", got, want)
+	}
+
+	// readHeader should have consumed the two header lines, and the blank line, but not the body
+	want = "Part body"
+	line, isPrefix, err := r.ReadLine()
+	got = string(line)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isPrefix {
+		t.Fatal("isPrefix was true, wanted false")
+	}
+	if got != want {
+		t.Errorf("Line got: %q, want: %q", got, want)
 	}
 }

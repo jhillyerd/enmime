@@ -121,14 +121,14 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
 func ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
+	root := &Part{}
 
 	// Read header
-	tr := textproto.NewReader(br)
-	header, err := tr.ReadMIMEHeader()
+	header, err := readHeader(br, root)
 	if err != nil {
 		return nil, err
 	}
-	root := &Part{Header: header}
+	root.Header = header
 
 	// Content-Type
 	contentType := header.Get(hnContentType)
