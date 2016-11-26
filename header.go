@@ -64,20 +64,45 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
 	buf := &bytes.Buffer{}
 
+	continuable := false
 	for {
-		lineBuf, err := r.ReadSlice('\n')
+		// Pull out each line of the headers as a temporary slice s
+		s, err := r.ReadSlice('\n')
 		if err != nil {
 			return nil, err
 		}
-		if len(lineBuf) == 0 || lineBuf[0] == '\r' || lineBuf[0] == '\n' {
+		// Remove trailing whitespace
+		s = bytes.TrimRight(s, " \r\n")
+		if len(s) == 0 {
 			// End of headers
 			break
 		}
-		buf.Write(lineBuf)
+		if continuable {
+			// Attempt to detect and repair a non-indented continuation of previous line
+			if s[0] != ' ' {
+				// Not already indented; if the first word does not end in a colon, this is a
+				// mangled continuation
+				firstSpace := bytes.IndexByte(s, ' ')
+				firstColon := bytes.IndexByte(s, ':')
+				if (firstColon < 0) || (0 <= firstSpace && firstSpace < firstColon) {
+					// Continuation scenario, prepend line with space
+					// "word word" (no colon)
+					// "word word:word" (colon after space)
+					buf.WriteByte(' ')
+				}
+			}
+			continuable = false
+		}
+		if s[len(s)-1] == ';' {
+			// Next line may be a continuation of this one
+			continuable = true
+		}
+		buf.Write(s)
+		buf.Write([]byte{'\r', '\n'})
 	}
 	buf.Write([]byte{'\r', '\n'})
 
-	// Parse the massaged header using textproto package
+	// Parse the buf using textproto package
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadMIMEHeader()
 	return header, err

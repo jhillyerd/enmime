@@ -159,11 +159,20 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 }
 
 func TestReadHeader(t *testing.T) {
-	input := `To: address
-From: somebody
+	input := `From: somebody
+Content-Type: text/plain;
+ charset=us-ascii
+X-Bad-Continuation: line1=foo;
+line2=bar; name=value:text
+X-Not-Continuation: line1=foo;
+line2: bar
 
 Part body
 `
+	// "a: " s:2, c:1
+	// "a:x" s:-1, c:1
+	// "word=x; foo=bar" s:8, c:-1
+	// "word=x; foo:=bar" s:8, c:12
 
 	// Reader we will share with readHeader()
 	r := bufio.NewReader(strings.NewReader(input))
@@ -174,16 +183,28 @@ Part body
 		t.Fatal(err)
 	}
 
-	want := "address"
-	got := header.Get("To")
-	if got != want {
-		t.Errorf("To header got: %q, want: %q", got, want)
-	}
-
-	want = "somebody"
-	got = header.Get("From")
+	want := "somebody"
+	got := header.Get("From")
 	if got != want {
 		t.Errorf("From header got: %q, want: %q", got, want)
+	}
+
+	want = "text/plain;charset=us-ascii"
+	got = strings.Replace(header.Get("Content-Type"), " ", "", -1)
+	if got != want {
+		t.Errorf("Stripped Content-Type header got: %q, want: %q", got, want)
+	}
+
+	want = "line1=foo;line2=bar;name=value:text"
+	got = strings.Replace(header.Get("X-Bad-Continuation"), " ", "", -1)
+	if got != want {
+		t.Errorf("Stripped X-Bad-Continuation header got: %q, want: %q", got, want)
+	}
+
+	want = "line1=foo;"
+	got = strings.Replace(header.Get("X-Not-Continuation"), " ", "", -1)
+	if got != want {
+		t.Errorf("Stripped X-Not-Continuation header got: %q, want: %q", got, want)
 	}
 
 	// readHeader should have consumed the two header lines, and the blank line, but not the body
