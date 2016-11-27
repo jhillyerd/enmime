@@ -222,10 +222,9 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 		// Set disposition, filename, charset if available
 		p.setupContentHeaders(mparams)
 
-		boundary := mparams[hpBoundary]
-		if boundary != "" {
+		if mparams[hpBoundary] != "" {
 			// Content is another multipart
-			err = parseParts(p, mrp, boundary)
+			err = parseParts(p, mrp, mparams[hpBoundary])
 			if err != nil {
 				return err
 			}
