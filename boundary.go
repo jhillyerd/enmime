@@ -3,6 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 )
 
@@ -13,16 +14,23 @@ import (
 const peekBufferSize = 4096
 
 type boundaryReader struct {
-	r      *bufio.Reader // Source reader
-	prefix []byte        // Boundary prefix we are looking for
-	buffer *bytes.Buffer
+	finished  bool
+	partsRead int
+	r         *bufio.Reader // Source reader
+	nlPrefix  []byte        // NL + boundary prefix we are looking for
+	prefix    []byte        //  Boundary prefix we are looking for
+	final     []byte        // Final boundary prefix
+	buffer    *bytes.Buffer // Content waiting to be read
 }
 
 func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
+	fullBoundary := []byte("\n--" + boundary + "--")
 	return &boundaryReader{
-		r:      reader,
-		prefix: []byte("\n--" + boundary),
-		buffer: new(bytes.Buffer),
+		r:        reader,
+		nlPrefix: fullBoundary[:len(fullBoundary)-2],
+		prefix:   fullBoundary[1 : len(fullBoundary)-2],
+		final:    fullBoundary[1:],
+		buffer:   new(bytes.Buffer),
 	}
 }
 
@@ -39,7 +47,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		return 0, err
 	}
 	var nCopy int
-	idx, complete := locateBoundary(peek, b.prefix)
+	idx, complete := locateBoundary(peek, b.nlPrefix)
 	if idx != -1 {
 		// Peeked boundary prefix, read until that point
 		nCopy = idx
@@ -50,7 +58,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	} else {
 		// No boundary found, read peek minus the length of boundaryPrefix, minus one more for
 		// potential \r
-		if nCopy = len(peek) - len(b.prefix) - 1; nCopy <= 0 {
+		if nCopy = len(peek) - len(b.nlPrefix) - 1; nCopy <= 0 {
 			nCopy = 0
 			if peekEOF {
 				// We've run out of peek space with no boundary found
@@ -70,6 +78,63 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		return n, nil
 	}
 	return
+}
+
+// Next moves over the boundary to the next part, returns true if there is another part to be read.
+func (b *boundaryReader) Next() (bool, error) {
+	if b.finished {
+		return false, nil
+	}
+	if b.partsRead == 0 {
+		b.partsRead++
+		return true, nil
+	}
+	// b.buffer.Reset()
+	for {
+		line, err := b.r.ReadSlice('\n')
+		if err != nil {
+			return false, err
+		}
+		if len(line) > 0 && line[0] == '\r' || line[0] == '\n' {
+			// Blank line
+			continue
+		}
+		if b.isTerminator(line) {
+			b.finished = true
+			return false, nil
+		}
+		if b.isDelimiter(line) {
+			return true, nil
+		}
+		return false, fmt.Errorf("expecting boundary %q, got %q", string(b.prefix), string(line))
+	}
+}
+
+// isDelimiter returns true for --BOUNDARY\r\n but not --BOUNDARY--\r\n
+func (b *boundaryReader) isDelimiter(buf []byte) bool {
+	idx := bytes.Index(buf, b.prefix)
+	if idx == -1 {
+		return false
+	}
+
+	// Fast forward to the end of the boundary prefix
+	buf = buf[idx+len(b.prefix):]
+	if len(buf) > 0 {
+		if buf[0] == '\r' || buf[0] == '\n' {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isTerminator returns true for --BOUNDARY--\r\n
+func (b *boundaryReader) isTerminator(buf []byte) bool {
+	idx := bytes.Index(buf, b.final)
+	if idx == -1 {
+		return false
+	}
+	return true
 }
 
 // Locate boundaryPrefix in buf, returning its starting idx. If complete is true, the boundary
