@@ -79,14 +79,14 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 			return nil, err
 		}
 		// Remove trailing whitespace
-		s = bytes.TrimRight(s, " \r\n")
+		s = bytes.TrimRight(s, " \t\r\n")
 		if len(s) == 0 {
 			// End of headers
 			break
 		}
 		if continuable {
 			// Attempt to detect and repair a non-indented continuation of previous line
-			if s[0] != ' ' {
+			if s[0] != ' ' && s[0] != '\t' {
 				// Not already indented; if the first word does not end in a colon, this is a
 				// mangled continuation
 				firstSpace := bytes.IndexByte(s, ' ')
@@ -96,6 +96,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 					// "word word" (no colon)
 					// "word word:word" (colon after space)
 					buf.WriteByte(' ')
+					p.addWarning(errorMalformedHeader, "Continued line %q was not indented", s)
 				}
 			}
 			continuable = false

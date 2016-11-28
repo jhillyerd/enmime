@@ -42,9 +42,10 @@ func TestWarnings(t *testing.T) {
 		perror   errorName
 	}{
 		{"bad-final-boundary.raw", errorMissingBoundary},
+		{"bad-header-wrap.raw", errorMalformedHeader},
+		{"html-only-inline.raw", errorPlainTextFromHTML},
 		{"missing-content-type.raw", errorMissingContentType},
 		{"unk-encoding-part.raw", errorContentEncoding},
-		{"html-only-inline.raw", errorPlainTextFromHTML},
 		// TODO Implement below cases
 		// {"unk-charset-html-only.raw", errorCharsetConversion},
 		// {"unk-charset-part.raw", errorCharsetConversion},
@@ -67,7 +68,12 @@ func TestWarnings(t *testing.T) {
 				t.Errorf("Expected Severe to be false, got true")
 			}
 			if perr.Name != string(tt.perror) {
-				t.Errorf("Got error %q, want %q for: %s", perr.Name, tt.perror, tt.filename)
+				t.Errorf(
+					"Got error %q, want %q for: %s\n(%s)",
+					perr.Name,
+					tt.perror,
+					tt.filename,
+					perr.String())
 			}
 		}
 	}

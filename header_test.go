@@ -159,65 +159,96 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 }
 
 func TestReadHeader(t *testing.T) {
-	input := `From: somebody
-Content-Type: text/plain;
- charset=us-ascii
-X-Bad-Continuation: line1=foo;
-line2=bar; name=value:text
-X-Not-Continuation: line1=foo;
-line2: bar
+	prefix := "From: hooman\n"
+	suffix := "Subject: hi\n\nPart body\n"
 
-Part body
-`
-	// "a: " s:2, c:1
-	// "a:x" s:-1, c:1
-	// "word=x; foo=bar" s:8, c:-1
-	// "word=x; foo:=bar" s:8, c:12
-
-	// Reader we will share with readHeader()
-	r := bufio.NewReader(strings.NewReader(input))
-
-	p := &Part{}
-	header, err := readHeader(r, p)
-	if err != nil {
-		t.Fatal(err)
+	var ttable = []struct {
+		input, hname, want string
+		correct            bool
+	}{
+		{
+			input:   "To: anybody\n",
+			hname:   "To",
+			want:    "anybody",
+			correct: true,
+		},
+		{
+			input:   "Content-Type: text/plain;\n charset=us-ascii\n",
+			hname:   "Content-Type",
+			want:    "text/plain;charset=us-ascii",
+			correct: true,
+		},
+		{
+			input:   "X-Tabbed-Continuation: line1=foo;\n\tline2=bar\n",
+			hname:   "X-Tabbed-Continuation",
+			want:    "line1=foo;line2=bar",
+			correct: true,
+		},
+		{
+			input:   "X-Bad-Continuation: line1=foo;\nline2=bar; name=value:text\n",
+			hname:   "X-Bad-Continuation",
+			want:    "line1=foo;line2=bar;name=value:text",
+			correct: false,
+		},
+		{
+			input:   "X-Not-Continuation: line1=foo;\nline2: bar\n",
+			hname:   "X-Not-Continuation",
+			want:    "line1=foo;",
+			correct: true,
+		},
 	}
 
-	want := "somebody"
-	got := header.Get("From")
-	if got != want {
-		t.Errorf("From header got: %q, want: %q", got, want)
-	}
+	for _, tt := range ttable {
+		// Reader we will share with readHeader()
+		r := bufio.NewReader(strings.NewReader(prefix + tt.input + suffix))
 
-	want = "text/plain;charset=us-ascii"
-	got = strings.Replace(header.Get("Content-Type"), " ", "", -1)
-	if got != want {
-		t.Errorf("Stripped Content-Type header got: %q, want: %q", got, want)
-	}
+		p := &Part{}
+		header, err := readHeader(r, p)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	want = "line1=foo;line2=bar;name=value:text"
-	got = strings.Replace(header.Get("X-Bad-Continuation"), " ", "", -1)
-	if got != want {
-		t.Errorf("Stripped X-Bad-Continuation header got: %q, want: %q", got, want)
-	}
+		// Check prefix
+		got := header.Get("From")
+		want := "hooman"
+		if got != want {
+			t.Errorf("From header got: %q, want: %q\ninput: %q", got, want, tt.input)
+		}
+		// Check suffix
+		got = header.Get("Subject")
+		want = "hi"
+		if got != want {
+			t.Errorf("Subject header got: %q, want: %q\ninput: %q", got, want, tt.input)
+		}
+		// Check ttable
+		got = strings.Replace(header.Get(tt.hname), " ", "", -1)
+		if got != tt.want {
+			t.Errorf(
+				"Stripped %s value got: %q, want: %q\ninput: %q", tt.hname, got, tt.want, tt.input)
+		}
+		// Check error count
+		wantErrs := 0
+		if !tt.correct {
+			wantErrs = 1
+		}
+		gotErrs := len(p.Errors)
+		if gotErrs != wantErrs {
+			t.Errorf("Got %v p.Errors, want %v\ninput: %q", gotErrs, wantErrs, tt.input)
+		}
 
-	want = "line1=foo;"
-	got = strings.Replace(header.Get("X-Not-Continuation"), " ", "", -1)
-	if got != want {
-		t.Errorf("Stripped X-Not-Continuation header got: %q, want: %q", got, want)
-	}
-
-	// readHeader should have consumed the two header lines, and the blank line, but not the body
-	want = "Part body"
-	line, isPrefix, err := r.ReadLine()
-	got = string(line)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if isPrefix {
-		t.Fatal("isPrefix was true, wanted false")
-	}
-	if got != want {
-		t.Errorf("Line got: %q, want: %q", got, want)
+		// readHeader should have consumed the two header lines, and the blank line, but not the
+		// body
+		want = "Part body"
+		line, isPrefix, err := r.ReadLine()
+		got = string(line)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if isPrefix {
+			t.Fatal("isPrefix was true, wanted false")
+		}
+		if got != want {
+			t.Errorf("Line got: %q, want: %q", got, want)
+		}
 	}
 }
