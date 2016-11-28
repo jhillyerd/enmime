@@ -3,7 +3,9 @@ package enmime
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"mime"
 	"net/textproto"
 	"strings"
@@ -33,6 +35,8 @@ const (
 	hpFilename = "filename"
 	hpName     = "name"
 )
+
+var errEmptyHeaderBlock = errors.New("empty header block")
 
 // AddressHeaders is the set of SMTP headers that contain email addresses, used by
 // Envelope.AddressList().  Key characters must be all lowercase.
@@ -69,6 +73,9 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		// Pull out each line of the headers as a temporary slice s
 		s, err := r.ReadSlice('\n')
 		if err != nil {
+			if err == io.ErrUnexpectedEOF && buf.Len() == 0 {
+				return nil, errEmptyHeaderBlock
+			}
 			return nil, err
 		}
 		// Remove trailing whitespace

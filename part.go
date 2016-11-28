@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"mime/multipart"
 	"mime/quotedprintable"
 	"net/textproto"
 	"strings"
@@ -66,7 +65,7 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	}
 }
 
-// buildContentReaders sets up the decodedReader and ut8Reader based on the Part headers.  If no
+// buildContentReaders sets up the decodedReader and utf8Reader based on the Part headers.  If no
 // translation is required at a particular stage, the reader will be the same as its predecessor.
 // If the content encoding type is not recognized, no effort will be made to do character set
 // conversion.
@@ -162,27 +161,29 @@ func ReadParts(r io.Reader) (*Part, error) {
 }
 
 // parseParts recursively parses a mime multipart document.
-func parseParts(parent *Part, reader io.Reader, boundary string) error {
+func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 	var prevSibling *Part
 
 	// Loop over MIME parts
-	mr := multipart.NewReader(reader, boundary)
+	br := newBoundaryReader(reader, boundary)
 	for {
-		// mrp is golang's built in mime-part
-		mrp, err := mr.NextPart()
+		next, err := br.Next()
 		if err != nil {
-			if err == io.EOF {
-				// This is a clean end-of-message signal
-				break
-			}
 			return err
 		}
-		if len(mrp.Header) == 0 {
+		if !next {
+			break
+		}
+		p := &Part{Parent: parent}
+		bbr := bufio.NewReader(br)
+		header, err := readHeader(bbr, p)
+		p.Header = header
+		if err == errEmptyHeaderBlock {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
-			// close its boundary.  We will let this slide if this this the last MIME part.
-			if _, err = mr.NextPart(); err != nil {
+			// close its boundary.
+			if next, err = br.Next(); err != nil {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
-					// There are no more MIME parts, but the error belongs to our sibling or parent,
+					// There are no more Parts, but the error belongs to a sibling or parent,
 					// because this Part doesn't actually exist.
 					owner := parent
 					if prevSibling != nil {
@@ -193,25 +194,24 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 						"Boundary %q was not closed correctly",
 						boundary)
 					break
-				} else {
-					return fmt.Errorf("Error at boundary %v: %v", boundary, err)
 				}
+				return fmt.Errorf("Error at boundary %v: %v", boundary, err)
 			}
-
-			return fmt.Errorf("Empty header at boundary %v", boundary)
-		}
-		ctype := mrp.Header.Get(hnContentType)
-		if ctype == "" {
-			return fmt.Errorf("Missing Content-Type at boundary %v", boundary)
-		}
-		mediatype, mparams, err := mime.ParseMediaType(ctype)
-		if err != nil {
+		} else if err != nil {
 			return err
 		}
 
-		// Insert ourselves into tree, p is enmime's MIME part
-		p := NewPart(parent, mediatype)
-		p.Header = mrp.Header
+		ctype := header.Get(hnContentType)
+		if ctype == "" {
+			return fmt.Errorf("Missing Content-Type at boundary %v", boundary)
+		}
+		mtype, mparams, err := mime.ParseMediaType(ctype)
+		if err != nil {
+			return err
+		}
+		p.ContentType = mtype
+
+		// Insert this Part into the MIME tree
 		if prevSibling != nil {
 			prevSibling.NextSibling = p
 		} else {
@@ -224,13 +224,13 @@ func parseParts(parent *Part, reader io.Reader, boundary string) error {
 
 		if mparams[hpBoundary] != "" {
 			// Content is another multipart
-			err = parseParts(p, mrp, mparams[hpBoundary])
+			err = parseParts(p, bbr, mparams[hpBoundary])
 			if err != nil {
 				return err
 			}
 		} else {
-			// Content is text or data, build content reader pipeline
-			if err := p.buildContentReaders(mrp); err != nil {
+			// Content is text or data: build content reader pipeline
+			if err := p.buildContentReaders(bbr); err != nil {
 				return err
 			}
 		}
