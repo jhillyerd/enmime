@@ -1,6 +1,8 @@
 package enmime
 
 import (
+	"bufio"
+	"strings"
 	"testing"
 )
 
@@ -153,5 +155,69 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 		}
+	}
+}
+
+func TestReadHeader(t *testing.T) {
+	input := `From: somebody
+Content-Type: text/plain;
+ charset=us-ascii
+X-Bad-Continuation: line1=foo;
+line2=bar; name=value:text
+X-Not-Continuation: line1=foo;
+line2: bar
+
+Part body
+`
+	// "a: " s:2, c:1
+	// "a:x" s:-1, c:1
+	// "word=x; foo=bar" s:8, c:-1
+	// "word=x; foo:=bar" s:8, c:12
+
+	// Reader we will share with readHeader()
+	r := bufio.NewReader(strings.NewReader(input))
+
+	p := &Part{}
+	header, err := readHeader(r, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "somebody"
+	got := header.Get("From")
+	if got != want {
+		t.Errorf("From header got: %q, want: %q", got, want)
+	}
+
+	want = "text/plain;charset=us-ascii"
+	got = strings.Replace(header.Get("Content-Type"), " ", "", -1)
+	if got != want {
+		t.Errorf("Stripped Content-Type header got: %q, want: %q", got, want)
+	}
+
+	want = "line1=foo;line2=bar;name=value:text"
+	got = strings.Replace(header.Get("X-Bad-Continuation"), " ", "", -1)
+	if got != want {
+		t.Errorf("Stripped X-Bad-Continuation header got: %q, want: %q", got, want)
+	}
+
+	want = "line1=foo;"
+	got = strings.Replace(header.Get("X-Not-Continuation"), " ", "", -1)
+	if got != want {
+		t.Errorf("Stripped X-Not-Continuation header got: %q, want: %q", got, want)
+	}
+
+	// readHeader should have consumed the two header lines, and the blank line, but not the body
+	want = "Part body"
+	line, isPrefix, err := r.ReadLine()
+	got = string(line)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isPrefix {
+		t.Fatal("isPrefix was true, wanted false")
+	}
+	if got != want {
+		t.Errorf("Line got: %q, want: %q", got, want)
 	}
 }

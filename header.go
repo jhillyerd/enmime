@@ -1,8 +1,13 @@
 package enmime
 
 import (
+	"bufio"
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"mime"
+	"net/textproto"
 	"strings"
 )
 
@@ -31,6 +36,8 @@ const (
 	hpName     = "name"
 )
 
+var errEmptyHeaderBlock = errors.New("empty header block")
+
 // AddressHeaders is the set of SMTP headers that contain email addresses, used by
 // Envelope.AddressList().  Key characters must be all lowercase.
 var AddressHeaders = map[string]bool{
@@ -54,6 +61,59 @@ func debug(format string, args ...interface{}) {
 //  charset: the character set portion of the encoded word
 //  encoding: the character encoding type used for the encoded-text
 //  encoded-text: the text we are decoding
+
+// readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
+// Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
+func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
+	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
+	buf := &bytes.Buffer{}
+
+	continuable := false
+	for {
+		// Pull out each line of the headers as a temporary slice s
+		s, err := r.ReadSlice('\n')
+		if err != nil {
+			if err == io.ErrUnexpectedEOF && buf.Len() == 0 {
+				return nil, errEmptyHeaderBlock
+			}
+			return nil, err
+		}
+		// Remove trailing whitespace
+		s = bytes.TrimRight(s, " \r\n")
+		if len(s) == 0 {
+			// End of headers
+			break
+		}
+		if continuable {
+			// Attempt to detect and repair a non-indented continuation of previous line
+			if s[0] != ' ' {
+				// Not already indented; if the first word does not end in a colon, this is a
+				// mangled continuation
+				firstSpace := bytes.IndexByte(s, ' ')
+				firstColon := bytes.IndexByte(s, ':')
+				if (firstColon < 0) || (0 <= firstSpace && firstSpace < firstColon) {
+					// Continuation scenario, prepend line with space
+					// "word word" (no colon)
+					// "word word:word" (colon after space)
+					buf.WriteByte(' ')
+				}
+			}
+			continuable = false
+		}
+		if s[len(s)-1] == ';' {
+			// Next line may be a continuation of this one
+			continuable = true
+		}
+		buf.Write(s)
+		buf.Write([]byte{'\r', '\n'})
+	}
+	buf.Write([]byte{'\r', '\n'})
+
+	// Parse the buf using textproto package
+	tr := textproto.NewReader(bufio.NewReader(buf))
+	header, err := tr.ReadMIMEHeader()
+	return header, err
+}
 
 // decodeHeader decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
 func decodeHeader(input string) string {

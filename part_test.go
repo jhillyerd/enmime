@@ -84,7 +84,6 @@ func TestQuotedPrintablePart(t *testing.T) {
 	if p.NextSibling != nil {
 		t.Error("Root should never have a sibling")
 	}
-
 }
 
 func TestMultiAlternParts(t *testing.T) {
@@ -112,7 +111,7 @@ func TestMultiAlternParts(t *testing.T) {
 		t.Error("Content should have length of 0")
 	}
 	if p.FirstChild == nil {
-		t.Error("Root should have a FirstChild")
+		t.Fatal("Root should have a FirstChild")
 	}
 	if p.NextSibling != nil {
 		t.Error("Root should never have a sibling")

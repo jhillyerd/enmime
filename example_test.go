@@ -8,8 +8,19 @@ import (
 )
 
 func Example() {
-	r, _ := os.Open("testdata/mail/qp-utf8-header.raw")
-	env, _ := enmime.ReadEnvelope(r) // Parse message body with enmime
+	// Open a sample message file
+	r, err := os.Open("testdata/mail/qp-utf8-header.raw")
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// Parse message body with enmime
+	env, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
 
 	// Headers can be retrieved via Envelope.GetHeader(name)
 	fmt.Printf("From: %v\n", env.GetHeader("From"))
