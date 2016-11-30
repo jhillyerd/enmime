@@ -233,6 +233,82 @@ func TestPartMissingContentType(t *testing.T) {
 	}
 }
 
+func TestPartEmptyHeader(t *testing.T) {
+	r := openTestData("parts", "empty-header.raw")
+	p, err := ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatal("Unexpected parse error:", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	want := "multipart/alternative"
+	got := p.ContentType
+	if got != want {
+		t.Errorf("ContentType got: %q, want: %q", got, want)
+	}
+	allBytes, err := ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allBytes) > 0 {
+		t.Error("Content should have length of 0")
+	}
+	if p.FirstChild == nil {
+		t.Fatal("Root should have a FirstChild")
+	}
+	if p.NextSibling != nil {
+		t.Error("Root should never have a sibling")
+	}
+
+	// Examine first child
+	p = p.FirstChild
+
+	want = ""
+	got = p.ContentType
+	if got != want {
+		t.Errorf("ContentType got: %q, want: %q", got, want)
+	}
+
+	want = "A text section"
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
+	if !strings.Contains(got, want) {
+		t.Errorf("Content: %q, should contain: %q", got, want)
+	}
+	if p.NextSibling == nil {
+		t.Error("First child should have a sibling")
+	}
+
+	// Examine sibling
+	p = p.NextSibling
+
+	want = "text/html"
+	got = p.ContentType
+	if got != want {
+		t.Errorf("ContentType got: %q, want: %q", got, want)
+	}
+
+	want = "An HTML section"
+	allBytes, err = ioutil.ReadAll(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(allBytes)
+	if !strings.Contains(got, want) {
+		t.Errorf("Content: %q, should contain: %q", got, want)
+	}
+	if p.NextSibling != nil {
+		t.Error("NextSibling should be nil")
+	}
+}
+
 func TestMultiMixedParts(t *testing.T) {
 	r := openTestData("parts", "multimixed.raw")
 	p, err := ReadParts(r)
