@@ -18,7 +18,7 @@ const (
 
 	// Standard MIME content types
 	ctAppOctetStream  = "application/octet-stream"
-	ctMultipartAltern = "multipart/altern"
+	ctMultipartAltern = "multipart/alternative"
 	ctMultipartPrefix = "multipart/"
 	ctTextPlain       = "text/plain"
 	ctTextHTML        = "text/html"

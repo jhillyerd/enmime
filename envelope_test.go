@@ -139,6 +139,20 @@ func TestParseInlineText(t *testing.T) {
 	}
 }
 
+func TestParseMultiAlernativeText(t *testing.T) {
+	msg := readMessage("mime-alternative.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "Section one\n"
+	if e.Text != want {
+		t.Error("Text parts should not concatenate, got:", e.Text, "want:", want)
+	}
+}
+
 func TestParseMultiMixedText(t *testing.T) {
 	msg := readMessage("mime-mixed.raw")
 	e, err := ReadEnvelope(msg)

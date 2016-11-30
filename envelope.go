@@ -216,7 +216,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			if ioerr != nil {
 				return ioerr
 			}
-			e.Text += string(allBytes)
+			e.Text = string(allBytes)
 		}
 	} else {
 		// multipart is of a mixed type
