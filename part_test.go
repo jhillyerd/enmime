@@ -1,18 +1,13 @@
 package enmime
 
 import (
-	"fmt"
-	"io"
 	"io/ioutil"
-	"net/textproto"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestPlainTextPart(t *testing.T) {
-	r := openPart("textplain.raw")
+	r := openTestData("parts", "textplain.raw")
 	p, err := ReadParts(r)
 
 	if err != nil {
@@ -50,7 +45,7 @@ func TestPlainTextPart(t *testing.T) {
 }
 
 func TestQuotedPrintablePart(t *testing.T) {
-	r := openPart("quoted-printable.raw")
+	r := openTestData("parts", "quoted-printable.raw")
 	p, err := ReadParts(r)
 
 	if err != nil {
@@ -87,7 +82,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 }
 
 func TestMultiAlternParts(t *testing.T) {
-	r := openPart("multialtern.raw")
+	r := openTestData("parts", "multialtern.raw")
 	p, err := ReadParts(r)
 
 	// Examine root
@@ -163,7 +158,7 @@ func TestMultiAlternParts(t *testing.T) {
 }
 
 func TestMultiMixedParts(t *testing.T) {
-	r := openPart("multimixed.raw")
+	r := openTestData("parts", "multimixed.raw")
 	p, err := ReadParts(r)
 
 	// Examine root
@@ -239,7 +234,7 @@ func TestMultiMixedParts(t *testing.T) {
 }
 
 func TestMultiOtherParts(t *testing.T) {
-	r := openPart("multiother.raw")
+	r := openTestData("parts", "multiother.raw")
 	p, err := ReadParts(r)
 
 	// Examine root
@@ -315,7 +310,7 @@ func TestMultiOtherParts(t *testing.T) {
 }
 
 func TestNestedAlternParts(t *testing.T) {
-	r := openPart("nestedmulti.raw")
+	r := openTestData("parts", "nestedmulti.raw")
 	p, err := ReadParts(r)
 
 	// Examine root
@@ -481,7 +476,7 @@ func TestNestedAlternParts(t *testing.T) {
 }
 
 func TestMultiBase64Parts(t *testing.T) {
-	r := openPart("multibase64.raw")
+	r := openTestData("parts", "multibase64.raw")
 	p, err := ReadParts(r)
 
 	// Examine root
@@ -560,7 +555,7 @@ func TestMultiBase64Parts(t *testing.T) {
 }
 
 func TestBadBoundaryTerm(t *testing.T) {
-	r := openPart("badboundary.raw")
+	r := openTestData("parts", "badboundary.raw")
 	p, err := ReadParts(r)
 
 	// Examine root
@@ -610,43 +605,4 @@ func TestBadBoundaryTerm(t *testing.T) {
 	if p.NextSibling != nil {
 		t.Error("NextSibling should be nil")
 	}
-}
-
-func TestPartSetter(t *testing.T) {
-	m := Part{
-		Header: textproto.MIMEHeader{
-			"Content-Type": {"testType"},
-		},
-	}
-
-	want := "application/octet-stream"
-	m.ContentType = want
-	got := m.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
-	}
-
-	want = "inline"
-	m.Disposition = want
-	got = m.Disposition
-	if got != want {
-		t.Errorf("Disposition got: %q, want: %q", got, want)
-	}
-
-	want = "somefilename"
-	m.FileName = want
-	got = m.FileName
-	if got != want {
-		t.Errorf("FileName got: %q, want: %q", got, want)
-	}
-}
-
-// openPart is a test utility function to open a part as a reader
-func openPart(filename string) io.Reader {
-	// Open test part for parsing
-	raw, err := os.Open(filepath.Join("testdata", "parts", filename))
-	if err != nil {
-		panic(fmt.Sprintf("Failed to open test data: %v", err))
-	}
-	return raw
 }

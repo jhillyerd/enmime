@@ -1,12 +1,6 @@
 package enmime
 
-import (
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"testing"
-)
+import "testing"
 
 func TestStringConversion(t *testing.T) {
 	e := &Error{
@@ -53,7 +47,7 @@ func TestWarnings(t *testing.T) {
 
 	for _, tt := range files {
 		// Mail with disposition attachment
-		msg := readLowQuality(tt.filename)
+		msg := openTestData("low-quality", tt.filename)
 		e, err := ReadEnvelope(msg)
 		if err != nil {
 			t.Fatal("Failed to parse MIME:", err)
@@ -77,14 +71,4 @@ func TestWarnings(t *testing.T) {
 			}
 		}
 	}
-}
-
-// readMessage is a test utility function to fetch a mail.Message object.
-func readLowQuality(filename string) io.Reader {
-	// Open test email for parsing
-	r, err := os.Open(filepath.Join("testdata", "low-quality", filename))
-	if err != nil {
-		panic(fmt.Sprintf("Failed to open test data: %v", err))
-	}
-	return r
 }
