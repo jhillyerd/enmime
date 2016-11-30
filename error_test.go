@@ -39,6 +39,7 @@ func TestWarnings(t *testing.T) {
 		{"bad-header-wrap.raw", errorMalformedHeader},
 		{"html-only-inline.raw", errorPlainTextFromHTML},
 		{"missing-content-type.raw", errorMissingContentType},
+		{"missing-content-type2.raw", errorMissingContentType},
 		{"unk-encoding-part.raw", errorContentEncoding},
 		// TODO Implement below cases
 		// {"unk-charset-html-only.raw", errorCharsetConversion},

@@ -26,6 +26,7 @@ type Part struct {
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
 
+	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader // The content decoded from quoted-printable or base64
 	utf8Reader    io.Reader // The decoded content converted to UTF-8
@@ -203,13 +204,21 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 
 		ctype := header.Get(hnContentType)
 		if ctype == "" {
-			return fmt.Errorf("Missing Content-Type at boundary %v", boundary)
+			p.addWarning(
+				errorMissingContentType,
+				"MIME parts should have a Content-Type header")
+		} else {
+			// Parse Content-Type header
+			mtype, mparams, err := mime.ParseMediaType(ctype)
+			if err != nil {
+				return err
+			}
+			p.ContentType = mtype
+
+			// Set disposition, filename, charset if available
+			p.setupContentHeaders(mparams)
+			p.boundary = mparams[hpBoundary]
 		}
-		mtype, mparams, err := mime.ParseMediaType(ctype)
-		if err != nil {
-			return err
-		}
-		p.ContentType = mtype
 
 		// Insert this Part into the MIME tree
 		if prevSibling != nil {
@@ -219,12 +228,9 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 		}
 		prevSibling = p
 
-		// Set disposition, filename, charset if available
-		p.setupContentHeaders(mparams)
-
-		if mparams[hpBoundary] != "" {
+		if p.boundary != "" {
 			// Content is another multipart
-			err = parseParts(p, bbr, mparams[hpBoundary])
+			err = parseParts(p, bbr, p.boundary)
 			if err != nil {
 				return err
 			}
