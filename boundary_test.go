@@ -23,6 +23,16 @@ func TestBoundaryReader(t *testing.T) {
 			want:     "good",
 		},
 		{
+			input:    "good\r\n--STOPHERE \t\r\nafter",
+			boundary: "STOPHERE",
+			want:     "good",
+		},
+		{
+			input:    "good\r\n--STOPHERE--\t \r\nafter",
+			boundary: "STOPHERE",
+			want:     "good",
+		},
+		{
 			input:    "good\r\n--STOPHEREA\r\n--STOPHERE--\r\nafter",
 			boundary: "STOPHERE",
 			want:     "good\r\n--STOPHEREA",
@@ -59,7 +69,7 @@ func TestBoundaryReader(t *testing.T) {
 		br := newBoundaryReader(ir, tt.boundary)
 		output, err := ioutil.ReadAll(br)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Got error: %v\ninput: %q", err, tt.input)
 		}
 
 		// Test the buffered data is correct
@@ -117,6 +127,11 @@ func TestBoundaryReaderParts(t *testing.T) {
 	}{
 		{
 			input:    "preamble\r\n--STOP\r\npart1\r\n--STOP\r\npart2\r\n--STOP--\r\n",
+			boundary: "STOP",
+			parts:    []string{"part1", "part2"},
+		},
+		{
+			input:    "preamble\r\n--STOP \t\r\npart1\r\n--STOP\t \r\npart2\r\n--STOP-- \t\r\n",
 			boundary: "STOP",
 			parts:    []string{"part1", "part2"},
 		},

@@ -131,6 +131,7 @@ func (b *boundaryReader) isDelimiter(buf []byte) bool {
 
 	// Fast forward to the end of the boundary prefix
 	buf = buf[idx+len(b.prefix):]
+	buf = bytes.TrimLeft(buf, " \t")
 	if len(buf) > 0 {
 		if buf[0] == '\r' || buf[0] == '\n' {
 			return true
@@ -173,16 +174,17 @@ func locateBoundary(buf, boundaryPrefix []byte) (idx int, complete bool) {
 		// Need more bytes to verify completeness
 		return
 	}
-	if len(buf) > 0 {
-		if buf[0] == '\r' || buf[0] == '\n' {
-			return idx, true
-		}
-	}
 	if len(buf) > 1 {
 		if buf[0] == '-' && buf[1] == '-' {
 			return idx, true
 		}
 	}
+	buf = bytes.TrimLeft(buf, " \t")
+	if len(buf) > 0 {
+		if buf[0] == '\r' || buf[0] == '\n' {
+			return idx, true
+		}
+	}
 
-	return idx, false
+	return
 }
