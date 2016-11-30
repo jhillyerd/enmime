@@ -42,9 +42,8 @@ func TestWarnings(t *testing.T) {
 		{"missing-content-type2.raw", errorMissingContentType},
 		{"empty-header.raw", errorMissingContentType},
 		{"unk-encoding-part.raw", errorContentEncoding},
-		// TODO Implement below cases
-		// {"unk-charset-html-only.raw", errorCharsetConversion},
-		// {"unk-charset-part.raw", errorCharsetConversion},
+		{"unk-charset-html-only.raw", errorCharsetConversion},
+		{"unk-charset-part.raw", errorCharsetConversion},
 	}
 
 	for _, tt := range files {
@@ -59,18 +58,27 @@ func TestWarnings(t *testing.T) {
 			t.Error("Got 0 warnings, expected at least one for:", tt.filename)
 		}
 
+		satisfied := false
 		for _, perr := range e.Errors {
-			if perr.Severe {
-				t.Errorf("Expected Severe to be false, got true")
+			if perr.Name == string(tt.perror) {
+				satisfied = true
+				if perr.Severe {
+					t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+				}
 			}
-			if perr.Name != string(tt.perror) {
-				t.Errorf(
-					"Got error %q, want %q for: %s\n(%s)",
-					perr.Name,
-					tt.perror,
-					tt.filename,
-					perr.String())
+		}
+
+		if !satisfied {
+			var errorList string
+			for _, perr := range e.Errors {
+				errorList += perr.String()
+				errorList += "\n"
 			}
+			t.Errorf(
+				"File %q should have error of type %q, got these instead:\n%s",
+				tt.filename,
+				tt.perror,
+				errorList)
 		}
 	}
 }

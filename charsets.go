@@ -264,7 +264,7 @@ func convertToUTF8String(charset string, textBytes []byte) (string, error) {
 	}
 	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
-		return "", fmt.Errorf("Unsupported charset %s", charset)
+		return "", fmt.Errorf("Unsupported charset %q", charset)
 	}
 	input := bytes.NewReader(textBytes)
 	reader := transform.NewReader(input, csentry.e.NewDecoder())
@@ -285,7 +285,7 @@ func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	}
 	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
-		return nil, fmt.Errorf("Unsupported charset %s", charset)
+		return nil, fmt.Errorf("Unsupported charset %q", charset)
 	}
 	return transform.NewReader(input, csentry.e.NewDecoder()), nil
 }
