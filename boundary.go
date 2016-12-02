@@ -109,15 +109,15 @@ func (b *boundaryReader) Next() (bool, error) {
 			b.partsRead++
 			return true, nil
 		}
+		if err == io.EOF {
+			return false, io.EOF
+		}
 		if b.partsRead == 0 {
 			// The first part didn't find the starting delimiter, burn off any preamble in front of
 			// the boundary
 			continue
 		}
 		b.finished = true
-		if err == io.EOF {
-			return false, io.ErrUnexpectedEOF
-		}
 		return false, fmt.Errorf("expecting boundary %q, got %q", string(b.prefix), string(line))
 	}
 }

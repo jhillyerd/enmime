@@ -228,3 +228,19 @@ func TestBoundaryReaderPartialRead(t *testing.T) {
 		}
 	}
 }
+
+func TestBoundaryReaderNoMatch(t *testing.T) {
+	input := "\r\n--STOPHERE\r\n1111\r\n--STOPHERE\r\n2222\r\n--STOPHERE\r\n"
+	boundary := "NOMATCH"
+
+	ir := bufio.NewReader(strings.NewReader(input))
+	br := newBoundaryReader(ir, boundary)
+
+	next, err := br.Next()
+	if err != io.EOF {
+		t.Fatalf("err = %v, want: io.EOF", err)
+	}
+	if next {
+		t.Fatalf("Next() = true, want: false")
+	}
+}
