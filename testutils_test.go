@@ -8,6 +8,9 @@ import (
 	"testing"
 )
 
+// Syntatic sugar for Part comparisons
+var partExists = &Part{}
+
 // inequalPartField is called by comparePart when it finds inequal Part fields
 type inequalPartField func(field, got, want string)
 
