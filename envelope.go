@@ -111,7 +111,7 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
 			// Using DepthMatchAll to traverse all parts, don't care about result
-			for i, _ := range part.Errors {
+			for i := range part.Errors {
 				// Index is required here to get the correct address, &value from range
 				// points to a locally scoped variable
 				e.Errors = append(e.Errors, &part.Errors[i])

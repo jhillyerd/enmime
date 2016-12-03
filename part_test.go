@@ -1,15 +1,14 @@
 package enmime
 
 import (
-	"io/ioutil"
-	"strings"
 	"testing"
 )
 
 func TestPlainTextPart(t *testing.T) {
+	var want, got string
+	var wantp *Part
 	r := openTestData("parts", "textplain.raw")
 	p, err := ReadParts(r)
-
 	if err != nil {
 		t.Fatal("Unexpected parse error:", err)
 	}
@@ -17,37 +16,31 @@ func TestPlainTextPart(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "7bit"
-	got := p.Header.Get("Content-Transfer-Encoding")
+	wantp = &Part{
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "7bit"
+	got = p.Header.Get("Content-Transfer-Encoding")
 	if got != want {
 		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
 	}
 
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
-	}
-
 	want = "Test of text/plain section"
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestQuotedPrintablePart(t *testing.T) {
+	var want, got string
+	var wantp *Part
 	r := openTestData("parts", "quoted-printable.raw")
 	p, err := ReadParts(r)
-
 	if err != nil {
 		t.Fatal("Unexpected parse error:", err)
 	}
@@ -55,33 +48,29 @@ func TestQuotedPrintablePart(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "quoted-printable"
-	got := p.Header.Get("Content-Transfer-Encoding")
+	wantp = &Part{
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "quoted-printable"
+	got = p.Header.Get("Content-Transfer-Encoding")
 	if got != want {
 		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
 	}
 
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
-	}
-
 	want = "Start=ABC=Finish"
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	if ok, err := contentEqualsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiAlternParts(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "multialtern.raw")
 	p, err := ReadParts(r)
 
@@ -93,71 +82,55 @@ func TestMultiAlternParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/alternative"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/alternative",
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Fatal("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/html"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/html",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestPartMissingContentType(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "missing-ctype.raw")
 	p, err := ReadParts(r)
 
@@ -169,71 +142,54 @@ func TestPartMissingContentType(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/alternative"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/alternative",
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Fatal("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = ""
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		// No ContentType
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/html"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/html",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestPartEmptyHeader(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "empty-header.raw")
 	p, err := ReadParts(r)
 
@@ -245,71 +201,55 @@ func TestPartEmptyHeader(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/alternative"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/alternative",
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Fatal("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
 
-	want = ""
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		// No ContentType
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/html"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/html",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiMixedParts(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "multimixed.raw")
 	p, err := ReadParts(r)
 
@@ -321,71 +261,55 @@ func TestMultiMixedParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/mixed"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/mixed",
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Error("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "Section one"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "Section two"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiOtherParts(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "multiother.raw")
 	p, err := ReadParts(r)
 
@@ -397,71 +321,55 @@ func TestMultiOtherParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/x-enmime"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/x-enmime",
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Error("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "Section one"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "Section two"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestNestedAlternParts(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "nestedmulti.raw")
 	p, err := ReadParts(r)
 
@@ -473,161 +381,106 @@ func TestNestedAlternParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/alternative"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		ContentType: "multipart/alternative",
+		FirstChild:  partExists,
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Error("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
+	wantp = &Part{
+		Parent:      partExists,
+		FirstChild:  partExists,
+		ContentType: "multipart/related",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
-	want = "multipart/related"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
-	}
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
-	}
-	if p.FirstChild == nil {
-		t.Error("Second child should have a child")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// First nested
 	p = p.FirstChild
-
-	want = "text/html"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/html",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First nested should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Second nested
 	p = p.NextSibling
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Disposition: "inline",
+		FileName:    "attach.txt",
 	}
-
-	want = "inline"
-	got = p.Disposition
-	if got != want {
-		t.Errorf("Disposition got: %q, want: %q", got, want)
-	}
-
-	want = "attach.txt"
-	got = p.FileName
-	if got != want {
-		t.Errorf("FileName got: %q, want: %q", got, want)
-	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "An inline text attachment"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("Second nested should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Third nested
 	p = p.NextSibling
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/plain",
+		Disposition: "inline",
+		FileName:    "attach2.txt",
 	}
-
-	want = "inline"
-	got = p.Disposition
-	if got != want {
-		t.Errorf("Disposition got: %q, want: %q", got, want)
-	}
-
-	want = "attach2.txt"
-	got = p.FileName
-	if got != want {
-		t.Errorf("FileName got: %q, want: %q", got, want)
-	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "Another inline text attachment"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiBase64Parts(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "multibase64.raw")
 	p, err := ReadParts(r)
 
@@ -639,74 +492,56 @@ func TestMultiBase64Parts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/mixed"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/mixed",
 	}
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
-	}
-	if p.FirstChild == nil {
-		t.Error("Root should have a FirstChild")
-	}
-	if p.NextSibling != nil {
-		t.Error("Root should never have a sibling")
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/html"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/html",
+		Disposition: "attachment",
+		FileName:    "test.html",
 	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
-	}
-	if p.FirstChild != nil {
-		t.Error("FirstChild should be nil")
-	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "<html>"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestBadBoundaryTerm(t *testing.T) {
+	var want string
+	var wantp *Part
 	r := openTestData("parts", "badboundary.raw")
 	p, err := ReadParts(r)
 
@@ -718,43 +553,39 @@ func TestBadBoundaryTerm(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	want := "multipart/alternative"
-	got := p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/alternative",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	// Examine first child
 	p = p.FirstChild
-
-	want = "text/plain"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
 	}
-	if p.NextSibling == nil {
-		t.Error("First child should have a sibling")
-	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	// Examine sibling
 	p = p.NextSibling
-
-	want = "text/html"
-	got = p.ContentType
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/html",
+		Charset:     "us-ascii",
 	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
 
 	want = "An HTML section"
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
-	}
-	if p.NextSibling != nil {
-		t.Error("NextSibling should be nil")
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }

@@ -253,13 +253,8 @@ func TestParseAttachment(t *testing.T) {
 	}
 
 	want = "<html>"
-	allBytes, err := ioutil.ReadAll(e.Attachments[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content %q should contain: %q", got, want)
+	if ok, err := contentContainsString(e.Attachments[0], want); !ok {
+		t.Error("Part", err)
 	}
 }
 
