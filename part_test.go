@@ -1,8 +1,6 @@
 package enmime
 
 import (
-	"io/ioutil"
-	"strings"
 	"testing"
 )
 
@@ -33,13 +31,8 @@ func TestPlainTextPart(t *testing.T) {
 	}
 
 	want = "Test of text/plain section"
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
@@ -70,18 +63,13 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 
 	want = "Start=ABC=Finish"
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if got != want {
-		t.Errorf("ContentType got: %q, want: %q", got, want)
+	if ok, err := contentEqualsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiAlternParts(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "multialtern.raw")
 	p, err := ReadParts(r)
@@ -102,12 +90,8 @@ func TestMultiAlternParts(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -123,13 +107,8 @@ func TestMultiAlternParts(t *testing.T) {
 	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -144,18 +123,13 @@ func TestMultiAlternParts(t *testing.T) {
 	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestPartMissingContentType(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "missing-ctype.raw")
 	p, err := ReadParts(r)
@@ -176,12 +150,8 @@ func TestPartMissingContentType(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -196,13 +166,8 @@ func TestPartMissingContentType(t *testing.T) {
 	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -217,18 +182,13 @@ func TestPartMissingContentType(t *testing.T) {
 	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestPartEmptyHeader(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "empty-header.raw")
 	p, err := ReadParts(r)
@@ -249,12 +209,8 @@ func TestPartEmptyHeader(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -270,13 +226,8 @@ func TestPartEmptyHeader(t *testing.T) {
 	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -291,18 +242,13 @@ func TestPartEmptyHeader(t *testing.T) {
 	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiMixedParts(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "multimixed.raw")
 	p, err := ReadParts(r)
@@ -323,12 +269,8 @@ func TestMultiMixedParts(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -344,13 +286,8 @@ func TestMultiMixedParts(t *testing.T) {
 	})
 
 	want = "Section one"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -365,18 +302,13 @@ func TestMultiMixedParts(t *testing.T) {
 	})
 
 	want = "Section two"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiOtherParts(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "multiother.raw")
 	p, err := ReadParts(r)
@@ -397,12 +329,8 @@ func TestMultiOtherParts(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -418,13 +346,8 @@ func TestMultiOtherParts(t *testing.T) {
 	})
 
 	want = "Section one"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -439,18 +362,13 @@ func TestMultiOtherParts(t *testing.T) {
 	})
 
 	want = "Section two"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestNestedAlternParts(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "nestedmulti.raw")
 	p, err := ReadParts(r)
@@ -470,12 +388,9 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(p, wantp, func(field, got, want string) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -491,13 +406,8 @@ func TestNestedAlternParts(t *testing.T) {
 	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -511,12 +421,8 @@ func TestNestedAlternParts(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// First nested
@@ -532,13 +438,8 @@ func TestNestedAlternParts(t *testing.T) {
 	})
 
 	want = "An HTML section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Second nested
@@ -555,13 +456,8 @@ func TestNestedAlternParts(t *testing.T) {
 	})
 
 	want = "An inline text attachment"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Third nested
@@ -577,18 +473,13 @@ func TestNestedAlternParts(t *testing.T) {
 	})
 
 	want = "Another inline text attachment"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestMultiBase64Parts(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "multibase64.raw")
 	p, err := ReadParts(r)
@@ -609,12 +500,8 @@ func TestMultiBase64Parts(t *testing.T) {
 		t.Errorf("Part.%s == %q, want: %q", field, got, want)
 	})
 
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(allBytes) > 0 {
-		t.Error("Content should have length of 0")
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine first child
@@ -630,13 +517,8 @@ func TestMultiBase64Parts(t *testing.T) {
 	})
 
 	want = "A text section"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 
 	// Examine sibling
@@ -652,18 +534,13 @@ func TestMultiBase64Parts(t *testing.T) {
 	})
 
 	want = "<html>"
-	allBytes, err = ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }
 
 func TestBadBoundaryTerm(t *testing.T) {
-	var want, got string
+	var want string
 	var wantp *Part
 	r := openTestData("parts", "badboundary.raw")
 	p, err := ReadParts(r)
@@ -708,12 +585,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 	})
 
 	want = "An HTML section"
-	allBytes, err := ioutil.ReadAll(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = string(allBytes)
-	if !strings.Contains(got, want) {
-		t.Errorf("Content: %q, should contain: %q", got, want)
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
 	}
 }

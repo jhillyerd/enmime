@@ -3,8 +3,10 @@ package enmime
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -202,4 +204,30 @@ func TestTestComparePartsInequal(t *testing.T) {
 			}
 		}
 	}
+}
+
+// contentContainsString checks if the provided readers content contains the specified substring
+func contentContainsString(r io.Reader, substr string) (ok bool, err error) {
+	allBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return false, err
+	}
+	got := string(allBytes)
+	if strings.Contains(got, substr) {
+		return true, nil
+	}
+	return false, fmt.Errorf("content == %q, should contain: %q", got, substr)
+}
+
+// contentEqualsString checks if the provided readers content is the specified string
+func contentEqualsString(r io.Reader, str string) (ok bool, err error) {
+	allBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return false, err
+	}
+	got := string(allBytes)
+	if got == str {
+		return true, nil
+	}
+	return false, fmt.Errorf("content == %q, want: %q", got, str)
 }
