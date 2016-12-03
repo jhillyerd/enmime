@@ -2,7 +2,11 @@ language: go
 sudo: false
 
 before_script:
+  - go get github.com/mattn/goveralls
   - go vet ./...
+
+script:
+  - $HOME/gopath/bin/goveralls -service=travis-ci
 
 go:
   - 1.7.3
