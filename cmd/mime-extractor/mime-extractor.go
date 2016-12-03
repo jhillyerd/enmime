@@ -1,3 +1,4 @@
+// Package main extracts attachments from the provided email
 package main
 
 import (

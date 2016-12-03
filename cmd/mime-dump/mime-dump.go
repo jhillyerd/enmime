@@ -1,3 +1,4 @@
+// Package main outputs a markdown formatted document describing the provided email
 package main
 
 import (
