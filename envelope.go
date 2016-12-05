@@ -64,7 +64,13 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to ReadParts: %v", err)
 	}
+	return EnvelopeFromPart(root)
+}
 
+// EnvelopeFromPart uses the provided Part tree to build an Envelope,, downconverting HTML to plain
+// text if needed, and sorting the attachments, inlines and other parts into their respective
+// slices.
+func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	e := &Envelope{
 		Root:   root,
 		header: &root.Header,
