@@ -1,10 +1,82 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
-	"github.com/jhillyerd/enmime"
 	"testing"
+
+	"github.com/jhillyerd/enmime"
 )
+
+func TestMarkdownH1(t *testing.T) {
+	buf := new(bytes.Buffer)
+	bw := bufio.NewWriter(buf)
+	md := &markdown{bw}
+	md.H1("Big Header")
+	bw.Flush()
+
+	want := "Big Header\n==========\n\n"
+	got := buf.String()
+	if got != want {
+		t.Errorf("got: %q, wanted: %q", got, want)
+	}
+}
+
+func TestMarkdownH2(t *testing.T) {
+	buf := new(bytes.Buffer)
+	bw := bufio.NewWriter(buf)
+	md := &markdown{bw}
+	md.H2("Big Header")
+	bw.Flush()
+
+	want := "## Big Header\n"
+	got := buf.String()
+	if got != want {
+		t.Errorf("got: %q, wanted: %q", got, want)
+	}
+}
+
+func TestMarkdownH3(t *testing.T) {
+	buf := new(bytes.Buffer)
+	bw := bufio.NewWriter(buf)
+	md := &markdown{bw}
+	md.H3("Big Header")
+	bw.Flush()
+
+	want := "### Big Header\n"
+	got := buf.String()
+	if got != want {
+		t.Errorf("got: %q, wanted: %q", got, want)
+	}
+}
+
+func TestMarkdownPrintf(t *testing.T) {
+	buf := new(bytes.Buffer)
+	bw := bufio.NewWriter(buf)
+	md := &markdown{bw}
+	md.Printf("%v %q", 123, "quoted")
+	bw.Flush()
+
+	want := "123 \"quoted\""
+	got := buf.String()
+	if got != want {
+		t.Errorf("got: %q, wanted: %q", got, want)
+	}
+}
+
+func TestMarkdownPrintln(t *testing.T) {
+	buf := new(bytes.Buffer)
+	bw := bufio.NewWriter(buf)
+	md := &markdown{bw}
+	md.Println("words")
+	bw.Flush()
+
+	want := "words\n"
+	got := buf.String()
+	if got != want {
+		t.Errorf("got: %q, wanted: %q", got, want)
+	}
+}
 
 func TestFormatPartNil(t *testing.T) {
 	buf := new(bytes.Buffer)
