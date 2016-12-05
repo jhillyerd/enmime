@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/cmd"
 )
 
 // AddressHeaders enumerates SMTP headers that contain email addresses
@@ -89,7 +90,7 @@ func dump(reader io.Reader, name string) error {
 	if e.Root == nil {
 		fmt.Println("Message was not MIME encoded")
 	} else {
-		printPart(e.Root, "    ")
+		cmd.FormatPart(os.Stdout, e.Root, "    ")
 	}
 
 	if len(e.Errors) > 0 {
@@ -114,50 +115,4 @@ func h2(content string) {
 
 func br() {
 	fmt.Println("")
-}
-
-// printPart pretty prints the Part tree
-func printPart(p *enmime.Part, indent string) {
-	sibling := p.NextSibling
-	child := p.FirstChild
-
-	// Compute indent strings
-	myindent := indent + "`-- "
-	childindent := indent + "    "
-	if sibling != nil {
-		myindent = indent + "|-- "
-		childindent = indent + "|   "
-	}
-	if p.Parent == nil {
-		// Root shouldn't be decorated, has no siblings
-		myindent = indent
-		childindent = indent
-	}
-
-	// Format and print this node
-	ctype := "MISSING TYPE"
-	if p.ContentType != "" {
-		ctype = p.ContentType
-	}
-	disposition := ""
-	if p.Disposition != "" {
-		disposition = fmt.Sprintf(", disposition: %s", p.Disposition)
-	}
-	filename := ""
-	if p.FileName != "" {
-		filename = fmt.Sprintf(", filename: %q", p.FileName)
-	}
-	errors := ""
-	if len(p.Errors) > 0 {
-		errors = fmt.Sprintf(" (errors: %v)", len(p.Errors))
-	}
-	fmt.Printf("%s%s%s%s%s\n", myindent, ctype, disposition, filename, errors)
-
-	// Recurse
-	if child != nil {
-		printPart(child, childindent)
-	}
-	if sibling != nil {
-		printPart(sibling, indent)
-	}
 }

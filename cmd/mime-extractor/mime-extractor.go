@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/cmd"
 	"io"
 	"os"
 	"path"
@@ -93,7 +94,7 @@ func dump(reader io.Reader, name string) error {
 	if e.Root == nil {
 		fmt.Println("Message was not MIME encoded")
 	} else {
-		printPart(e.Root, "    ")
+		cmd.FormatPart(os.Stdout, e.Root, "    ")
 	}
 
 	return nil
@@ -107,46 +108,4 @@ func h1(content string) {
 func h2(content string) {
 	bar := strings.Repeat("-", len(content))
 	fmt.Printf("%v\n%v\n", content, bar)
-}
-
-// printPart pretty prints the Part tree
-func printPart(p *enmime.Part, indent string) {
-	sibling := p.NextSibling
-	child := p.FirstChild
-
-	// Compute indent strings
-	myindent := indent + "`-- "
-	childindent := indent + "    "
-	if sibling != nil {
-		myindent = indent + "|-- "
-		childindent = indent + "|   "
-	}
-	if p.Parent == nil {
-		// Root shouldn't be decorated, has no siblings
-		myindent = indent
-		childindent = indent
-	}
-
-	// Format and print this node
-	ctype := "MISSING TYPE"
-	if p.ContentType != "" {
-		ctype = p.ContentType
-	}
-	disposition := ""
-	if p.Disposition != "" {
-		disposition = ", disposition: " + p.Disposition
-	}
-	filename := ""
-	if p.FileName != "" {
-		filename = ", filename: \"" + p.FileName + "\""
-	}
-	fmt.Printf("%s%s%s%s\n", myindent, ctype, disposition, filename)
-
-	// Recurse
-	if child != nil {
-		printPart(child, childindent)
-	}
-	if sibling != nil {
-		printPart(sibling, indent)
-	}
 }
