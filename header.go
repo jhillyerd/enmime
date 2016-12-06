@@ -41,12 +41,19 @@ var errEmptyHeaderBlock = errors.New("empty header block")
 // AddressHeaders is the set of SMTP headers that contain email addresses, used by
 // Envelope.AddressList().  Key characters must be all lowercase.
 var AddressHeaders = map[string]bool{
-	"bcc":          true,
-	"cc":           true,
-	"delivered-to": true,
-	"from":         true,
-	"reply-to":     true,
-	"to":           true,
+	"bcc":             true,
+	"cc":              true,
+	"delivered-to":    true,
+	"from":            true,
+	"reply-to":        true,
+	"to":              true,
+	"sender":          true,
+	"resent-bcc":      true,
+	"resent-cc":       true,
+	"resent-from":     true,
+	"resent-reply-to": true,
+	"resent-to":       true,
+	"resent-sender":   true,
 }
 
 func debug(format string, args ...interface{}) {

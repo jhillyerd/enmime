@@ -536,6 +536,21 @@ func TestParseEncodedAddressList(t *testing.T) {
 	if got != want {
 		t.Errorf("To was: %q, want: %q", got, want)
 	}
+
+	senderAddresses, err := e.AddressList("Sender")
+	if err != nil {
+		t.Fatal("Failed to parse Sender list:", err)
+	}
+	if len(senderAddresses) != 1 {
+		t.Fatalf("len(senderAddresses) == %v, want: %v", len(senderAddresses), 1)
+	}
+
+	// Confirm address name was decoded properly
+	want = "André Pirard"
+	got = senderAddresses[0].Name
+	if got != want {
+		t.Errorf("Sender was: %q, want: %q", got, want)
+	}
 }
 
 func TestDetectCharacterSetInHTML(t *testing.T) {

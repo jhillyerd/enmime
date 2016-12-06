@@ -47,7 +47,7 @@ func Example() {
 	fmt.Printf("Attachments: %v\n", len(env.Attachments))
 
 	// Output:
-	// From: James Hillyerd <jamehi03@jamehi03lx.noa.com>
+	// From: James Hillyerd <jamehi03@jamehi03lx.noa.com>, André Pirard <PIRARD@vm1.ulg.ac.be>
 	// To: Mirosław Marczak <marczak@inbucket.com>
 	// Subject: MIME UTF8 Test ¢ More Text
 	// Text Body: 1300 chars
