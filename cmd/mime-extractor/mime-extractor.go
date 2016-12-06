@@ -4,12 +4,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/jhillyerd/enmime"
-	"github.com/jhillyerd/enmime/cmd"
 	"io"
 	"os"
 	"path"
-	"strings"
+
+	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/cmd"
 )
 
 var (
@@ -28,7 +28,6 @@ func main() {
 	if *outdir == "" {
 		outdir = &cwd
 	}
-	fmt.Fprintf(os.Stdout, "Extract attachments in %s\n", *outdir)
 
 	if err := os.MkdirAll(*outdir, os.ModePerm); err != nil {
 		fmt.Fprintf(os.Stderr, "Mkdir %s failed.", *outdir)
@@ -41,71 +40,37 @@ func main() {
 		os.Exit(1)
 	}
 
+	// basename is used as the markdown title
 	basename := path.Base(*mimefile)
-	if err = dump(reader, basename); err != nil {
+	e, err := enmime.ReadEnvelope(reader)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "During enmime.ReadEnvelope:", err)
+		os.Exit(1)
+	}
+
+	if err = cmd.EnvelopeToMarkdown(os.Stdout, e, basename); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
 
-func dump(reader io.Reader, name string) error {
-	// Parse message body with enmime
-	e, err := enmime.ReadEnvelope(reader)
-	if err != nil {
-		return fmt.Errorf("During enmime.ReadEnvelope: %v", err)
-	}
-
-	h1(name)
-
-	h2("Envelope")
-	fmt.Printf("From: %v  \n", e.GetHeader("From"))
-	fmt.Printf("To: %v  \n", e.GetHeader("To"))
-	fmt.Printf("Subject: %v  \n", e.GetHeader("Subject"))
-	fmt.Println()
-
-	h2("Body Text")
-	fmt.Println(e.Text)
-	fmt.Println()
-
-	h2("Body HTML")
-	fmt.Println(e.HTML)
-	fmt.Println()
-
-	h2("Attachment List")
+	// Write out attachments
+	fmt.Fprintf(os.Stderr, "\nExtracting attachments into %s...", *outdir)
 	for _, a := range e.Attachments {
 		newFileName := path.Join(*outdir, a.FileName)
 		f, err := os.Create(newFileName)
 		if err != nil {
 			fmt.Printf("Error creating file %q: %v\n", newFileName, err)
+			break
 		}
 		_, err = io.Copy(f, a)
 		if err != nil {
 			fmt.Printf("Error writing file %q: %v\n", newFileName, err)
+			break
 		}
-		err = f.Close()
-		if err != nil {
+		if f.Close() != nil {
 			fmt.Printf("Error closing file %q: %v\n", newFileName, err)
+			break
 		}
-		fmt.Printf("- %v (%v)\n", a.FileName, a.ContentType)
 	}
-	fmt.Println()
-
-	h2("MIME Part Tree")
-	if e.Root == nil {
-		fmt.Println("Message was not MIME encoded")
-	} else {
-		cmd.FormatPart(os.Stdout, e.Root, "    ")
-	}
-
-	return nil
-}
-
-func h1(content string) {
-	bar := strings.Repeat("=", len(content))
-	fmt.Printf("%v\n%v\n\n", content, bar)
-}
-
-func h2(content string) {
-	bar := strings.Repeat("-", len(content))
-	fmt.Printf("%v\n%v\n", content, bar)
+	fmt.Fprintln(os.Stderr, " Done!")
 }
