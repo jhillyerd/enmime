@@ -16,40 +16,30 @@ var addressHeaders = []string{"From", "To", "Delivered-To", "Cc", "Bcc", "Reply-
 
 // markdown adds some simple HTML tag like methods to a bufio.Writer
 type markdown struct {
-	w *bufio.Writer
+	*bufio.Writer
 }
 
 func (md *markdown) H1(content string) {
 	bar := strings.Repeat("=", len(content))
-	fmt.Fprintf(md.w, "%v\n%v\n\n", content, bar)
+	fmt.Fprintf(md, "%v\n%v\n\n", content, bar)
 }
 
 func (md *markdown) H2(content string) {
-	fmt.Fprintf(md.w, "## %v\n", content)
+	fmt.Fprintf(md, "## %v\n", content)
 }
 
 func (md *markdown) H3(content string) {
-	fmt.Fprintf(md.w, "### %v\n", content)
+	fmt.Fprintf(md, "### %v\n", content)
 }
 
 // Printf implements fmt.Printf for markdown
 func (md *markdown) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(md.w, format, args...)
+	fmt.Fprintf(md, format, args...)
 }
 
 // Println implements fmt.Println for markdown
 func (md *markdown) Println(args ...interface{}) {
-	fmt.Fprintln(md.w, args...)
-}
-
-// Write to the underlying bufio.Writer
-func (md *markdown) Write(d []byte) (int, error) {
-	return md.w.Write(d)
-}
-
-// Flush calls flush on the underlying bufio.Writer
-func (md *markdown) Flush() error {
-	return md.w.Flush()
+	fmt.Fprintln(md, args...)
 }
 
 // EnvelopeToMarkdown renders the contents of an enmime.Envelope in Markdown format. Used by
