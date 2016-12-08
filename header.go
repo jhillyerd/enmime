@@ -86,6 +86,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 			if err == io.ErrUnexpectedEOF && buf.Len() == 0 {
 				return nil, errEmptyHeaderBlock
 			} else if err == io.EOF {
+				buf.Write([]byte{'\r', '\n'})
 				break
 			}
 			return nil, err
@@ -117,12 +118,12 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 				} else {
 					// Empty line, finish header parsing
 					buf.Write([]byte{'\r', '\n'})
-					buf.Write([]byte{'\r', '\n'})
 					break
 				}
 			}
 		}
 	}
+	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadMIMEHeader()
 	return header, err

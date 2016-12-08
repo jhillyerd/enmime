@@ -65,6 +65,22 @@ func TestIdentifyBinaryBody(t *testing.T) {
 	}
 }
 
+func TestParseHeaderOnly(t *testing.T) {
+	want := ""
+	msg := openTestData("mail", "header-only.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse non-MIME:", err)
+	}
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Expected %q to contain %q", e.Text, want)
+	}
+	if e.HTML != "" {
+		t.Errorf("Expected no HTML body, got %q", e.HTML)
+	}
+}
+
 func TestParseNonMime(t *testing.T) {
 	want := "This is a test mailing"
 	msg := openTestData("mail", "non-mime.raw")
