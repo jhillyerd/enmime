@@ -159,13 +159,66 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 }
 
 func TestReadHeader(t *testing.T) {
-	prefix := "From: hooman\n"
+	prefix := "From: hooman\n \n being\n"
 	suffix := "Subject: hi\n\nPart body\n"
 
+	data := make([]byte, 16*1024)
+	for i := 0; i < len(data); i++ {
+		data[i] = 'x'
+	}
+	sdata := string(data)
 	var ttable = []struct {
 		input, hname, want string
 		correct            bool
 	}{
+		{
+			input:   "Foo: bar\r\n",
+			hname:   "Foo",
+			want:    "bar",
+			correct: true,
+		},
+		{
+			input:   "Content-Language: en\r\n",
+			hname:   "Content-Language",
+			want:    "en",
+			correct: true,
+		},
+		{
+			input:   "SID : 0\r\n",
+			hname:   "SID",
+			want:    "0",
+			correct: true,
+		},
+		{
+			input:   "Audio Mode : None\r\n",
+			hname:   "Audio Mode",
+			want:    "None",
+			correct: true,
+		},
+		{
+			input:   "Privilege : 127\r\n",
+			hname:   "Privilege",
+			want:    "127",
+			correct: true,
+		},
+		{
+			input:   "Cookie: " + sdata + "\r\n",
+			hname:   "Cookie",
+			want:    sdata,
+			correct: true,
+		},
+		{
+			input:   ": line1=foo\r\n",
+			hname:   "",
+			want:    "",
+			correct: true,
+		},
+		{
+			input:   "X-Continuation: line1=foo\r\n \r\n line2=bar\r\n",
+			hname:   "X-Continuation",
+			want:    "line1=foo  line2=bar",
+			correct: true,
+		},
 		{
 			input:   "To: anybody\n",
 			hname:   "To",
@@ -175,19 +228,25 @@ func TestReadHeader(t *testing.T) {
 		{
 			input:   "Content-Type: text/plain;\n charset=us-ascii\n",
 			hname:   "Content-Type",
-			want:    "text/plain;charset=us-ascii",
+			want:    "text/plain; charset=us-ascii",
 			correct: true,
 		},
 		{
 			input:   "X-Tabbed-Continuation: line1=foo;\n\tline2=bar\n",
 			hname:   "X-Tabbed-Continuation",
-			want:    "line1=foo;line2=bar",
+			want:    "line1=foo; line2=bar",
 			correct: true,
 		},
 		{
-			input:   "X-Bad-Continuation: line1=foo;\nline2=bar; name=value:text\n",
+			input:   "name=value:text\n",
+			hname:   "name=value",
+			want:    "text",
+			correct: true,
+		},
+		{
+			input:   "X-Bad-Continuation: line1=foo;\nline2=bar\n",
 			hname:   "X-Bad-Continuation",
-			want:    "line1=foo;line2=bar;name=value:text",
+			want:    "line1=foo; line2=bar",
 			correct: false,
 		},
 		{
@@ -210,7 +269,7 @@ func TestReadHeader(t *testing.T) {
 
 		// Check prefix
 		got := header.Get("From")
-		want := "hooman"
+		want := "hooman  being"
 		if got != want {
 			t.Errorf("From header got: %q, want: %q\ninput: %q", got, want, tt.input)
 		}
@@ -221,7 +280,7 @@ func TestReadHeader(t *testing.T) {
 			t.Errorf("Subject header got: %q, want: %q\ninput: %q", got, want, tt.input)
 		}
 		// Check ttable
-		got = strings.Replace(header.Get(tt.hname), " ", "", -1)
+		got = header.Get(tt.hname)
 		if got != tt.want {
 			t.Errorf(
 				"Stripped %s value got: %q, want: %q\ninput: %q", tt.hname, got, tt.want, tt.input)
