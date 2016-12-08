@@ -169,7 +169,7 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 	br := newBoundaryReader(reader, boundary)
 	for {
 		next, err := br.Next()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return err
 		}
 		if !next {
