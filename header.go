@@ -72,52 +72,57 @@ func debug(format string, args ...interface{}) {
 // readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
 // Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
 func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
+	// if true {
+	// 	return textproto.NewReader(r).ReadMIMEHeader()
+	// }
 	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
 	buf := &bytes.Buffer{}
-
-	continuable := false
+	tp := textproto.NewReader(r)
+	firstHeader := true
 	for {
 		// Pull out each line of the headers as a temporary slice s
-		s, err := r.ReadSlice('\n')
+		s, err := tp.ReadLineBytes()
 		if err != nil {
 			if err == io.ErrUnexpectedEOF && buf.Len() == 0 {
 				return nil, errEmptyHeaderBlock
+			} else if err == io.EOF {
+				break
 			}
 			return nil, err
 		}
-		// Remove trailing whitespace
-		s = bytes.TrimRight(s, " \t\r\n")
-		if len(s) == 0 {
-			// End of headers
-			break
-		}
-		if continuable {
-			// Attempt to detect and repair a non-indented continuation of previous line
-			if s[0] != ' ' && s[0] != '\t' {
-				// Not already indented; if the first word does not end in a colon, this is a
-				// mangled continuation
-				firstSpace := bytes.IndexByte(s, ' ')
-				firstColon := bytes.IndexByte(s, ':')
-				if (firstColon < 0) || (0 <= firstSpace && firstSpace < firstColon) {
-					// Continuation scenario, prepend line with space
-					// "word word" (no colon)
-					// "word word:word" (colon after space)
+		firstColon := bytes.IndexByte(s, ':')
+		firstSpace := bytes.IndexAny(s, " \t\n\r")
+		if firstColon == 0 {
+			continue
+		} else if firstColon > 0 {
+			if !firstHeader {
+				// New Header line, end the last
+				buf.Write([]byte{'\r', '\n'})
+			}
+			s = textproto.TrimBytes(s)
+			buf.Write(s)
+			firstHeader = false
+		} else {
+			// Possible continuation
+			if firstSpace == 0 {
+				// Continuation
+				s = append([]byte{' '}, textproto.TrimBytes(s)...)
+				buf.Write(s)
+			} else {
+				if len(s) > 0 {
+					// Attempt to detect and repair a non-indented continuation of previous line
 					buf.WriteByte(' ')
+					buf.Write(s)
 					p.addWarning(errorMalformedHeader, "Continued line %q was not indented", s)
+				} else {
+					// Empty line, finish header parsing
+					buf.Write([]byte{'\r', '\n'})
+					buf.Write([]byte{'\r', '\n'})
+					break
 				}
 			}
-			continuable = false
 		}
-		if s[len(s)-1] == ';' {
-			// Next line may be a continuation of this one
-			continuable = true
-		}
-		buf.Write(s)
-		buf.Write([]byte{'\r', '\n'})
 	}
-	buf.Write([]byte{'\r', '\n'})
-
-	// Parse the buf using textproto package
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadMIMEHeader()
 	return header, err
