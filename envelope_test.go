@@ -67,6 +67,7 @@ func TestIdentifyBinaryBody(t *testing.T) {
 
 func TestParseHeaderOnly(t *testing.T) {
 	want := ""
+
 	msg := openTestData("mail", "header-only.raw")
 	e, err := ReadEnvelope(msg)
 
@@ -78,6 +79,12 @@ func TestParseHeaderOnly(t *testing.T) {
 	}
 	if e.HTML != "" {
 		t.Errorf("Expected no HTML body, got %q", e.HTML)
+	}
+	if e.Root == nil {
+		t.Errorf("Expected a root part")
+	}
+	if len(e.Root.Header) != 7 {
+		t.Errorf("Expected 7 headers, got %d", len(e.Root.Header))
 	}
 }
 
