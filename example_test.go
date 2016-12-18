@@ -2,12 +2,14 @@ package enmime_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/jhillyerd/enmime"
 )
 
-func Example() {
+func ExampleReadEnvelope() {
 	// Open a sample message file
 	r, err := os.Open("testdata/mail/qp-utf8-header.raw")
 	if err != nil {
@@ -54,4 +56,105 @@ func Example() {
 	// HTML Body: 1736 chars
 	// Inlines: 0
 	// Attachments: 0
+}
+
+// ExampleEnvelope demonstrates the relationship between Envelope and Parts.
+func ExampleEnvelope() {
+	// Create sample message in memory
+	raw := `From: user@inbucket.org
+Subject: Example message
+Content-Type: multipart/alternative; boundary=Enmime-100
+
+--Enmime-100
+Content-Type: text/plain
+X-Comment: part1
+
+hello!
+--Enmime-100
+Content-Type: text/html
+X-Comment: part2
+
+<b>hello!</b>
+--Enmime-100
+Content-Type: text/plain
+Content-Disposition: attachment;
+filename=hi.txt
+X-Comment: part3
+
+hello again!
+--Enmime-100--
+`
+
+	// Parse message body with enmime.ReadEnvelope
+	r := strings.NewReader(raw)
+	env, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// The root Part contains the message header, which is also available via the
+	// Envelope.GetHeader() method.
+	fmt.Printf("Root Part Subject: %q\n", env.Root.Header.Get("Subject"))
+	fmt.Printf("Envelope Subject: %q\n", env.GetHeader("Subject"))
+	fmt.Println()
+
+	// The text from part1 is consumed and placed into the Envelope.Text field.
+	fmt.Printf("Text Content: %q\n", env.Text)
+
+	// But part1 is also available as a child of the root Part.  Only the headers may be accessed,
+	// because the content has been consumed.
+	part1 := env.Root.FirstChild
+	fmt.Printf("Part 1 X-Comment: %q\n", part1.Header.Get("X-Comment"))
+	fmt.Println()
+
+	// The HTML from part2 is consumed and placed into the Envelope.HTML field.
+	fmt.Printf("HTML Content: %q\n", env.HTML)
+
+	// And part2 is available as the second child of the root Part. Only the headers may be
+	// accessed, because the content has been consumed.
+	part2 := env.Root.FirstChild.NextSibling
+	fmt.Printf("Part 2 X-Comment: %q\n", part2.Header.Get("X-Comment"))
+	fmt.Println()
+
+	// Because part3 has a disposition of attachment, it is added to the Envelope.Attachments
+	// slice
+	fmt.Printf("Attachment 1 X-Comment: %q\n", env.Attachments[0].Header.Get("X-Comment"))
+
+	// And is still available as the third child of the root Part
+	part3 := env.Root.FirstChild.NextSibling.NextSibling
+	fmt.Printf("Part 3 X-Comment: %q\n", part3.Header.Get("X-Comment"))
+
+	// The content of Attachments, Inlines and OtherParts is available to be read.
+	content, _ := ioutil.ReadAll(part3)
+	fmt.Printf("Part 3 Content: %q\n", content)
+
+	// part3 contained a malformed header line, enmime has attached an Error to it
+	p3error := part3.Errors[0]
+	fmt.Println(p3error.String())
+	fmt.Println()
+
+	// All Part errors are collected and placed into Envelope.Errors
+	fmt.Println("Envelope errors:")
+	for _, e := range env.Errors {
+		fmt.Println(e.String())
+	}
+
+	// Output:
+	// Root Part Subject: "Example message"
+	// Envelope Subject: "Example message"
+	//
+	// Text Content: "hello!"
+	// Part 1 X-Comment: "part1"
+	//
+	// HTML Content: "<b>hello!</b>"
+	// Part 2 X-Comment: "part2"
+	//
+	// Attachment 1 X-Comment: "part3"
+	// Part 3 X-Comment: "part3"
+	// Part 3 Content: "hello again!"
+	// [W] Malformed Header: Continued line "filename=hi.txt" was not indented
+	//
+	// Envelope errors:
+	// [W] Malformed Header: Continued line "filename=hi.txt" was not indented
 }

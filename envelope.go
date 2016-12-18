@@ -55,9 +55,10 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	return ret, nil
 }
 
-// ReadEnvelope parses the content of the provided reader into an Envelope, downconverting HTML to
-// plain text if needed, and sorting the attachments, inlines and other parts into their respective
-// slices.
+// ReadEnvelope is a wrapper around ReadParts and EnvelopeFromPart.  It parses the content of the
+// provided reader into an Envelope, downconverting HTML to plain text if needed, and sorting the
+// attachments, inlines and other parts into their respective slices. Errors are collected from all
+// Parts and placed into the Envelope.Errors slice.
 func ReadEnvelope(r io.Reader) (*Envelope, error) {
 	// Read MIME parts from reader
 	root, err := ReadParts(r)
@@ -67,9 +68,9 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 	return EnvelopeFromPart(root)
 }
 
-// EnvelopeFromPart uses the provided Part tree to build an Envelope,, downconverting HTML to plain
+// EnvelopeFromPart uses the provided Part tree to build an Envelope, downconverting HTML to plain
 // text if needed, and sorting the attachments, inlines and other parts into their respective
-// slices.
+// slices.  Errors are collected from all Parts and placed into the Envelopes Errors slice.
 func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	e := &Envelope{
 		Root:   root,
