@@ -12,9 +12,8 @@ import (
 	"strings"
 )
 
-// Part is the primary structure enmine clients will interact with.  Each Part represents a
-// node in the MIME multipart tree.  The Content-Type, Disposition and File Name are parsed out of
-// the header for easier access.
+// Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
+// are parsed out of the header for easier access.
 type Part struct {
 	Header      textproto.MIMEHeader // Header for this Part
 	Parent      *Part                // Parent of this part (can be nil)
