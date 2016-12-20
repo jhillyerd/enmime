@@ -2,7 +2,7 @@ package enmime
 
 import "testing"
 
-func TestStringConversion(t *testing.T) {
+func TestErrorStringConversion(t *testing.T) {
 	e := &Error{
 		Name:   "WarnName",
 		Detail: "Warn Details",
@@ -28,7 +28,49 @@ func TestStringConversion(t *testing.T) {
 	}
 }
 
-func TestWarnings(t *testing.T) {
+func TestErrorAddError(t *testing.T) {
+	p := &Part{}
+	p.addError(errorMalformedHeader, "1 %v %q", 2, "three")
+
+	if len(p.Errors) != 1 {
+		t.Fatal("len(p.Errors) ==", len(p.Errors), ", want: 1")
+	}
+	e := p.Errors[0]
+
+	if e.Name != string(errorMalformedHeader) {
+		t.Errorf("e.Name == %q, want: %q", e.Name, errorMalformedHeader)
+	}
+	if !e.Severe {
+		t.Errorf("e.Severe == %v, want: true", e.Severe)
+	}
+	want := "1 2 \"three\""
+	if e.Detail != want {
+		t.Errorf("e.Detail == %q, want: %q", e.Detail, want)
+	}
+}
+
+func TestErrorAddWarning(t *testing.T) {
+	p := &Part{}
+	p.addWarning(errorMalformedHeader, "1 %v %q", 2, "three")
+
+	if len(p.Errors) != 1 {
+		t.Fatal("len(p.Errors) ==", len(p.Errors), ", want: 1")
+	}
+	e := p.Errors[0]
+
+	if e.Name != string(errorMalformedHeader) {
+		t.Errorf("e.Name == %q, want: %q", e.Name, errorMalformedHeader)
+	}
+	if e.Severe {
+		t.Errorf("e.Severe == %v, want: false", e.Severe)
+	}
+	want := "1 2 \"three\""
+	if e.Detail != want {
+		t.Errorf("e.Detail == %q, want: %q", e.Detail, want)
+	}
+}
+
+func TestErrorEnvelopeWarnings(t *testing.T) {
 	// To pass each file below must error one or more times with the specified errorName, and no
 	// other errorNames.
 	var files = []struct {
