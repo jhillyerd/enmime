@@ -504,24 +504,35 @@ func TestParseNestedHeaders(t *testing.T) {
 	}
 }
 
-func TestParseEncodedSubject(t *testing.T) {
+func TestEnvelopeGetHeader(t *testing.T) {
+	var e *Envelope
+	var got, want string
+
+	// Test empty header
+	e = &Envelope{}
+	want = ""
+	got = e.GetHeader("Subject")
+	if got != want {
+		t.Errorf("Subject was: %q, want: %q", got, want)
+	}
+
 	// Even non-MIME messages should support encoded-words in headers
 	// Also, encoded addresses should be suppored
-	msg := openTestData("mail", "qp-ascii-header.raw")
-	e, err := ReadEnvelope(msg)
+	r := openTestData("mail", "qp-ascii-header.raw")
+	e, err := ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
 
-	want := "Test QP Subject!"
-	got := e.GetHeader("Subject")
+	want = "Test QP Subject!"
+	got = e.GetHeader("Subject")
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
 	}
 
 	// Test UTF-8 subject line
-	msg = openTestData("mail", "qp-utf8-header.raw")
-	e, err = ReadEnvelope(msg)
+	r = openTestData("mail", "qp-utf8-header.raw")
+	e, err = ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -533,9 +544,19 @@ func TestParseEncodedSubject(t *testing.T) {
 	}
 }
 
-func TestParseEncodedAddressList(t *testing.T) {
-	msg := openTestData("mail", "qp-utf8-header.raw")
-	e, err := ReadEnvelope(msg)
+func TestEnvelopeAddressList(t *testing.T) {
+	var e *Envelope
+	var got, want string
+
+	// Test empty header
+	e = &Envelope{}
+	_, err := e.AddressList("To")
+	if err == nil {
+		t.Error("AddressList(\"Subject\") should have returned err, got nil")
+	}
+
+	r := openTestData("mail", "qp-utf8-header.raw")
+	e, err = ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -554,8 +575,8 @@ func TestParseEncodedAddressList(t *testing.T) {
 	}
 
 	// Confirm address name was decoded properly
-	want := "Mirosław Marczak"
-	got := toAddresses[0].Name
+	want = "Mirosław Marczak"
+	got = toAddresses[0].Name
 	if got != want {
 		t.Errorf("To was: %q, want: %q", got, want)
 	}
@@ -733,5 +754,46 @@ func TestAttachmentOnly(t *testing.T) {
 				t.Errorf("Content should be PNG image, got: %v", allBytes)
 			}
 		}
+	}
+}
+
+func TestEnvelopeParseMultiPartBody(t *testing.T) {
+	var want string
+	var err error
+	root := &Part{}
+	e := &Envelope{}
+
+	// Empty root part
+	err = parseMultiPartBody(root, e)
+	want = "Unable to parse media type"
+	if err == nil {
+		t.Fatalf("err was %v, wanted: %v", err, want)
+	}
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("err was %v, wanted: %v", err, want)
+	}
+
+	// Unexpected content type
+	root.Header = make(textproto.MIMEHeader)
+	root.Header.Set("Content-Type", "text/plain")
+	err = parseMultiPartBody(root, e)
+	want = "Unknown mediatype"
+	if err == nil {
+		t.Fatalf("err was %v, wanted: %v", err, want)
+	}
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("err was %v, wanted: %v", err, want)
+	}
+
+	// No boundary param
+	root.Header = make(textproto.MIMEHeader)
+	root.Header.Set("Content-Type", "multipart/mixed")
+	err = parseMultiPartBody(root, e)
+	want = "Unable to locate boundary param"
+	if err == nil {
+		t.Fatalf("err was %v, wanted: %v", err, want)
+	}
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("err was %v, wanted: %v", err, want)
 	}
 }
