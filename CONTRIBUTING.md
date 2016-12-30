@@ -17,17 +17,23 @@ to provide validation and/or guidance on your suggested approach.
 
 ## Making Changes
 
-- Create a topic branch from where you want to base your work.
+Enmime uses [git-flow] with default options.  If you have git-flow installed,
+you can run `git flow feature start <topic branch name>`.
+
+Without git-flow, create a topic branch from where you want to base your work:
   - This is usually the `develop` branch, example command:
     `git checkout origin/develop -b <topic branch name>`
   - Only target the `master` branch if the issue is already resolved in
     `develop`.
-- Make commits of logical units.
-- Add unit tests to exercise your changes.
-- Scrub personally identifying information from test case emails, and
-  keep attachments short.
-- Run the updated code through `go fmt` and `go vet`.
-- Ensure the code builds and tests with the following commands:
+
+Once you are on your topic branch:
+
+1. Make commits of logical units.
+2. Add unit tests to exercise your changes.
+3. Scrub personally identifying information from test case emails, and
+   keep attachments short.
+4. Run the updated code through `go fmt` and `go vet`.
+5. Ensure the code builds and tests with the following commands:
   - `go clean ./...`
   - `go build ./...`
   - `go test ./...`
@@ -35,4 +41,6 @@ to provide validation and/or guidance on your suggested approach.
 
 ## Thanks
 
-Thank you for considering contributing to enmime!
+Thank you for contributing to enmime!
+
+[git-flow]: https://github.com/nvie/gitflow
