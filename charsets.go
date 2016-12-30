@@ -240,6 +240,15 @@ var encodings = map[string]struct {
 	"utf-16":              {unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM), "utf-16le"},
 	"utf-16le":            {unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM), "utf-16le"},
 	"x-user-defined":      {charmap.XUserDefined, "x-user-defined"},
+	"iso646-us":           {charmap.Windows1252, "windows-1252"}, // ISO646 isn't us-ascii but 1991 version is.
+	"iso: western":        {charmap.Windows1252, "windows-1252"}, // same as iso-8859-1
+	"we8iso8859p1":        {charmap.Windows1252, "windows-1252"}, // same as iso-8859-1
+	"iso=8859-1":          {charmap.Windows1252, "windows-1252"}, // same as iso-8859-1
+	"cp936":               {simplifiedchinese.GBK, "gbk"},        // same as gb2312
+	"cp850":               {charmap.CodePage850, "cp850"},
+	"cp-850":              {charmap.CodePage850, "cp850"},
+	"ibm850":              {charmap.CodePage850, "cp850"},
+	"136":                 {traditionalchinese.Big5, "big5"}, // same as chinese big5
 }
 
 var metaTagCharsetRegexp = regexp.MustCompile(
