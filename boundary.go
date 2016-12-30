@@ -11,7 +11,6 @@ import (
 // This constant needs to be at least 76 for this package to work correctly.  This is because
 // \r\n--separator_of_len_70- would fill the buffer and it wouldn't be safe to consume a single byte
 // from it.
-// TODO implement test with boundary crossing edge of buffer
 const peekBufferSize = 4096
 
 type boundaryReader struct {

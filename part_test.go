@@ -478,6 +478,98 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 }
 
+func TestPartSimilarBoundary(t *testing.T) {
+	var want string
+	var wantp *Part
+	r := openTestData("parts", "similar-boundary.raw")
+	p, err := ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatal("Unexpected parse error:", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	wantp = &Part{
+		ContentType: "multipart/mixed",
+		FirstChild:  partExists,
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
+	}
+
+	// Examine first child
+	p = p.FirstChild
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "Section one"
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
+	}
+
+	// Examine sibling
+	p = p.NextSibling
+	wantp = &Part{
+		Parent:      partExists,
+		FirstChild:  partExists,
+		ContentType: "multipart/alternative",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
+	}
+
+	// First nested
+	p = p.FirstChild
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "A text section"
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
+	}
+
+	// Second nested
+	p = p.NextSibling
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "text/html",
+		Charset:     "us-ascii",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "An HTML section"
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
+	}
+}
+
 func TestMultiBase64Parts(t *testing.T) {
 	var want string
 	var wantp *Part
