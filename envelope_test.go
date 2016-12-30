@@ -158,6 +158,34 @@ func TestParseInlineText(t *testing.T) {
 	}
 }
 
+func TestParseInlineBadCharsetText(t *testing.T) {
+	msg := openTestData("mail", "html-mime-bad-charset-inline.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "Test of text section"
+	if e.Text != want {
+		t.Error("got:", e.Text, "want:", want)
+	}
+}
+
+func TestParseInlineBadUknownCharsetText(t *testing.T) {
+	msg := openTestData("mail", "html-mime-bad-unknown-charset-inline.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "Test of text section"
+	if e.Text != want {
+		t.Error("got:", e.Text, "want:", want)
+	}
+}
+
 func TestParseMultiAlernativeText(t *testing.T) {
 	msg := openTestData("mail", "mime-alternative.raw")
 	e, err := ReadEnvelope(msg)
