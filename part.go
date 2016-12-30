@@ -160,6 +160,22 @@ func ReadParts(r io.Reader) (*Part, error) {
 	return root, nil
 }
 
+func parseBadContentType(ctype, sep string) string {
+	cp := strings.Split(ctype, sep)
+	mctype := ""
+	for _, p := range cp {
+		if strings.Contains(p, "=") {
+			params := strings.Split(p, "=")
+			if !strings.Contains(mctype, params[0]+"=") {
+				mctype += p + ";"
+			}
+		} else {
+			mctype += p + ";"
+		}
+	}
+	return mctype
+}
+
 // parseParts recursively parses a mime multipart document.
 func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 	var prevSibling *Part
@@ -210,7 +226,20 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			// Parse Content-Type header
 			mtype, mparams, err := mime.ParseMediaType(ctype)
 			if err != nil {
-				return err
+				// Small hack to remove harmless charset duplicate params
+				mctype := parseBadContentType(ctype, ";")
+				mtype, mparams, err = mime.ParseMediaType(mctype)
+				if err != nil {
+					// Some badly formed content-types forget to send a ; between fields
+					mctype := parseBadContentType(ctype, " ")
+					if strings.Contains(mctype, `name=""`) {
+						mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+					}
+					mtype, mparams, err = mime.ParseMediaType(mctype)
+					if err != nil {
+						return err
+					}
+				}
 			}
 			p.ContentType = mtype
 

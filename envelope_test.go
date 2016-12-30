@@ -797,3 +797,16 @@ func TestEnvelopeParseMultiPartBody(t *testing.T) {
 		t.Fatalf("err was %v, wanted: %v", err, want)
 	}
 }
+
+func TestDuplicateParamsInMime(t *testing.T) {
+	msg := openTestData("mail", "mime-duplicate-param.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if e.Attachments[0].FileName != "Invoice_302232133150612.pdf" {
+		t.Fatal("Mail should have a part with filename Invoice_302232133150612.pdf")
+	}
+}
