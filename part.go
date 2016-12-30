@@ -108,8 +108,21 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 			if reader, err := newCharsetReader(p.Charset, contentReader); err == nil {
 				contentReader = reader
 			} else {
-				// Failed to get a conversion reader
-				p.addWarning(errorCharsetConversion, err.Error())
+				// Try to parse charset again here to see if we can salvage some badly formed ones
+				// like charset="charset=utf-8"
+				charsetp := strings.Split(p.Charset, "=")
+				if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
+					p.Charset = charsetp[1]
+					if reader, err := newCharsetReader(p.Charset, contentReader); err == nil {
+						contentReader = reader
+					} else {
+						// Failed to get a conversion reader
+						p.addWarning(errorCharsetConversion, err.Error())
+					}
+				} else {
+					// Failed to get a conversion reader
+					p.addWarning(errorCharsetConversion, err.Error())
+				}
 			}
 		}
 	}
