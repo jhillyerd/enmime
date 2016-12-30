@@ -48,7 +48,7 @@ func (p *Part) Read(b []byte) (n int, err error) {
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	// Determine content disposition, filename, character set
-	disposition, dparams, err := mime.ParseMediaType(p.Header.Get(hnContentDisposition))
+	disposition, dparams, err := parseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
@@ -136,7 +136,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 			errorMissingContentType,
 			"MIME parts should have a Content-Type header")
 	}
-	mediatype, params, err := mime.ParseMediaType(header.Get(hnContentType))
+	mediatype, params, err := parseMediaType(header.Get(hnContentType))
 	if contentType != "" && err != nil {
 		return nil, err
 	}
@@ -158,6 +158,28 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 
 	return root, nil
+}
+
+func parseMediaType(ctype string) (string, map[string]string, error) {
+	// Parse Content-Type header
+	mtype, mparams, err := mime.ParseMediaType(ctype)
+	if err != nil {
+		// Small hack to remove harmless charset duplicate params
+		mctype := parseBadContentType(ctype, ";")
+		mtype, mparams, err = mime.ParseMediaType(mctype)
+		if err != nil {
+			// Some badly formed content-types forget to send a ; between fields
+			mctype := parseBadContentType(ctype, " ")
+			if strings.Contains(mctype, `name=""`) {
+				mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+			}
+			mtype, mparams, err = mime.ParseMediaType(mctype)
+			if err != nil {
+				return "", make(map[string]string), err
+			}
+		}
+	}
+	return mtype, mparams, err
 }
 
 func parseBadContentType(ctype, sep string) string {
@@ -224,22 +246,9 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 				"MIME parts should have a Content-Type header")
 		} else {
 			// Parse Content-Type header
-			mtype, mparams, err := mime.ParseMediaType(ctype)
+			mtype, mparams, err := parseMediaType(ctype)
 			if err != nil {
-				// Small hack to remove harmless charset duplicate params
-				mctype := parseBadContentType(ctype, ";")
-				mtype, mparams, err = mime.ParseMediaType(mctype)
-				if err != nil {
-					// Some badly formed content-types forget to send a ; between fields
-					mctype := parseBadContentType(ctype, " ")
-					if strings.Contains(mctype, `name=""`) {
-						mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-					}
-					mtype, mparams, err = mime.ParseMediaType(mctype)
-					if err != nil {
-						return err
-					}
-				}
+				return err
 			}
 			p.ContentType = mtype
 

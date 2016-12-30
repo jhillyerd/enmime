@@ -2,13 +2,13 @@ package enmime
 
 import (
 	"fmt"
-	"github.com/jaytaylor/html2text"
 	"io"
 	"io/ioutil"
-	"mime"
 	"net/mail"
 	"net/textproto"
 	"strings"
+
+	"github.com/jaytaylor/html2text"
 )
 
 // Envelope is a simplified wrapper for MIME email messages.
@@ -137,7 +137,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 	var charset string
 	var isHTML bool
 	if ctype := root.Header.Get(hnContentType); ctype != "" {
-		if mediatype, mparams, err := mime.ParseMediaType(ctype); err == nil {
+		if mediatype, mparams, err := parseMediaType(ctype); err == nil {
 			isHTML = (mediatype == ctTextHTML)
 			if mparams[hpCharset] != "" {
 				charset = mparams[hpCharset]
@@ -179,7 +179,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 	// Determine mediatype
 	ctype := root.Header.Get(hnContentType)
-	mediatype, mparams, err := mime.ParseMediaType(ctype)
+	mediatype, mparams, err := parseMediaType(ctype)
 	if err != nil {
 		mediatype = cdAttachment
 	}
@@ -203,7 +203,7 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 func parseMultiPartBody(root *Part, e *Envelope) error {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mediatype, params, err := mime.ParseMediaType(ctype)
+	mediatype, params, err := parseMediaType(ctype)
 	if err != nil {
 		return fmt.Errorf("Unable to parse media type: %v", err)
 	}
@@ -285,7 +285,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 func isMultipartMessage(root *Part) bool {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mediatype, _, err := mime.ParseMediaType(ctype)
+	mediatype, _, err := parseMediaType(ctype)
 	if err != nil {
 		return false
 	}
@@ -305,13 +305,13 @@ func isMultipartMessage(root *Part) bool {
 //  - Content-Disposition: inline; filename="frog.jpg"
 //  - Content-Type: attachment; filename="frog.jpg"
 func isAttachment(header textproto.MIMEHeader) bool {
-	mediatype, _, _ := mime.ParseMediaType(header.Get(hnContentDisposition))
+	mediatype, _, _ := parseMediaType(header.Get(hnContentDisposition))
 	if strings.ToLower(mediatype) == cdAttachment ||
 		strings.ToLower(mediatype) == cdInline {
 		return true
 	}
 
-	mediatype, _, _ = mime.ParseMediaType(header.Get(hnContentType))
+	mediatype, _, _ = parseMediaType(header.Get(hnContentType))
 	if strings.ToLower(mediatype) == cdAttachment {
 		return true
 	}
@@ -328,7 +328,7 @@ func isPlain(header textproto.MIMEHeader, emptyContentTypeIsPlain bool) bool {
 		return true
 	}
 
-	mediatype, _, err := mime.ParseMediaType(ctype)
+	mediatype, _, err := parseMediaType(ctype)
 	if err != nil {
 		return false
 	}
