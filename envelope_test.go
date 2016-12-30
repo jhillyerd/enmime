@@ -823,3 +823,16 @@ func TestBadContentTypeInMime(t *testing.T) {
 		t.Fatal("Mail should have a part with filename Invoice_302232133150612.pdf")
 	}
 }
+
+func TestBlankMediaName(t *testing.T) {
+	msg := openTestData("mail", "mime-blank-media-name.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if e.Attachments[0].FileName != "Invoice_302232133150612.pdf" {
+		t.Fatal("Mail should have a part with filename Invoice_302232133150612.pdf")
+	}
+}
