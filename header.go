@@ -98,6 +98,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		}
 		if firstColon == 0 {
 			// Can't parse line starting with colon: skip
+			p.addError(errorMalformedHeader, "Header line %q started with a colon", s)
 			continue
 		}
 		if firstColon > 0 {

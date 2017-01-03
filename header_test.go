@@ -211,7 +211,7 @@ func TestReadHeader(t *testing.T) {
 			input:   ": line1=foo\r\n",
 			hname:   "",
 			want:    "",
-			correct: true,
+			correct: false,
 		},
 		{
 			input:   "X-Continuation: line1=foo\r\n \r\n line2=bar\r\n",
