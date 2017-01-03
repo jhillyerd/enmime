@@ -211,7 +211,7 @@ func TestReadHeader(t *testing.T) {
 			input:   ": line1=foo\r\n",
 			hname:   "",
 			want:    "",
-			correct: true,
+			correct: false,
 		},
 		{
 			input:   "X-Continuation: line1=foo\r\n \r\n line2=bar\r\n",
@@ -255,6 +255,18 @@ func TestReadHeader(t *testing.T) {
 			want:    "line1=foo;",
 			correct: true,
 		},
+		{
+			input: "Authentication-Results: mx.google.com;\n" +
+				"       spf=pass (google.com: sender)\n" +
+				"       dkim=pass header.i=@1;\n" +
+				"       dkim=pass header.i=@2\n",
+			hname: "Authentication-Results",
+			want: "mx.google.com;" +
+				" spf=pass (google.com: sender)" +
+				" dkim=pass header.i=@1;" +
+				" dkim=pass header.i=@2",
+			correct: true,
+		},
 	}
 
 	for _, tt := range ttable {
@@ -283,7 +295,7 @@ func TestReadHeader(t *testing.T) {
 		got = header.Get(tt.hname)
 		if got != tt.want {
 			t.Errorf(
-				"Stripped %s value got: %q, want: %q\ninput: %q", tt.hname, got, tt.want, tt.input)
+				"Stripped %s value\ngot : %q,\nwant: %q,\ninput: %q", tt.hname, got, tt.want, tt.input)
 		}
 		// Check error count
 		wantErrs := 0

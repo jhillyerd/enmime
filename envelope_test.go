@@ -864,3 +864,56 @@ func TestBlankMediaName(t *testing.T) {
 		t.Fatal("Mail should have a part with filename Invoice_302232133150612.pdf")
 	}
 }
+
+func TestEnvelopeHeaders(t *testing.T) {
+	headers := map[string]string{
+		"Received-Spf": "pass (google.com: domain of bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com designates 198.2.135.10 as permitted sender) client-ip=198.2.135.10;",
+		"To":           "<deepak@redsift.io>",
+		"Domainkey-Signature":    "a=rsa-sha1; c=nofws; q=dns; s=mandrill; d=papertrailapp.com; b=Cv9EE+3+CO+puDhpfQOsuwuP6YqJQBA/Z6OofPTXqWf/Asr/edsi7aoXIE+forQ/q8DjhhMMuMiD bQ1tlRXMFckw08GjqU7RN+ouwJEMXOpzxUgp6OwrITvddwhddEg6H3uYRva5pNJqonDDykshHyjA EVeAdcY4tjYQrcRxw/0=;",
+		"Dkim-Signature":         "v=1; a=rsa-sha1; c=relaxed/relaxed; s=mandrill; d=papertrailapp.com; h=From:Subject:To:Message-Id:Date:MIME-Version:Content-Type; i=support@papertrailapp.com; bh=2tw/BU7QN7gmFr2K2wnVpETYxbU=; b=T+PzWzjbOoKO3jNANsmqsnbM+gnbgT9EQBP8DOSno75iHQ9AuU6xcDCPctvJt50Exr6aTs9qJmEG baCa39danDRIx5zXsdaSy34+SKfDODdgmwEEfKFeULQGPwF1g73tXeX4k0kwt+bm6f0baWbaLwR1 RdhUd42jEMossTKuD9w= v=1; a=rsa-sha256; c=relaxed/relaxed; d=mandrillapp.com; i=@mandrillapp.com; q=dns/txt; s=mandrill; t=1436559153; h=From : Subject : To : Message-Id : Date : MIME-Version : Content-Type : From : Subject : Date : X-Mandrill-User : List-Unsubscribe; bh=eW2QM8XcfLCwIBTvTJaT619pYOD3YrxBvxC9cZ2gxe0=; b=quxFFNbO04KKNNB8yMd9Zch6wogobVbNFlpGIOQI/jA9FuhdZvMxQwwZ2jeno7c17v2eXY Vp3c1vwvVERCboNaPwwxrKkrhqMxM8rb15n8xM3v0IplkQ3vs9G5agiTT1qqxErsrS6xAqmj UNUPKEXuSjr24HqmQzxPry0aIgHdI=",
+		"Message-Id":             "<55a02731af510_7b0b33f2c7821d@pt02w01.papertrailapp.com.tmail>",
+		"X-Report-Abuse":         "Please forward a copy of this message, including all headers, to abuse@mandrill.com You can also report abuse here: http://mandrillapp.com/contact/abuse?id=30112948.163e4a0faf244a2da6b0121cc7af1fe9",
+		"Mime-Version":           "1.0",
+		"Return-Path":            "<bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com> <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>",
+		"Authentication-Results": "mx.google.com; spf=pass (google.com: domain of bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com designates 198.2.135.10 as permitted sender) smtp.mail=bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com; dkim=pass header.i=@papertrailapp.com; dkim=pass header.i=@mandrillapp.com",
+		"From":            "Papertrail <support@papertrailapp.com>",
+		"Subject":         "Welcome to Papertrail",
+		"Content-Type":    `multipart/alternative; boundary="_av-rPFkvS5QROAYLq2cQTUr1w"`,
+		"X-Mandrill-User": "md_30112948",
+		"Delivered-To":    "deepak@redsift.io",
+		"Received":        "by 10.76.55.35 with SMTP id o3csp106612oap; Fri, 10 Jul 2015 13:12:34 -0700 (PDT) from mail135-10.atl141.mandrillapp.com (mail135-10.atl141.mandrillapp.com. [198.2.135.10]) by mx.google.com with ESMTPS id k184si6630505ywf.180.2015.07.10.13.12.34 for <deepak@redsift.io> (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128); Fri, 10 Jul 2015 13:12:34 -0700 (PDT) from pmta03.mandrill.prod.atl01.rsglab.com (127.0.0.1) by mail135-10.atl141.mandrillapp.com id hk0jj41sau80 for <deepak@redsift.io>; Fri, 10 Jul 2015 20:12:33 +0000 (envelope-from <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>) from [67.214.212.122] by mandrillapp.com id 163e4a0faf244a2da6b0121cc7af1fe9; Fri, 10 Jul 2015 20:12:33 +0000",
+		"X-Received":      "by 10.170.119.147 with SMTP id l141mr25507408ykb.89.1436559154116; Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
+		"Date":            "Fri, 10 Jul 2015 20:12:33 +0000",
+	}
+
+	msg := openTestData("mail", "ctype-bug.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if len(e.Root.Header) != len(headers) {
+		t.Errorf("Failed to extract expected headers. Got %v headers, expected %v",
+			len(e.Root.Header), len(headers))
+	}
+
+	for k, _ := range headers {
+		if e.Root.Header[k] == nil {
+			t.Errorf("Header named %q was missing, want it to exist", k)
+		}
+	}
+
+	for k, v := range e.Root.Header {
+		if _, ok := headers[k]; !ok {
+			t.Errorf("Got header named %q, did not expect it to exist", k)
+			continue
+		}
+		for _, val := range v {
+			if !strings.Contains(headers[k], val) {
+				t.Errorf("Got header %q with value %q, wanted value contained in:\n%q",
+					k, val, headers[k])
+			}
+		}
+	}
+}
