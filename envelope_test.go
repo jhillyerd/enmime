@@ -865,7 +865,7 @@ func TestBlankMediaName(t *testing.T) {
 	}
 }
 
-func TestCTypeBug(t *testing.T) {
+func TestEnvelopeHeaders(t *testing.T) {
 	headers := map[string]string{
 		"Received-Spf": "pass (google.com: domain of bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com designates 198.2.135.10 as permitted sender) client-ip=198.2.135.10;",
 		"To":           "<deepak@redsift.io>",
@@ -894,13 +894,25 @@ func TestCTypeBug(t *testing.T) {
 	}
 
 	if len(e.Root.Header) != len(headers) {
-		t.Fatalf("Failed to extract expected headers. Expected length %d but got %d instead.", len(headers), len(e.Root.Header))
+		t.Errorf("Failed to extract expected headers. Got %v headers, expected %v",
+			len(e.Root.Header), len(headers))
+	}
+
+	for k, _ := range headers {
+		if e.Root.Header[k] == nil {
+			t.Errorf("Header named %q was missing, want it to exist", k)
+		}
 	}
 
 	for k, v := range e.Root.Header {
+		if _, ok := headers[k]; !ok {
+			t.Errorf("Got header named %q, did not expect it to exist", k)
+			continue
+		}
 		for _, val := range v {
 			if !strings.Contains(headers[k], val) {
-				t.Fatalf("Expected header with key (%s) and value (%s) but got value (%s) instead.", k, headers[k], v[0])
+				t.Errorf("Got header %q with value %q, wanted value contained in:\n%q",
+					k, val, headers[k])
 			}
 		}
 	}
