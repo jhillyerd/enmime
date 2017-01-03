@@ -90,33 +90,36 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		}
 		firstColon := bytes.IndexByte(s, ':')
 		firstSpace := bytes.IndexAny(s, " \t\n\r")
-		if firstColon == 0 {
+		if firstSpace == 0 {
+			// Starts with space: continuation
+			buf.WriteByte(' ')
+			buf.Write(textproto.TrimBytes(s))
 			continue
-		} else if firstColon > 0 {
+		}
+		if firstColon == 0 {
+			// Can't parse line starting with colon: skip
+			continue
+		}
+		if firstColon > 0 {
+			// Contains a colon, treat as a new header line
 			if !firstHeader {
-				// New Header line, end the last
+				// New Header line, end the previous
 				buf.Write([]byte{'\r', '\n'})
 			}
 			s = textproto.TrimBytes(s)
 			buf.Write(s)
 			firstHeader = false
 		} else {
-			// Possible continuation
-			if firstSpace == 0 {
-				// Continuation
-				s = append([]byte{' '}, textproto.TrimBytes(s)...)
+			// No colon: potential non-indented continuation
+			if len(s) > 0 {
+				// Attempt to detect and repair a non-indented continuation of previous line
+				buf.WriteByte(' ')
 				buf.Write(s)
+				p.addWarning(errorMalformedHeader, "Continued line %q was not indented", s)
 			} else {
-				if len(s) > 0 {
-					// Attempt to detect and repair a non-indented continuation of previous line
-					buf.WriteByte(' ')
-					buf.Write(s)
-					p.addWarning(errorMalformedHeader, "Continued line %q was not indented", s)
-				} else {
-					// Empty line, finish header parsing
-					buf.Write([]byte{'\r', '\n'})
-					break
-				}
+				// Empty line, finish header parsing
+				buf.Write([]byte{'\r', '\n'})
+				break
 			}
 		}
 	}
