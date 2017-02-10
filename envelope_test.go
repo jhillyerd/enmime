@@ -917,3 +917,58 @@ func TestEnvelopeHeaders(t *testing.T) {
 		}
 	}
 }
+
+func TestInlineTextBody(t *testing.T) {
+	headers := map[string]string{
+		"To":                        "<info@stuff.com>",
+		"Message-Id":                "<E1cbNWz-0002jP-2E@stuf.com>",
+		"Mime-Version":              "1.0",
+		"From":                      "Chris Garrett <cgarrett@stuff.com>",
+		"Subject":                   "Text body only with disposition inline",
+		"Content-Type":              `text/html; charset="UTF-8"`,
+		"Content-Disposition":       "inline",
+		"Content-Transfer-Encoding": "quoted-printable",
+		"Date": "Wed, 8 Feb 2017 03:23:13 -0500",
+	}
+
+	msg := openTestData("mail", "attachment-only-inline-quoted-printable.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if e.Text != "Just some html content" {
+		t.Errorf("Got Text with value %s, wanted value:\n%s",
+			e.Text, "Just some html content")
+	}
+
+	if len(e.Root.Header) != len(headers) {
+		t.Errorf("Failed to extract expected headers. Got %v headers, expected %v",
+			len(e.Root.Header), len(headers))
+	}
+
+	for k, _ := range headers {
+		if e.Root.Header[k] == nil {
+			t.Errorf("Header named %q was missing, want it to exist", k)
+		}
+	}
+
+	for k, v := range e.Root.Header {
+		if _, ok := headers[k]; !ok {
+			t.Errorf("Got header named %q, did not expect it to exist", k)
+			continue
+		}
+		for _, val := range v {
+			if !strings.Contains(headers[k], val) {
+				t.Errorf("Got header %q with value %q, wanted value contained in:\n%q",
+					k, val, headers[k])
+			}
+		}
+	}
+}
+

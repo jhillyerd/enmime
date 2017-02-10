@@ -1,0 +1,24 @@
+MIME-Version: 1.0
+Message-ID: <E1cbNWz-0002jP-2E@stuf.com>
+Date: Wed, 8 Feb 2017 03:23:13 -0500
+Content-Type: text/html; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+To: <info@stuff.com>
+From: Chris Garrett <cgarrett@stuff.com>
+Subject: Text body only with disposition inline
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.=
+w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title></title>
+</head>
+<body bgcolor=3D"#f1f1f1" leftmargin=3D"0" marginheight=3D"0" marginwidth=
+=3D"0" topmargin=3D"0">
+
+Just some html content
+
+</body>
+</html>

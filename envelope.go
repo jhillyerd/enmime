@@ -342,7 +342,8 @@ func isPlain(header textproto.MIMEHeader, emptyContentTypeIsPlain bool) bool {
 
 // isBinaryBody returns true if the mail header defines a binary body.
 func isBinaryBody(root *Part) bool {
-	if isAttachment(root.Header) {
+	if isAttachment(root.Header) &&
+		!strings.Contains(root.Header.Get(hnContentEncoding), "quoted-printable") {
 		return true
 	}
 
