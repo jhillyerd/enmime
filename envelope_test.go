@@ -917,3 +917,51 @@ func TestEnvelopeHeaders(t *testing.T) {
 		}
 	}
 }
+
+func TestMissMatchedTransferEncoding(t *testing.T) {
+	headers := map[string]string{
+		"To":                        "cgarrett@stuff.com",
+		"Message-Id":                "<20170123170028.510AC13AE@slack-job-worker626.tinyspeck.com>",
+		"Mime-Version":              "1.0",
+		"From":                      `"Slack" <feedback@slack.com>`,
+		"Subject":                   "=?utf-8?Q?=5bSlack=5d_Stuffs_Company_updates_for_the_week_of_January_=31=35th=2c_=32=30=31=37?=",
+		"Content-Type":              `multipart/alternative; boundary="__slack_1231448102__"`,
+		"Date": "Mon, 23 Jan 2017 09:00:28 -0800 (PST)",
+	}
+
+	msg := openTestData("mail", "mime-missmatched-encoding.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if e.Text != "Stuff" {
+		t.Errorf("Got Text with value %s, wanted value:\n%s",
+			e.Text, "Stuff")
+	}
+
+	if len(e.Root.Header) != len(headers) {
+		t.Errorf("Failed to extract expected headers. Got %v headers, expected %v",
+			len(e.Root.Header), len(headers))
+	}
+
+	for k, _ := range headers {
+		if e.Root.Header[k] == nil {
+			t.Errorf("Header named %q was missing, want it to exist", k)
+		}
+	}
+
+	for k, v := range e.Root.Header {
+		if _, ok := headers[k]; !ok {
+			t.Errorf("Got header named %q, did not expect it to exist", k)
+			continue
+		}
+		for _, val := range v {
+			if !strings.Contains(headers[k], val) {
+				t.Errorf("Got header %q with value %q, wanted value contained in:\n%q",
+					k, val, headers[k])
+			}
+		}
+	}
+}

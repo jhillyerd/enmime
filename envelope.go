@@ -199,6 +199,31 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 	return nil
 }
 
+func parseTextBody(p *Part) ([]byte, error) {
+
+	// use reader that part described
+	allBytes, ioerr := ioutil.ReadAll(p)
+	if ioerr != nil {
+
+		// quoted-printable was not quoted. try raw
+		if strings.Contains(ioerr.Error(), "quotedprintable: invalid unescaped byte") {
+			reader, err := newCharsetReader("utf-8", p.rawReader)
+			if err != nil {
+				return nil, err
+			}
+
+			allBytes, ioerr = ioutil.ReadAll(reader)
+			if ioerr != nil {
+				return nil, ioerr
+			}
+		}
+
+		return nil, ioerr
+	}
+
+	return allBytes, nil
+}
+
 // parseMultiPartBody parses a multipart message in root.  The result is placed in e.
 func parseMultiPartBody(root *Part, e *Envelope) error {
 	// Parse top-level multipart
@@ -221,7 +246,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			return p.ContentType == ctTextPlain && p.Disposition != cdAttachment
 		})
 		if p != nil {
-			allBytes, ioerr := ioutil.ReadAll(p)
+			allBytes, ioerr := parseTextBody(p)
 			if ioerr != nil {
 				return ioerr
 			}
@@ -236,7 +261,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			if i > 0 {
 				e.Text += "\n--\n"
 			}
-			allBytes, ioerr := ioutil.ReadAll(p)
+			allBytes, ioerr := parseTextBody(p)
 			if ioerr != nil {
 				return ioerr
 			}
