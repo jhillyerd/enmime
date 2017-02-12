@@ -22,8 +22,7 @@ func newQPCleaner(r io.ByteReader) *qpCleaner {
 	}
 }
 
-// Read method for io.Reader interface.  Reasonably efficient for well-formed quoted-printable
-// streams.  Less so when invalid characters are encountered; reads will be short.
+// Read method for io.Reader interface.
 func (qp *qpCleaner) Read(dest []byte) (n int, err error) {
 	// Ensure room to write a byte or =XX string
 	destLen := len(dest) - 3
