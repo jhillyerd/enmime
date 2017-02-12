@@ -938,13 +938,12 @@ func TestInlineTextBody(t *testing.T) {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if err != nil {
-		t.Fatal("Failed to parse MIME:", err)
+	want := "Just some html content"
+	if e.Text != want {
+		t.Errorf("Got Text with value %s, wanted value:\n%s", e.Text, want)
 	}
-
-	if e.Text != "Just some html content" {
-		t.Errorf("Got Text with value %s, wanted value:\n%s",
-			e.Text, "Just some html content")
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("Expected %q to contain %q", e.HTML, want)
 	}
 
 	if len(e.Root.Header) != len(headers) {
@@ -971,4 +970,3 @@ func TestInlineTextBody(t *testing.T) {
 		}
 	}
 }
-
