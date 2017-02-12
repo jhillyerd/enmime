@@ -68,6 +68,38 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 }
 
+func TestQuotedPrintableInvalidPart(t *testing.T) {
+	var want, got string
+	var wantp *Part
+	r := openTestData("parts", "quoted-printable-invalid.raw")
+	p, err := ReadParts(r)
+	if err != nil {
+		t.Fatal("Unexpected parse error:", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	wantp = &Part{
+		ContentType: "text/plain",
+		Charset:     "utf-8",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "quoted-printable"
+	got = p.Header.Get("Content-Transfer-Encoding")
+	if got != want {
+		t.Errorf("Content-Transfer-Encoding got: %q, want: %q", got, want)
+	}
+
+	want = "Stuffs’s Weekly Summary"
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
+	}
+}
+
 func TestMultiAlternParts(t *testing.T) {
 	var want string
 	var wantp *Part
