@@ -5,6 +5,8 @@ Enmime highly encourages third-party patches. There is a great deal of MIME
 encoded email out there, so it's likely you will encounter a scenario we
 haven't.
 
+**tl;dr:** File pull requests against the `develop` branch, not `master`!
+
 
 ## Getting Started
 
