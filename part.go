@@ -86,7 +86,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
 	case "quoted-printable":
-		contentReader = newQPCleaner(contentReader.(io.ByteReader))
+		contentReader = newQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
 	case "base64":
 		contentReader = newBase64Cleaner(contentReader)
