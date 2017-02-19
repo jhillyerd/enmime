@@ -2,6 +2,7 @@ package enmime
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -19,6 +20,8 @@ func TestQPCleaner(t *testing.T) {
 		{"\r\n\t", "\r\n\t"},
 		{"pédagogues", "p=C3=A9dagogues"},
 		{"Stuffs’s", "Stuffs=E2=80=99s"},
+		{"=", "=3D"},
+		{"=a", "=3Da"},
 	}
 
 	for _, tc := range ttable {
@@ -60,6 +63,24 @@ func TestQPCleanerOverflow(t *testing.T) {
 			}
 			offset++
 		}
+	}
+}
+
+var PEEK_ERR = errors.New("DIE BART DIE")
+
+type peekBreakReader string
+
+func (r peekBreakReader) Read(p []byte) (int, error) {
+	return copy(p, r), PEEK_ERR
+}
+
+func TestQPPeekError(t *testing.T) {
+	qp := newQPCleaner(peekBreakReader("=a"))
+
+	buf := make([]byte, 100)
+	_, err := qp.Read(buf)
+	if err != PEEK_ERR {
+		t.Errorf("Got: %q, want: %q", err, PEEK_ERR)
 	}
 }
 
