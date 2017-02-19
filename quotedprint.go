@@ -38,10 +38,8 @@ func (qp *qpCleaner) Read(dest []byte) (n int, err error) {
 		case b == '=':
 			// pass valid hex bytes through
 			hexBytes, err := qp.in.Peek(2)
-			if err != nil {
-				if err != io.EOF {
-					return 0, err
-				}
+			if err != nil && err != io.EOF {
+				return 0, err
 			}
 			if isValidHexBytes(hexBytes) {
 				dest[n] = b
