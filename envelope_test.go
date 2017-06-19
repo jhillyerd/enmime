@@ -51,6 +51,7 @@ func TestIdentifyBinaryBody(t *testing.T) {
 	}{
 		{filename: "attachment-only.raw", disposition: "attachment"},
 		{filename: "attachment-only-inline.raw", disposition: "inline"},
+		{filename: "attachment-only-no-disposition.raw", disposition: "none"},
 	}
 	for _, tt := range ttable {
 		r := openTestData("mail", tt.filename)

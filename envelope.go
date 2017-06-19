@@ -345,7 +345,21 @@ func isBinaryBody(root *Part) bool {
 	if isPlain(root.Header, true) {
 		return false
 	}
-	return isAttachment(root.Header)
+
+	isBin := isAttachment(root.Header)
+	if !isBin {
+		// This must be an attachment, if the Content-Type is not
+		// 'text/plain' or 'text/html'.
+		// Example:
+		// Content-Type: application/pdf; name="doc.pdf"
+		mediatype, _, _ := parseMediaType(root.Header.Get(hnContentType))
+		mediatype = strings.ToLower(mediatype)
+		if mediatype != ctTextPlain && mediatype != ctTextHTML {
+			return true
+		}
+	}
+
+	return isBin
 }
 
 // Used by Part matchers to locate the HTML body.  Not inlined because it's used in multiple places.
