@@ -190,6 +190,9 @@ func parseBinaryOnlyBody(root *Part, e *Envelope) error {
 	// Add our part to the appropriate section of the Envelope
 	e.Root = NewPart(nil, mediatype)
 
+	// Add header from binary only part
+	e.Root.Header = root.Header
+
 	if root.Disposition == cdInline {
 		e.Inlines = append(e.Inlines, root)
 	} else {

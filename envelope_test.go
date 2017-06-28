@@ -783,6 +783,10 @@ func TestAttachmentOnly(t *testing.T) {
 				t.Errorf("Content should be PNG image, got: %v", allBytes)
 			}
 		}
+		// Check, if root header is set
+		if len(e.Root.Header) < 1 {
+			t.Errorf("No root header defined, but must be set from binary only part.")
+		}
 	}
 }
 
