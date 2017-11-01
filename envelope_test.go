@@ -975,3 +975,17 @@ func TestInlineTextBody(t *testing.T) {
 		}
 	}
 }
+
+func TestEnvelopEpilogue(t *testing.T) {
+
+	msg := openTestData("mail", "epilogue-sample.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if e.Root.Epiloge.Len() == 0 {
+		t.Errorf("Epilogue extraction not working")
+	}
+}

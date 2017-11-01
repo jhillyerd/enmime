@@ -6,9 +6,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
+	"regexp"
 	"strings"
 )
 
@@ -24,6 +26,7 @@ type Part struct {
 	FileName    string               // The file-name from disposition or type header
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
+	Epiloge     bytes.Buffer         // This is the epiloge of the email.
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -160,7 +163,13 @@ func ReadParts(r io.Reader) (*Part, error) {
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
-		err = parseParts(root, br, boundary)
+		// Get epiloge
+		emailContent, epiloge, err := splitEpilogue(br, boundary)
+		if err != nil {
+			return nil, err
+		}
+		root.Epiloge = epiloge
+		err = parseParts(root, bufio.NewReader(&emailContent), boundary)
 		if err != nil {
 			return nil, err
 		}
@@ -172,6 +181,41 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 
 	return root, nil
+}
+
+func splitEpilogue(r *bufio.Reader, boundary string) (bytes.Buffer, bytes.Buffer, error) {
+	var emailBody bytes.Buffer
+	var epilogue bytes.Buffer
+	closingBoundary := "--" + boundary + "--"
+	tp := bufio.NewReader(r)
+	var eofReached = false
+	for !eofReached {
+		emailLine, err := tp.ReadBytes('\n')
+		if err != nil {
+			if err != io.EOF {
+				return emailBody, epilogue, err
+			}
+			eofReached = true
+		}
+		isClosingLine, err := regexp.MatchString("^"+closingBoundary+".*", string(emailLine))
+		if err != nil {
+			return emailBody, epilogue, err
+		}
+		emailBody.Write(emailLine)
+		if err != nil {
+			return emailBody, epilogue, err
+		}
+		if isClosingLine {
+			// here we read what is left after the closing boundary
+			content, err := ioutil.ReadAll(r)
+			if err != nil {
+				return emailBody, epilogue, err
+			}
+			epilogue.Write(content)
+			break
+		}
+	}
+	return emailBody, epilogue, nil
 }
 
 func parseMediaType(ctype string) (string, map[string]string, error) {
