@@ -9,6 +9,7 @@ import (
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
+	"strconv"
 	"strings"
 )
 
@@ -24,6 +25,7 @@ type Part struct {
 	FileName    string               // The file-name from disposition or type header
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
+	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -212,13 +214,24 @@ func parseBadContentType(ctype, sep string) string {
 	return mctype
 }
 
-// parseParts recursively parses a mime multipart document.
+// parseParts recursively parses a mime multipart document and sets each Part's PartID.
 func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 	var prevSibling *Part
+
+	firstRecursion := parent.Parent == nil
+	// e.Root.PartID = 0
+	if firstRecursion {
+		parent.PartID = "0"
+	}
+
+	var indexPartID int = 0
 
 	// Loop over MIME parts
 	br := newBoundaryReader(reader, boundary)
 	for {
+
+		indexPartID++
+
 		next, err := br.Next()
 		if err != nil && err != io.EOF {
 			return err
@@ -227,6 +240,14 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			break
 		}
 		p := &Part{Parent: parent}
+
+		// Set this Part's PartID, indicating its position within the MIME Part Tree
+		if firstRecursion {
+			p.PartID = strconv.Itoa(indexPartID)
+		} else {
+			p.PartID = p.Parent.PartID + "." + strconv.Itoa(indexPartID)
+		}
+
 		bbr := bufio.NewReader(br)
 		header, err := readHeader(bbr, p)
 		p.Header = header
@@ -291,6 +312,12 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 				return err
 			}
 		}
+	}
+
+	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
+	// i.e. it is the root of its MIME Part subtree
+	if !firstRecursion {
+		parent.PartID += ".0"
 	}
 
 	return nil
