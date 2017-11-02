@@ -1,6 +1,7 @@
 package enmime
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -147,6 +148,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 
 	// Read transcoded text
 	bodyBytes, err := ioutil.ReadAll(root)
+	root.Utf8Reader = bytes.NewReader(bodyBytes)
 	if err != nil {
 		return err
 	}
@@ -225,6 +227,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			if ioerr != nil {
 				return ioerr
 			}
+			p.Utf8Reader = bytes.NewReader(allBytes)
 			e.Text = string(allBytes)
 		}
 	} else {
@@ -240,6 +243,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			if ioerr != nil {
 				return ioerr
 			}
+			p.Utf8Reader = bytes.NewReader(allBytes)
 			e.Text += string(allBytes)
 		}
 	}
@@ -251,6 +255,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 		if ioerr != nil {
 			return ioerr
 		}
+		p.Utf8Reader = bytes.NewReader(allBytes)
 		e.HTML += string(allBytes)
 	}
 
