@@ -29,7 +29,7 @@ type Part struct {
 	Errors      []Error              // Errors encountered while parsing this part
 	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
 	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
-	Epiloge     bytes.Buffer         // This is the epiloge of the email.
+	Epilogue    bytes.Buffer         // This is the epilogue of the email.
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -167,12 +167,12 @@ func ReadParts(r io.Reader) (*Part, error) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
 		root.boundary = boundary
-		// Get epiloge
-		emailContent, epiloge, err := splitEpilogue(br, boundary)
+		// Get Epilogue
+		emailContent, epilogue, err := splitEpilogue(br, boundary)
 		if err != nil {
 			return nil, err
 		}
-		root.Epiloge = epiloge
+		root.Epilogue = epilogue
 		err = parseParts(root, bufio.NewReader(&emailContent), boundary)
 		if err != nil {
 			return nil, err
