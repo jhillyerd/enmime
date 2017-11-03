@@ -985,7 +985,7 @@ func TestEnvelopEpilogue(t *testing.T) {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if e.Root.Epiloge.Len() == 0 {
+	if e.Root.Epilogue.Len() == 0 {
 		t.Errorf("Epilogue extraction not working")
 	}
 }

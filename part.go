@@ -26,7 +26,7 @@ type Part struct {
 	FileName    string               // The file-name from disposition or type header
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
-	Epiloge     bytes.Buffer         // This is the epiloge of the email.
+	Epilogue    bytes.Buffer         // This is the epilogue of the email.
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -163,12 +163,12 @@ func ReadParts(r io.Reader) (*Part, error) {
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
-		// Get epiloge
-		emailContent, epiloge, err := splitEpilogue(br, boundary)
+		// Get Epilogue
+		emailContent, epilogue, err := splitEpilogue(br, boundary)
 		if err != nil {
 			return nil, err
 		}
-		root.Epiloge = epiloge
+		root.Epilogue = epilogue
 		err = parseParts(root, bufio.NewReader(&emailContent), boundary)
 		if err != nil {
 			return nil, err
