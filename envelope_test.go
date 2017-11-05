@@ -976,7 +976,7 @@ func TestInlineTextBody(t *testing.T) {
 	}
 }
 
-func TestEnvelopEpilogue(t *testing.T) {
+func TestEnvelopeEpilogue(t *testing.T) {
 
 	msg := openTestData("mail", "epilogue-sample.raw")
 	e, err := ReadEnvelope(msg)
