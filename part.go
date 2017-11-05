@@ -191,10 +191,10 @@ func splitEpilogue(r *bufio.Reader, boundary string) (bytes.Buffer, bytes.Buffer
 	var emailBody bytes.Buffer
 	var epilogue bytes.Buffer
 	closingBoundary := "--" + boundary + "--"
-	tp := bufio.NewReader(r)
+	emailBodyReader := bufio.NewReader(r)
 	var eofReached = false
 	for !eofReached {
-		emailLine, err := tp.ReadBytes('\n')
+		emailLine, err := emailBodyReader.ReadBytes('\n')
 		if err != nil {
 			if err != io.EOF {
 				return emailBody, epilogue, err
