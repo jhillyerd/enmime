@@ -27,7 +27,7 @@ type Part struct {
 	Errors        []Error              // Errors encountered while parsing this part
 	PartID        string               // The ID representing the part's exact position within the MIME Tree
 	Utf8Reader    io.Reader            // The decoded content converted to UTF-8
-	boundary      string               // boundary marker used within this part
+	boundary      string               // Boundary marker used within this part
 	rawReader     io.Reader            // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader            // The content decoded from quoted-printable or base64
 }
@@ -153,7 +153,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 	root.Charset = params[hpCharset]
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
-		boundary := params[hpboundary]
+		boundary := params[hpBoundary]
 		// set the boundary for the root such that it's FirstChild / and  NextSiblings
 		// of FirstChild part can access to their parent's i.e. the root's boundary
 		root.boundary = boundary
@@ -217,7 +217,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		parent.PartID = "0"
 	}
 	// Loop over MIME parts
-	br := newboundaryReader(reader, parent.boundary)
+	br := newBoundaryReader(reader, parent.boundary)
 	for {
 		// increment the index which serves for parts' IDs
 		indexID += 1
@@ -250,8 +250,8 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 						owner = prevSibling
 					}
 					owner.addWarning(
-						errorMissingboundary,
-						"boundary %q was not closed correctly",
+						errorMissingBoundary,
+						"Boundary %q was not closed correctly",
 						parent.boundary)
 					break
 				}
@@ -274,7 +274,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			p.ContentType = mtype
 			// Set disposition, filename, charset if available
 			p.setupContentHeaders(mparams)
-			p.boundary = mparams[hpboundary]
+			p.boundary = mparams[hpBoundary]
 		}
 		// Insert this Part into the MIME tree
 		if prevSibling != nil {
