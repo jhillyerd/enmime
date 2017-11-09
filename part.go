@@ -16,21 +16,20 @@ import (
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
-	Header      textproto.MIMEHeader // Header for this Part
-	Parent      *Part                // Parent of this part (can be nil)
-	FirstChild  *Part                // FirstChild is the top most child of this part
-	NextSibling *Part                // NextSibling of this part
-	ContentType string               // ContentType header without parameters
-	Disposition string               // Content-Disposition header without parameters
-	FileName    string               // The file-name from disposition or type header
-	Charset     string               // The content charset encoding label
-	Errors      []Error              // Errors encountered while parsing this part
-	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
-	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
-
-	boundary      string    // Boundary marker used within this part
-	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
-	decodedReader io.Reader // The content decoded from quoted-printable or base64
+	Header        textproto.MIMEHeader // Header for this Part
+	Parent        *Part                // Parent of this part (can be nil)
+	FirstChild    *Part                // FirstChild is the top most child of this part
+	NextSibling   *Part                // NextSibling of this part
+	ContentType   string               // ContentType header without parameters
+	Disposition   string               // Content-Disposition header without parameters
+	FileName      string               // The file-name from disposition or type header
+	Charset       string               // The content charset encoding label
+	Errors        []Error              // Errors encountered while parsing this part
+	PartID        string               // The ID representing the part's exact position within the MIME Tree
+	Utf8Reader    io.Reader            // The decoded content converted to UTF-8
+	boundary      string               // boundary marker used within this part
+	rawReader     io.Reader            // The raw Part content, no decoding or charset conversion
+	decodedReader io.Reader            // The content decoded from quoted-printable or base64
 }
 
 // NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
@@ -77,13 +76,10 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	if _, err := buf.ReadFrom(r); err != nil {
 		return err
 	}
-
 	var contentReader io.Reader = buf
 	valid := true
-
 	// Raw content reader
 	p.rawReader = contentReader
-
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
@@ -104,7 +100,6 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 			encoding)
 	}
 	p.decodedReader = contentReader
-
 	if valid {
 		// decodedReader is good; build character set conversion reader
 		if p.Charset != "" {
@@ -137,14 +132,12 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 func ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
 	root := &Part{}
-
 	// Read header
 	header, err := readHeader(br, root)
 	if err != nil {
 		return nil, err
 	}
 	root.Header = header
-
 	// Content-Type
 	contentType := header.Get(hnContentType)
 	if contentType == "" {
@@ -158,10 +151,11 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 	root.ContentType = mediatype
 	root.Charset = params[hpCharset]
-
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
-		boundary := params[hpBoundary]
+		boundary := params[hpboundary]
+		// set the boundary for the root such that it's FirstChild / and  NextSiblings
+		// of FirstChild part can access to their parent's i.e. the root's boundary
 		root.boundary = boundary
 		err = parseParts(root, br)
 		if err != nil {
@@ -173,10 +167,8 @@ func ReadParts(r io.Reader) (*Part, error) {
 			return nil, err
 		}
 	}
-
 	return root, nil
 }
-
 func parseMediaType(ctype string) (string, map[string]string, error) {
 	// Parse Content-Type header
 	mtype, mparams, err := mime.ParseMediaType(ctype)
@@ -198,7 +190,6 @@ func parseMediaType(ctype string) (string, map[string]string, error) {
 	}
 	return mtype, mparams, err
 }
-
 func parseBadContentType(ctype, sep string) string {
 	cp := strings.Split(ctype, sep)
 	mctype := ""
@@ -215,24 +206,21 @@ func parseBadContentType(ctype, sep string) string {
 	return mctype
 }
 
-// parseParts recursively parses a mime multipart document and sets each Part's PartID.
-func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
+// parseParts recursively parses a mime multipart document and sets each part's PartID
+func parseParts(parent *Part, reader *bufio.Reader) error {
 	var prevSibling *Part
-
+	// Handle exception: indexID for root is 0
+	var indexID int = 0
 	firstRecursion := parent.Parent == nil
-	// e.Root.PartID = 0
+	// root case
 	if firstRecursion {
 		parent.PartID = "0"
 	}
-
-	var indexPartID int = 0
-
 	// Loop over MIME parts
-	br := newBoundaryReader(reader, parent.boundary)
+	br := newboundaryReader(reader, parent.boundary)
 	for {
-
-		indexPartID++
-
+		// increment the index which serves for parts' IDs
+		indexID += 1
 		next, err := br.Next()
 		if err != nil && err != io.EOF {
 			return err
@@ -241,14 +229,12 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			break
 		}
 		p := &Part{Parent: parent}
-
-		// Set this Part's PartID, indicating its position within the MIME Part Tree
+		// set this part ID, indicates its place in the tree
 		if firstRecursion {
-			p.PartID = strconv.Itoa(indexPartID)
+			p.PartID = strconv.Itoa(indexID)
 		} else {
-			p.PartID = p.Parent.PartID + "." + strconv.Itoa(indexPartID)
+			p.PartID = p.Parent.PartID + "." + strconv.Itoa(indexID)
 		}
-
 		bbr := bufio.NewReader(br)
 		header, err := readHeader(bbr, p)
 		p.Header = header
@@ -264,8 +250,8 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 						owner = prevSibling
 					}
 					owner.addWarning(
-						errorMissingBoundary,
-						"Boundary %q was not closed correctly",
+						errorMissingboundary,
+						"boundary %q was not closed correctly",
 						parent.boundary)
 					break
 				}
@@ -274,7 +260,6 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 		} else if err != nil {
 			return err
 		}
-
 		ctype := header.Get(hnContentType)
 		if ctype == "" {
 			p.addWarning(
@@ -287,12 +272,10 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 				return err
 			}
 			p.ContentType = mtype
-
 			// Set disposition, filename, charset if available
 			p.setupContentHeaders(mparams)
-			p.boundary = mparams[hpBoundary]
+			p.boundary = mparams[hpboundary]
 		}
-
 		// Insert this Part into the MIME tree
 		if prevSibling != nil {
 			prevSibling.NextSibling = p
@@ -300,7 +283,6 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			parent.FirstChild = p
 		}
 		prevSibling = p
-
 		if p.boundary != "" {
 			// Content is another multipart
 			err = parseParts(p, bbr)
@@ -314,12 +296,9 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			}
 		}
 	}
-
-	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
-	// i.e. it is the root of its MIME Part subtree
+	// multipart content parts (except for the root) have .0 appended to their PartID
 	if !firstRecursion {
 		parent.PartID += ".0"
 	}
-
 	return nil
 }
