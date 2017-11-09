@@ -162,7 +162,8 @@ func ReadParts(r io.Reader) (*Part, error) {
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
-		err = parseParts(root, br, boundary)
+		root.boundary = boundary
+		err = parseParts(root, br)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +228,7 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 	var indexPartID int = 0
 
 	// Loop over MIME parts
-	br := newBoundaryReader(reader, boundary)
+	br := newBoundaryReader(reader, parent.boundary)
 	for {
 
 		indexPartID++
@@ -265,10 +266,10 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 					owner.addWarning(
 						errorMissingBoundary,
 						"Boundary %q was not closed correctly",
-						boundary)
+						parent.boundary)
 					break
 				}
-				return fmt.Errorf("Error at boundary %v: %v", boundary, err)
+				return fmt.Errorf("Error at boundary %v: %v", parent.boundary, err)
 			}
 		} else if err != nil {
 			return err
@@ -302,7 +303,7 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 
 		if p.boundary != "" {
 			// Content is another multipart
-			err = parseParts(p, bbr, p.boundary)
+			err = parseParts(p, bbr)
 			if err != nil {
 				return err
 			}
