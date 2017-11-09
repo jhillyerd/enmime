@@ -26,11 +26,11 @@ type Part struct {
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
 	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
+	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader // The content decoded from quoted-printable or base64
-	utf8Reader    io.Reader // The decoded content converted to UTF-8
 }
 
 // NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
@@ -40,10 +40,10 @@ func NewPart(parent *Part, contentType string) *Part {
 
 // Read returns the decoded & UTF-8 converted content; implements io.Reader.
 func (p *Part) Read(b []byte) (n int, err error) {
-	if p.utf8Reader == nil {
+	if p.Utf8Reader == nil {
 		return 0, io.EOF
 	}
-	return p.utf8Reader.Read(b)
+	return p.Utf8Reader.Read(b)
 }
 
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
@@ -129,7 +129,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 			}
 		}
 	}
-	p.utf8Reader = contentReader
+	p.Utf8Reader = contentReader
 	return nil
 }
 
