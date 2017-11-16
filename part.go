@@ -6,9 +6,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -24,11 +27,13 @@ type Part struct {
 	FileName    string               // The file-name from disposition or type header
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
+	Epilogue    bytes.Buffer         // This is the epilogue of the email.
+	PartID      string               // The ID representing the part's exact position within the MIME Tree
+	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader // The content decoded from quoted-printable or base64
-	utf8Reader    io.Reader // The decoded content converted to UTF-8
 }
 
 // NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
@@ -38,10 +43,10 @@ func NewPart(parent *Part, contentType string) *Part {
 
 // Read returns the decoded & UTF-8 converted content; implements io.Reader.
 func (p *Part) Read(b []byte) (n int, err error) {
-	if p.utf8Reader == nil {
+	if p.Utf8Reader == nil {
 		return 0, io.EOF
 	}
-	return p.utf8Reader.Read(b)
+	return p.Utf8Reader.Read(b)
 }
 
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
@@ -75,13 +80,10 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	if _, err := buf.ReadFrom(r); err != nil {
 		return err
 	}
-
 	var contentReader io.Reader = buf
 	valid := true
-
 	// Raw content reader
 	p.rawReader = contentReader
-
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
@@ -102,7 +104,6 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 			encoding)
 	}
 	p.decodedReader = contentReader
-
 	if valid {
 		// decodedReader is good; build character set conversion reader
 		if p.Charset != "" {
@@ -127,7 +128,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 			}
 		}
 	}
-	p.utf8Reader = contentReader
+	p.Utf8Reader = contentReader
 	return nil
 }
 
@@ -135,14 +136,12 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 func ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
 	root := &Part{}
-
 	// Read header
 	header, err := readHeader(br, root)
 	if err != nil {
 		return nil, err
 	}
 	root.Header = header
-
 	// Content-Type
 	contentType := header.Get(hnContentType)
 	if contentType == "" {
@@ -156,11 +155,19 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 	root.ContentType = mediatype
 	root.Charset = params[hpCharset]
-
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
-		err = parseParts(root, br, boundary)
+		// Get Epilogue
+		emailContent, epilogue, err := splitEpilogue(br, boundary)
+		if err != nil {
+			return nil, err
+		}
+		root.Epilogue = epilogue
+		// set the boundary for the root such that it's FirstChild / and  NextSiblings
+		// of FirstChild part can access to their parent's i.e. the root's boundary
+		root.boundary = boundary
+		err = parseParts(root, bufio.NewReader(&emailContent))
 		if err != nil {
 			return nil, err
 		}
@@ -170,8 +177,42 @@ func ReadParts(r io.Reader) (*Part, error) {
 			return nil, err
 		}
 	}
-
 	return root, nil
+}
+
+func splitEpilogue(r *bufio.Reader, boundary string) (bytes.Buffer, bytes.Buffer, error) {
+	var emailBody bytes.Buffer
+	var epilogue bytes.Buffer
+	closingBoundary := "--" + boundary + "--"
+	emailBodyReader := bufio.NewReader(r)
+	var eofReached = false
+	for !eofReached {
+		emailLine, err := emailBodyReader.ReadBytes('\n')
+		if err != nil {
+			if err != io.EOF {
+				return emailBody, epilogue, err
+			}
+			eofReached = true
+		}
+		isClosingLine, err := regexp.MatchString("^"+closingBoundary+".*", string(emailLine))
+		if err != nil {
+			return emailBody, epilogue, err
+		}
+		emailBody.Write(emailLine)
+		if err != nil {
+			return emailBody, epilogue, err
+		}
+		if isClosingLine {
+			// here we read what is left after the closing boundary
+			content, err := ioutil.ReadAll(r)
+			if err != nil {
+				return emailBody, epilogue, err
+			}
+			epilogue.Write(content)
+			break
+		}
+	}
+	return emailBody, epilogue, nil
 }
 
 func parseMediaType(ctype string) (string, map[string]string, error) {
@@ -195,7 +236,6 @@ func parseMediaType(ctype string) (string, map[string]string, error) {
 	}
 	return mtype, mparams, err
 }
-
 func parseBadContentType(ctype, sep string) string {
 	cp := strings.Split(ctype, sep)
 	mctype := ""
@@ -212,13 +252,21 @@ func parseBadContentType(ctype, sep string) string {
 	return mctype
 }
 
-// parseParts recursively parses a mime multipart document.
-func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
+// parseParts recursively parses a mime multipart document and sets each part's PartID
+func parseParts(parent *Part, reader *bufio.Reader) error {
 	var prevSibling *Part
-
+	// Handle exception: indexID for root is 0
+	var indexID int = 0
+	firstRecursion := parent.Parent == nil
+	// root case
+	if firstRecursion {
+		parent.PartID = "0"
+	}
 	// Loop over MIME parts
-	br := newBoundaryReader(reader, boundary)
+	br := newBoundaryReader(reader, parent.boundary)
 	for {
+		// increment the index which serves for parts' IDs
+		indexID += 1
 		next, err := br.Next()
 		if err != nil && err != io.EOF {
 			return err
@@ -227,6 +275,12 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			break
 		}
 		p := &Part{Parent: parent}
+		// set this part ID, indicates its place in the tree
+		if firstRecursion {
+			p.PartID = strconv.Itoa(indexID)
+		} else {
+			p.PartID = p.Parent.PartID + "." + strconv.Itoa(indexID)
+		}
 		bbr := bufio.NewReader(br)
 		header, err := readHeader(bbr, p)
 		p.Header = header
@@ -244,15 +298,14 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 					owner.addWarning(
 						errorMissingBoundary,
 						"Boundary %q was not closed correctly",
-						boundary)
+						parent.boundary)
 					break
 				}
-				return fmt.Errorf("Error at boundary %v: %v", boundary, err)
+				return fmt.Errorf("Error at boundary %v: %v", parent.boundary, err)
 			}
 		} else if err != nil {
 			return err
 		}
-
 		ctype := header.Get(hnContentType)
 		if ctype == "" {
 			p.addWarning(
@@ -265,12 +318,10 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 				return err
 			}
 			p.ContentType = mtype
-
 			// Set disposition, filename, charset if available
 			p.setupContentHeaders(mparams)
 			p.boundary = mparams[hpBoundary]
 		}
-
 		// Insert this Part into the MIME tree
 		if prevSibling != nil {
 			prevSibling.NextSibling = p
@@ -278,10 +329,9 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			parent.FirstChild = p
 		}
 		prevSibling = p
-
 		if p.boundary != "" {
 			// Content is another multipart
-			err = parseParts(p, bbr, p.boundary)
+			err = parseParts(p, bbr)
 			if err != nil {
 				return err
 			}
@@ -292,6 +342,9 @@ func parseParts(parent *Part, reader *bufio.Reader, boundary string) error {
 			}
 		}
 	}
-
+	// multipart content parts (except for the root) have .0 appended to their PartID
+	if !firstRecursion {
+		parent.PartID += ".0"
+	}
 	return nil
 }
