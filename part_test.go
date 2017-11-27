@@ -602,6 +602,71 @@ func TestPartSimilarBoundary(t *testing.T) {
 	}
 }
 
+// Check we don't UTF-8 decode attachments
+func TestBinaryDecode(t *testing.T) {
+	var want string
+	var wantp *Part
+	r := openTestData("parts", "bin-attach.raw")
+	p, err := ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatal("Unexpected parse error:", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	wantp = &Part{
+		FirstChild:  partExists,
+		ContentType: "multipart/mixed",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	if ok, err := contentEqualsString(p, ""); !ok {
+		t.Error("Part", err)
+	}
+
+	// Examine first child
+	p = p.FirstChild
+	wantp = &Part{
+		Parent:      partExists,
+		NextSibling: partExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	want = "A text section"
+	if ok, err := contentContainsString(p, want); !ok {
+		t.Error("Part", err)
+	}
+
+	// Examine sibling
+	p = p.NextSibling
+	wantp = &Part{
+		Parent:      partExists,
+		ContentType: "application/octet-stream",
+		Charset:     "us-ascii",
+		Disposition: "attachment",
+		FileName:    "test.bin",
+	}
+	comparePart(p, wantp, func(field, got, want string) {
+		t.Errorf("Part.%s == %q, want: %q", field, got, want)
+	})
+
+	wantBytes := []byte{
+		0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x08, 0x00,
+		0x08, 0x00, 0xC2, 0x02, 0x29, 0x4A, 0x00, 0x00}
+	if ok, err := contentEqualsBytes(p, wantBytes); !ok {
+		t.Error("Part", err)
+	}
+}
+
 func TestMultiBase64Parts(t *testing.T) {
 	var want string
 	var wantp *Part
