@@ -1,6 +1,7 @@
 package enmime
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -230,4 +231,16 @@ func contentEqualsString(r io.Reader, str string) (ok bool, err error) {
 		return true, nil
 	}
 	return false, fmt.Errorf("content == %q, want: %q", got, str)
+}
+
+// contentEqualsBytes checks if the provided readers content is the specified []byte
+func contentEqualsBytes(r io.Reader, want []byte) (ok bool, err error) {
+	allBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return false, err
+	}
+	if bytes.Equal(allBytes, want) {
+		return true, nil
+	}
+	return false, fmt.Errorf("content:\n%v, want:\n%v", allBytes, want)
 }
