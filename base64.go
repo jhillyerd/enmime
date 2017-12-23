@@ -41,7 +41,7 @@ func (qp *base64Cleaner) Read(p []byte) (n int, err error) {
 	buf := qp.buf[:size]
 	bn, err := qp.in.Read(buf)
 	for i := 0; i < bn; i++ {
-		switch base64CleanTable[buf[i]&0x7f] {
+		switch base64CleanerTable[buf[i]&0x7f] {
 		case -1:
 			// Strip these
 		default:
