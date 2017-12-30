@@ -1,0 +1,4 @@
+MIME-Version: 1.0
+
+According to RFC 822, content type defaults to text/plain at the root.
+Charset should default to us-ascii.

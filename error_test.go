@@ -80,7 +80,6 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 		{"bad-final-boundary.raw", errorMissingBoundary},
 		{"bad-header-wrap.raw", errorMalformedHeader},
 		{"html-only-inline.raw", errorPlainTextFromHTML},
-		{"missing-content-type.raw", errorMissingContentType},
 		{"missing-content-type2.raw", errorMissingContentType},
 		{"empty-header.raw", errorMissingContentType},
 		{"unk-encoding-part.raw", errorContentEncoding},
@@ -89,38 +88,38 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 	}
 
 	for _, tt := range files {
-		// Mail with disposition attachment
-		msg := openTestData("low-quality", tt.filename)
-		e, err := ReadEnvelope(msg)
-		if err != nil {
-			t.Fatal("Failed to parse MIME:", err)
-		}
+		t.Run(tt.filename, func(t *testing.T) {
+			msg := openTestData("low-quality", tt.filename)
+			e, err := ReadEnvelope(msg)
+			if err != nil {
+				t.Fatal("Failed to parse MIME:", err)
+			}
 
-		if len(e.Errors) == 0 {
-			t.Error("Got 0 warnings, expected at least one for:", tt.filename)
-		}
+			if len(e.Errors) == 0 {
+				t.Error("Got 0 warnings, expected at least one for:", tt.filename)
+			}
 
-		satisfied := false
-		for _, perr := range e.Errors {
-			if perr.Name == string(tt.perror) {
-				satisfied = true
-				if perr.Severe {
-					t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			satisfied := false
+			for _, perr := range e.Errors {
+				if perr.Name == string(tt.perror) {
+					satisfied = true
+					if perr.Severe {
+						t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+					}
 				}
 			}
-		}
-
-		if !satisfied {
-			var errorList string
-			for _, perr := range e.Errors {
-				errorList += perr.String()
-				errorList += "\n"
+			if !satisfied {
+				var errorList string
+				for _, perr := range e.Errors {
+					errorList += perr.String()
+					errorList += "\n"
+				}
+				t.Errorf(
+					"File %q should have error of type %q, got these instead:\n%s",
+					tt.filename,
+					tt.perror,
+					errorList)
 			}
-			t.Errorf(
-				"File %q should have error of type %q, got these instead:\n%s",
-				tt.filename,
-				tt.perror,
-				errorList)
-		}
+		})
 	}
 }

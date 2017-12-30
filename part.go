@@ -145,16 +145,17 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 	root.Header = header
 
-	// Content-Type
-	contentType := header.Get(hnContentType)
-	if contentType == "" {
-		root.addWarning(
-			errorMissingContentType,
-			"MIME parts should have a Content-Type header")
+	// Content-Type, default is text/plain us-ascii according to RFC 822
+	mediatype := "text/plain"
+	params := map[string]string{
+		"charset": "us-ascii",
 	}
-	mediatype, params, err := parseMediaType(header.Get(hnContentType))
-	if contentType != "" && err != nil {
-		return nil, err
+	contentType := header.Get(hnContentType)
+	if contentType != "" {
+		mediatype, params, err = parseMediaType(contentType)
+		if err != nil {
+			return nil, err
+		}
 	}
 	root.ContentType = mediatype
 	root.Charset = params[hpCharset]
@@ -220,17 +221,16 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	var prevSibling *Part
 
 	firstRecursion := parent.Parent == nil
-	// e.Root.PartID = 0
+	// Set root PartID
 	if firstRecursion {
 		parent.PartID = "0"
 	}
 
-	var indexPartID int = 0
+	var indexPartID int
 
 	// Loop over MIME parts
 	br := newBoundaryReader(reader, parent.boundary)
 	for {
-
 		indexPartID++
 
 		next, err := br.Next()
@@ -255,7 +255,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		if err == errEmptyHeaderBlock {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.
-			if next, err = br.Next(); err != nil {
+			if _, err = br.Next(); err != nil {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
 					// There are no more Parts, but the error belongs to a sibling or parent,
 					// because this Part doesn't actually exist.

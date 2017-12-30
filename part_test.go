@@ -160,6 +160,29 @@ func TestMultiAlternParts(t *testing.T) {
 	}
 }
 
+// TestRootMissingContentType expects a default content type to be set for the root if not specified
+func TestRootMissingContentType(t *testing.T) {
+	var want string
+	r := openTestData("parts", "missing-ctype-root.raw")
+	p, err := ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatal("Unexpected parse error:", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+	want = "text/plain"
+	if p.ContentType != want {
+		t.Errorf("Content-Type got: %q, want: %q", p.ContentType, want)
+	}
+	want = "us-ascii"
+	if p.Charset != want {
+		t.Errorf("Charset got: %q, want: %q", p.Charset, want)
+	}
+}
+
 func TestPartMissingContentType(t *testing.T) {
 	var want string
 	var wantp *Part
