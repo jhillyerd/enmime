@@ -96,14 +96,14 @@ func TestTestComparePartsEqual(t *testing.T) {
 	// Test equal Parts
 	var ttable = []*Part{
 		nil,
-		&Part{},
-		&Part{Parent: &Part{}},
-		&Part{FirstChild: &Part{}},
-		&Part{NextSibling: &Part{}},
-		&Part{ContentType: "such/wow"},
-		&Part{Disposition: "irritable"},
-		&Part{FileName: "readme.txt"},
-		&Part{Charset: "utf-7.999"},
+		{},
+		{Parent: &Part{}},
+		{FirstChild: &Part{}},
+		{NextSibling: &Part{}},
+		{ContentType: "such/wow"},
+		{Disposition: "irritable"},
+		{FileName: "readme.txt"},
+		{Charset: "utf-7.999"},
 	}
 
 	for i, tt := range ttable {
