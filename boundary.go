@@ -143,10 +143,7 @@ func (b *boundaryReader) isDelimiter(buf []byte) bool {
 // isTerminator returns true for --BOUNDARY--
 func (b *boundaryReader) isTerminator(buf []byte) bool {
 	idx := bytes.Index(buf, b.final)
-	if idx == -1 {
-		return false
-	}
-	return true
+	return idx != -1
 }
 
 // Locate boundaryPrefix in buf, returning its starting idx. If complete is true, the boundary

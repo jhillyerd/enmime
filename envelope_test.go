@@ -903,7 +903,7 @@ func TestEnvelopeHeaders(t *testing.T) {
 			len(e.Root.Header), len(headers))
 	}
 
-	for k, _ := range headers {
+	for k := range headers {
 		if e.Root.Header[k] == nil {
 			t.Errorf("Header named %q was missing, want it to exist", k)
 		}
@@ -956,7 +956,7 @@ func TestInlineTextBody(t *testing.T) {
 			len(e.Root.Header), len(headers))
 	}
 
-	for k, _ := range headers {
+	for k := range headers {
 		if e.Root.Header[k] == nil {
 			t.Errorf("Header named %q was missing, want it to exist", k)
 		}
@@ -1001,7 +1001,7 @@ func TestBinaryOnlyBodyHeaders(t *testing.T) {
 			len(e.Root.Header), len(headers))
 	}
 
-	for k, _ := range headers {
+	for k := range headers {
 		if e.Root.Header[k] == nil {
 			t.Errorf("Header named %q was missing, want it to exist", k)
 		}

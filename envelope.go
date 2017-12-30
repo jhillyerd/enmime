@@ -320,11 +320,7 @@ func isAttachment(header textproto.MIMEHeader) bool {
 	}
 
 	mediatype, _, _ = parseMediaType(header.Get(hnContentType))
-	if strings.ToLower(mediatype) == cdAttachment {
-		return true
-	}
-
-	return false
+	return strings.ToLower(mediatype) == cdAttachment
 }
 
 // isPlain returns true, if the the MIME headers define a valid 'text/plain' or 'text/html' part. If

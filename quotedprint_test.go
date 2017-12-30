@@ -66,12 +66,13 @@ func TestQPCleanerOverflow(t *testing.T) {
 	}
 }
 
-var PEEK_ERR = errors.New("DIE BART DIE")
+var ErrPeek = errors.New("enmime test peek error")
 
 type peekBreakReader string
 
+// Read always returns a ErrPeek
 func (r peekBreakReader) Read(p []byte) (int, error) {
-	return copy(p, r), PEEK_ERR
+	return copy(p, r), ErrPeek
 }
 
 func TestQPPeekError(t *testing.T) {
@@ -79,8 +80,8 @@ func TestQPPeekError(t *testing.T) {
 
 	buf := make([]byte, 100)
 	_, err := qp.Read(buf)
-	if err != PEEK_ERR {
-		t.Errorf("Got: %q, want: %q", err, PEEK_ERR)
+	if err != ErrPeek {
+		t.Errorf("Got: %q, want: %q", err, ErrPeek)
 	}
 }
 

@@ -155,7 +155,7 @@ func decodeToUTF8Base64Header(input string) string {
 
 	debug("input = %q", input)
 	tokens := strings.FieldsFunc(input, isWhiteSpaceRune)
-	output := make([]string, len(tokens), len(tokens))
+	output := make([]string, len(tokens))
 	for i, token := range tokens {
 		if len(token) > 4 && strings.Contains(token, "=?") {
 			// Stash parenthesis, they should not be encoded
