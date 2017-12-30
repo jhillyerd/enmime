@@ -111,6 +111,7 @@ func TestMultiAlternParts(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -125,6 +126,7 @@ func TestMultiAlternParts(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -139,6 +141,7 @@ func TestMultiAlternParts(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -188,6 +191,7 @@ func TestPartMissingContentType(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -201,6 +205,7 @@ func TestPartMissingContentType(t *testing.T) {
 		Parent:      partExists,
 		NextSibling: partExists,
 		// No ContentType
+		PartID: "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -215,6 +220,7 @@ func TestPartMissingContentType(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -241,6 +247,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -255,6 +262,7 @@ func TestPartEmptyHeader(t *testing.T) {
 		Parent:      partExists,
 		NextSibling: partExists,
 		// No ContentType
+		PartID: "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -269,6 +277,7 @@ func TestPartEmptyHeader(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -295,6 +304,7 @@ func TestMultiMixedParts(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/mixed",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -309,6 +319,7 @@ func TestMultiMixedParts(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -323,6 +334,7 @@ func TestMultiMixedParts(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -349,6 +361,7 @@ func TestMultiOtherParts(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/x-enmime",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -363,6 +376,7 @@ func TestMultiOtherParts(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -377,6 +391,7 @@ func TestMultiOtherParts(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -403,6 +418,7 @@ func TestNestedAlternParts(t *testing.T) {
 	wantp = &Part{
 		ContentType: "multipart/alternative",
 		FirstChild:  partExists,
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -417,6 +433,7 @@ func TestNestedAlternParts(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -431,6 +448,7 @@ func TestNestedAlternParts(t *testing.T) {
 		Parent:      partExists,
 		FirstChild:  partExists,
 		ContentType: "multipart/related",
+		PartID:      "2.0",
 	}
 	comparePart(t, p, wantp)
 
@@ -445,6 +463,7 @@ func TestNestedAlternParts(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
+		PartID:      "2.1",
 	}
 	comparePart(t, p, wantp)
 
@@ -461,6 +480,7 @@ func TestNestedAlternParts(t *testing.T) {
 		ContentType: "text/plain",
 		Disposition: "inline",
 		FileName:    "attach.txt",
+		PartID:      "2.2",
 	}
 	comparePart(t, p, wantp)
 
@@ -476,6 +496,7 @@ func TestNestedAlternParts(t *testing.T) {
 		ContentType: "text/plain",
 		Disposition: "inline",
 		FileName:    "attach2.txt",
+		PartID:      "2.3",
 	}
 	comparePart(t, p, wantp)
 
@@ -502,6 +523,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	wantp = &Part{
 		ContentType: "multipart/mixed",
 		FirstChild:  partExists,
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -516,6 +538,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -530,6 +553,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		Parent:      partExists,
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
+		PartID:      "2.0",
 	}
 	comparePart(t, p, wantp)
 
@@ -544,6 +568,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "2.1",
 	}
 	comparePart(t, p, wantp)
 
@@ -558,6 +583,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
+		PartID:      "2.2",
 	}
 	comparePart(t, p, wantp)
 
@@ -585,6 +611,7 @@ func TestBinaryDecode(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/mixed",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -599,6 +626,7 @@ func TestBinaryDecode(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -615,6 +643,7 @@ func TestBinaryDecode(t *testing.T) {
 		Charset:     "us-ascii",
 		Disposition: "attachment",
 		FileName:    "test.bin",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -643,6 +672,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/mixed",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -657,6 +687,7 @@ func TestMultiBase64Parts(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -672,6 +703,7 @@ func TestMultiBase64Parts(t *testing.T) {
 		ContentType: "text/html",
 		Disposition: "attachment",
 		FileName:    "test.html",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 
@@ -698,6 +730,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 	wantp = &Part{
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
+		PartID:      "0",
 	}
 	comparePart(t, p, wantp)
 
@@ -708,6 +741,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 		NextSibling: partExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "1",
 	}
 	comparePart(t, p, wantp)
 
@@ -717,6 +751,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 		Parent:      partExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
+		PartID:      "2",
 	}
 	comparePart(t, p, wantp)
 

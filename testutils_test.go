@@ -95,6 +95,11 @@ func comparePart(t *testing.T, got *Part, want *Part) (equal bool) {
 		equal = false
 		t.Errorf("Part.Charset == %q, want: %q", got.Charset, want.Charset)
 	}
+	if got.PartID != want.PartID {
+		equal = false
+		t.Errorf("Part.PartID == %q, want: %q", got.PartID, want.PartID)
+	}
+
 	return
 }
 
@@ -113,6 +118,7 @@ func TestHelperComparePartsEqual(t *testing.T) {
 		{"Disposition", &Part{Disposition: "irritable"}},
 		{"FileName", &Part{FileName: "readme.txt"}},
 		{"Charset", &Part{Charset: "utf-7.999"}},
+		{"PartID", &Part{PartID: "0.1"}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -172,6 +178,11 @@ func TestHelperComparePartsInequal(t *testing.T) {
 			name: "Charset",
 			a:    &Part{Charset: "foo"},
 			b:    &Part{Charset: "bar"},
+		},
+		{
+			name: "PartID",
+			a:    &Part{PartID: "0"},
+			b:    &Part{PartID: "1.1"},
 		},
 	}
 
