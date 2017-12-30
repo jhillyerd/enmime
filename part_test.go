@@ -20,9 +20,7 @@ func TestPlainTextPart(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "7bit"
 	got = p.Header.Get("Content-Transfer-Encoding")
@@ -52,9 +50,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "quoted-printable"
 	got = p.Header.Get("Content-Transfer-Encoding")
@@ -84,9 +80,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "utf-8",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "quoted-printable"
 	got = p.Header.Get("Content-Transfer-Encoding")
@@ -118,9 +112,7 @@ func TestMultiAlternParts(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -134,9 +126,7 @@ func TestMultiAlternParts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -150,9 +140,7 @@ func TestMultiAlternParts(t *testing.T) {
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An HTML section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -201,9 +189,7 @@ func TestPartMissingContentType(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -216,9 +202,7 @@ func TestPartMissingContentType(t *testing.T) {
 		NextSibling: partExists,
 		// No ContentType
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -232,9 +216,7 @@ func TestPartMissingContentType(t *testing.T) {
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An HTML section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -260,9 +242,7 @@ func TestPartEmptyHeader(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -276,9 +256,7 @@ func TestPartEmptyHeader(t *testing.T) {
 		NextSibling: partExists,
 		// No ContentType
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -292,9 +270,7 @@ func TestPartEmptyHeader(t *testing.T) {
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An HTML section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -320,9 +296,7 @@ func TestMultiMixedParts(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/mixed",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -336,9 +310,7 @@ func TestMultiMixedParts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "Section one"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -352,9 +324,7 @@ func TestMultiMixedParts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "Section two"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -380,9 +350,7 @@ func TestMultiOtherParts(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/x-enmime",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -396,9 +364,7 @@ func TestMultiOtherParts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "Section one"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -412,9 +378,7 @@ func TestMultiOtherParts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "Section two"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -440,9 +404,7 @@ func TestNestedAlternParts(t *testing.T) {
 		ContentType: "multipart/alternative",
 		FirstChild:  partExists,
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -456,9 +418,7 @@ func TestNestedAlternParts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -472,9 +432,7 @@ func TestNestedAlternParts(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/related",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -488,9 +446,7 @@ func TestNestedAlternParts(t *testing.T) {
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An HTML section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -506,9 +462,7 @@ func TestNestedAlternParts(t *testing.T) {
 		Disposition: "inline",
 		FileName:    "attach.txt",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An inline text attachment"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -523,9 +477,7 @@ func TestNestedAlternParts(t *testing.T) {
 		Disposition: "inline",
 		FileName:    "attach2.txt",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "Another inline text attachment"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -551,9 +503,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		ContentType: "multipart/mixed",
 		FirstChild:  partExists,
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -567,9 +517,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "Section one"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -583,9 +531,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -599,9 +545,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -615,9 +559,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An HTML section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -644,9 +586,7 @@ func TestBinaryDecode(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/mixed",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -660,9 +600,7 @@ func TestBinaryDecode(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -678,9 +616,7 @@ func TestBinaryDecode(t *testing.T) {
 		Disposition: "attachment",
 		FileName:    "test.bin",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	wantBytes := []byte{
 		0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x08, 0x00,
@@ -708,9 +644,7 @@ func TestMultiBase64Parts(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/mixed",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	if ok, err := contentEqualsString(p, ""); !ok {
 		t.Error("Part", err)
@@ -724,9 +658,7 @@ func TestMultiBase64Parts(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "A text section"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -741,9 +673,7 @@ func TestMultiBase64Parts(t *testing.T) {
 		Disposition: "attachment",
 		FileName:    "test.html",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "<html>"
 	if ok, err := contentContainsString(p, want); !ok {
@@ -769,9 +699,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 		FirstChild:  partExists,
 		ContentType: "multipart/alternative",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	// Examine first child
 	p = p.FirstChild
@@ -781,9 +709,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -792,9 +718,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 	}
-	comparePart(p, wantp, func(field, got, want string) {
-		t.Errorf("Part.%s == %q, want: %q", field, got, want)
-	})
+	comparePart(t, p, wantp)
 
 	want = "An HTML section"
 	if ok, err := contentContainsString(p, want); !ok {

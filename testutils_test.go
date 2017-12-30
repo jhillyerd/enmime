@@ -14,9 +14,6 @@ import (
 // Syntatic sugar for Part comparisons
 var partExists = &Part{}
 
-// inequalPartField is called by comparePart when it finds inequal Part fields
-type inequalPartField func(field, got, want string)
-
 // openTestData is a utility function to open a file in testdata for reading, it will panic if there
 // is an error.
 func openTestData(subdir, filename string) io.Reader {
@@ -29,14 +26,23 @@ func openTestData(subdir, filename string) io.Reader {
 	return raw
 }
 
-// comparePart compares the contents of two parts, returning true if they are equal.  The provided
-// function will be call for each field that is not equal.  The presence of child and siblings will
-// be checked, but not the contents of them.  Header, Errors and unexported fields are ignored.
-func comparePart(got *Part, want *Part, handler inequalPartField) (equal bool) {
-	if got == nil {
-		return want == nil
+// comparePart test hehlper compares the contents of two parts, returning true if they are equal.
+// t.Errorf() will be called for each field that is not equal.  The presence of child and siblings
+// will be checked, but not the contents of them.  Header, Errors and unexported fields are ignored.
+func comparePart(t *testing.T, got *Part, want *Part) (equal bool) {
+	t.Helper()
+	if got == nil && want != nil {
+		t.Error("Part == nil, want not nil")
+		return
+	}
+	if got != nil && want == nil {
+		t.Error("Part != nil, want nil")
+		return
 	}
 	equal = true
+	if got == nil && want == nil {
+		return
+	}
 	if (got.Parent == nil) != (want.Parent == nil) {
 		equal = false
 		gs := "nil"
@@ -47,7 +53,7 @@ func comparePart(got *Part, want *Part, handler inequalPartField) (equal bool) {
 		if want.Parent != nil {
 			ws = "present"
 		}
-		handler("Parent", gs, ws)
+		t.Errorf("Part.Parent == %q, want: %q", gs, ws)
 	}
 	if (got.FirstChild == nil) != (want.FirstChild == nil) {
 		equal = false
@@ -59,7 +65,7 @@ func comparePart(got *Part, want *Part, handler inequalPartField) (equal bool) {
 		if want.FirstChild != nil {
 			ws = "present"
 		}
-		handler("FirstChild", gs, ws)
+		t.Errorf("Part.FirstChild == %q, want: %q", gs, ws)
 	}
 	if (got.NextSibling == nil) != (want.NextSibling == nil) {
 		equal = false
@@ -71,139 +77,116 @@ func comparePart(got *Part, want *Part, handler inequalPartField) (equal bool) {
 		if want.NextSibling != nil {
 			ws = "present"
 		}
-		handler("NextSibling", gs, ws)
+		t.Errorf("Part.NextSibling == %q, want: %q", gs, ws)
 	}
 	if got.ContentType != want.ContentType {
 		equal = false
-		handler("ContentType", got.ContentType, want.ContentType)
+		t.Errorf("Part.ContentType == %q, want: %q", got.ContentType, want.ContentType)
 	}
 	if got.Disposition != want.Disposition {
 		equal = false
-		handler("Disposition", got.Disposition, want.Disposition)
+		t.Errorf("Part.Disposition == %q, want: %q", got.Disposition, want.Disposition)
 	}
 	if got.FileName != want.FileName {
 		equal = false
-		handler("FileName", got.FileName, want.FileName)
+		t.Errorf("Part.FileName == %q, want: %q", got.FileName, want.FileName)
 	}
 	if got.Charset != want.Charset {
 		equal = false
-		handler("Charset", got.Charset, want.Charset)
+		t.Errorf("Part.Charset == %q, want: %q", got.Charset, want.Charset)
 	}
 	return
 }
 
-func TestTestComparePartsEqual(t *testing.T) {
-	// Test equal Parts
-	var ttable = []*Part{
-		nil,
-		{},
-		{Parent: &Part{}},
-		{FirstChild: &Part{}},
-		{NextSibling: &Part{}},
-		{ContentType: "such/wow"},
-		{Disposition: "irritable"},
-		{FileName: "readme.txt"},
-		{Charset: "utf-7.999"},
+// TestHelperComparePartsEqual tests compareParts with equalivent Parts
+func TestHelperComparePartsEqual(t *testing.T) {
+	testCases := []struct {
+		name string
+		part *Part
+	}{
+		{"nil", nil},
+		{"empty", &Part{}},
+		{"Parent", &Part{Parent: &Part{}}},
+		{"FirstChild", &Part{FirstChild: &Part{}}},
+		{"NextSibling", &Part{NextSibling: &Part{}}},
+		{"ContentType", &Part{ContentType: "such/wow"}},
+		{"Disposition", &Part{Disposition: "irritable"}},
+		{"FileName", &Part{FileName: "readme.txt"}},
+		{"Charset", &Part{Charset: "utf-7.999"}},
 	}
-
-	for i, tt := range ttable {
-		if !comparePart(tt, tt, func(field, got, want string) {
-			t.Errorf("inequalPartField handler was called for %q, should not have been", field)
-		}) {
-			t.Errorf("Got false while comparing a Part (index %v) to itself: %+v", i, tt)
-		}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockt := &testing.T{}
+			if !comparePart(mockt, tc.part, tc.part) {
+				t.Errorf("Got false while comparing a Part %v to itself: %+v", tc.name, tc.part)
+			}
+			if mockt.Failed() {
+				t.Errorf("Helper failed test for %q, should have been successful", tc.name)
+			}
+		})
 	}
 }
 
-func TestTestComparePartsInequal(t *testing.T) {
-	// Test equal Parts
-	var ttable = []struct {
-		got, want                  *Part
-		field, gotValue, wantValue string
+// TestHelperComparePartsInequal tests compareParts with differing Parts
+func TestHelperComparePartsInequal(t *testing.T) {
+	testCases := []struct {
+		name string
+		a, b *Part
 	}{
 		{
-			got:  nil,
-			want: &Part{},
+			name: "nil",
+			a:    nil,
+			b:    &Part{},
 		},
 		{
-			got:       &Part{},
-			want:      &Part{Parent: &Part{}},
-			field:     "Parent",
-			gotValue:  "nil",
-			wantValue: "present",
+			name: "Parent",
+			a:    &Part{},
+			b:    &Part{Parent: &Part{}},
 		},
 		{
-			got:       &Part{},
-			want:      &Part{FirstChild: &Part{}},
-			field:     "FirstChild",
-			gotValue:  "nil",
-			wantValue: "present",
+			name: "FirstChild",
+			a:    &Part{},
+			b:    &Part{FirstChild: &Part{}},
 		},
 		{
-			got:       &Part{},
-			want:      &Part{NextSibling: &Part{}},
-			field:     "NextSibling",
-			gotValue:  "nil",
-			wantValue: "present",
+			name: "NextSibling",
+			a:    &Part{},
+			b:    &Part{NextSibling: &Part{}},
 		},
 		{
-			got:       &Part{ContentType: "text/plain"},
-			want:      &Part{ContentType: "text/html"},
-			field:     "ContentType",
-			gotValue:  "text/plain",
-			wantValue: "text/html",
+			name: "ContentType",
+			a:    &Part{ContentType: "text/plain"},
+			b:    &Part{ContentType: "text/html"},
 		},
 		{
-			got:       &Part{Disposition: "happy"},
-			want:      &Part{Disposition: "sad"},
-			field:     "Disposition",
-			gotValue:  "happy",
-			wantValue: "sad",
+			name: "Disposition",
+			a:    &Part{Disposition: "happy"},
+			b:    &Part{Disposition: "sad"},
 		},
 		{
-			got:       &Part{FileName: "foo.gif"},
-			want:      &Part{FileName: "bar.jpg"},
-			field:     "FileName",
-			gotValue:  "foo.gif",
-			wantValue: "bar.jpg",
+			name: "FileName",
+			a:    &Part{FileName: "foo.gif"},
+			b:    &Part{FileName: "bar.jpg"},
 		},
 		{
-			got:       &Part{Charset: "foo"},
-			want:      &Part{Charset: "bar"},
-			field:     "Charset",
-			gotValue:  "foo",
-			wantValue: "bar",
+			name: "Charset",
+			a:    &Part{Charset: "foo"},
+			b:    &Part{Charset: "bar"},
 		},
 	}
 
-	for i, tt := range ttable {
-		called := false
-		var gotField, gotValue, wantValue string
-		if comparePart(tt.got, tt.want, func(field, got, want string) {
-			called = true
-			gotField = field
-			gotValue = got
-			wantValue = want
-		}) {
-			t.Errorf(
-				"Got true while comparing inequal Parts (index %v, field %v):\n"+
-					"got arg: %+v\nwant arg: %+v", i, tt.field, tt.got, tt.want)
-		}
-		if tt.field != "" {
-			if called {
-				// Build up handler args as a string: easy to compare and print
-				wantArgs := fmt.Sprintf("%q, %q, %q", tt.field, tt.gotValue, tt.wantValue)
-				gotArgs := fmt.Sprintf("%q, %q, %q", gotField, gotValue, wantValue)
-				if gotArgs != wantArgs {
-					t.Errorf(
-						"Got: inequalPartField(%s), want: inequalPartField(%s)",
-						gotArgs,
-						wantArgs)
-				}
-			} else {
-				t.Error("Expected inequalPartField handler to be called, was not for index", i)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockt := &testing.T{}
+			if comparePart(mockt, tc.a, tc.b) {
+				t.Errorf(
+					"Got true while comparing inequal Parts (%v):\n"+
+						"Part A: %+v\nPart B: %+v", tc.name, tc.a, tc.b)
 			}
-		}
+			if tc.name != "" && !mockt.Failed() {
+				t.Errorf("Mock test succeeded for %s, should have failed", tc.name)
+			}
+		})
 	}
 }
 

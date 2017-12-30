@@ -7,7 +7,7 @@ haven't.
 
 ### tl;dr:
 - File pull requests against the `develop` branch, not `master`!
-- `make test` followed by `make lint`
+- Ensure clean run of `make test lint`
 
 
 ## Getting Started
