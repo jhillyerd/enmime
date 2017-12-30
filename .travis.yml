@@ -9,5 +9,5 @@ after_success:
   - $HOME/gopath/bin/goveralls -service=travis-ci
 
 go:
-  - 1.8.5
-  - 1.9.2
+  - 1.9.x
+  - tip
