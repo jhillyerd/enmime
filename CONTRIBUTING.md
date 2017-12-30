@@ -5,7 +5,9 @@ Enmime highly encourages third-party patches. There is a great deal of MIME
 encoded email out there, so it's likely you will encounter a scenario we
 haven't.
 
-**tl;dr:** File pull requests against the `develop` branch, not `master`!
+### tl;dr:
+- File pull requests against the `develop` branch, not `master`!
+- `make test` followed by `make lint`
 
 
 ## Getting Started
@@ -34,11 +36,8 @@ Once you are on your topic branch:
 2. Add unit tests to exercise your changes.
 3. Scrub personally identifying information from test case emails, and
    keep attachments short.
-4. Run the updated code through `go fmt` and `go vet`.
-5. Ensure the code builds and tests with the following commands:
-  - `go clean ./...`
-  - `go build ./...`
-  - `go test ./...`
+4. Ensure the code builds and tests with `make test`
+5. Run the updated code through `make lint`
 
 
 ## Thanks
