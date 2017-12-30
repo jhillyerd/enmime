@@ -975,3 +975,48 @@ func TestInlineTextBody(t *testing.T) {
 		}
 	}
 }
+
+func TestBinaryOnlyBodyHeaders(t *testing.T) {
+	headers := map[string]string{
+		"To":                        "bob@test.com",
+		"From":                      "alice@test.com",
+		"Subject":                   "Test",
+		"Message-Id":                "<56A0AA5F.4020203@test.com>",
+		"Date":                      "Thu, 21 Jan 2016 10:52:31 +0100",
+		"Mime-Version":              "1.0",
+		"Content-Type":              `image/jpeg; name="favicon.jpg"`,
+		"Content-Transfer-Encoding": "base64",
+		"Content-Disposition":       `attachment; filename="favicon.jpg"`,
+	}
+
+	msg := openTestData("mail", "attachment-only.raw")
+	e, err := ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if len(e.Root.Header) != len(headers) {
+		t.Errorf("Failed to extract expected headers. Got %v headers, expected %v",
+			len(e.Root.Header), len(headers))
+	}
+
+	for k, _ := range headers {
+		if e.Root.Header[k] == nil {
+			t.Errorf("Header named %q was missing, want it to exist", k)
+		}
+	}
+
+	for k, v := range e.Root.Header {
+		if _, ok := headers[k]; !ok {
+			t.Errorf("Got header named %q, did not expect it to exist", k)
+			continue
+		}
+		for _, val := range v {
+			if !strings.Contains(headers[k], val) {
+				t.Errorf("Got header %q with value %q, wanted value contained in:\n%q",
+					k, val, headers[k])
+			}
+		}
+	}
+}
