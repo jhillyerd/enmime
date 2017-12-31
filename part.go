@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
@@ -29,7 +28,7 @@ type Part struct {
 	Errors      []Error              // Errors encountered while parsing this part
 	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
 	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
-	Epilogue    bytes.Buffer         // Content following the closing boundary marker
+	Epilogue    *bytes.Buffer        // Content following the closing boundary marker
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -173,7 +172,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 			return nil, err
 		}
 		root.Epilogue = epilogue
-		err = parseParts(root, bufio.NewReader(&emailContent))
+		err = parseParts(root, bufio.NewReader(emailContent))
 		if err != nil {
 			return nil, err
 		}
@@ -187,39 +186,44 @@ func ReadParts(r io.Reader) (*Part, error) {
 	return root, nil
 }
 
-func splitEpilogue(r io.Reader, boundary string) (bytes.Buffer, bytes.Buffer, error) {
-	var emailBody bytes.Buffer
-	var epilogue bytes.Buffer
-	closingBoundary := "--" + boundary + "--"
-	emailBodyReader := bufio.NewReader(r)
-	var eofReached = false
-	for !eofReached {
-		emailLine, err := emailBodyReader.ReadBytes('\n')
+func splitEpilogue(
+	br *bufio.Reader,
+	boundary string,
+) (
+	body *bytes.Buffer,
+	epilogue *bytes.Buffer,
+	err error,
+) {
+	body = new(bytes.Buffer)
+	epilogue = new(bytes.Buffer)
+	eof := false
+	// Loop over lines in email
+	for !eof {
+		line, err := br.ReadBytes('\n')
 		if err != nil {
 			if err != io.EOF {
-				return emailBody, epilogue, err
+				return nil, nil, err
 			}
-			eofReached = true
+			eof = true
 		}
-		isClosingLine, err := regexp.MatchString("^"+closingBoundary+".*", string(emailLine))
+		isClosingLine, err := regexp.MatchString("^--"+boundary+"--.*", string(line))
 		if err != nil {
-			return emailBody, epilogue, err
+			return nil, nil, err
 		}
-		emailBody.Write(emailLine)
+		body.Write(line)
 		if err != nil {
-			return emailBody, epilogue, err
+			return nil, nil, err
 		}
 		if isClosingLine {
 			// here we read what is left after the closing boundary
-			content, err := ioutil.ReadAll(r)
+			_, err = io.Copy(epilogue, br)
 			if err != nil {
-				return emailBody, epilogue, err
+				return nil, nil, err
 			}
-			epilogue.Write(content)
 			break
 		}
 	}
-	return emailBody, epilogue, nil
+	return body, epilogue, nil
 }
 
 func parseMediaType(ctype string) (string, map[string]string, error) {

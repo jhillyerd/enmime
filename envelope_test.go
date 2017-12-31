@@ -1030,6 +1030,6 @@ func TestEnvelopeEpilogue(t *testing.T) {
 	}
 
 	if e.Root.Epilogue.Len() == 0 {
-		t.Errorf("Epilogue extraction not working")
+		t.Error("Epilogue extraction not working, len was 0")
 	}
 }

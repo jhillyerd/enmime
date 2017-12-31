@@ -778,8 +778,7 @@ PGh0bWw+Cg==
 
 --Enmime-Test-100-->
 PGh0bWw+Cg==`))
-	boundary := "Enmime-Test-100"
-	expectedBody := bytes.NewBuffer([]byte(`--Enmime-Test-100
+	wantBody := []byte(`--Enmime-Test-100
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=us-ascii
 
@@ -792,17 +791,17 @@ Content-Disposition: attachment; filename=test.html
 PGh0bWw+Cg==
 
 --Enmime-Test-100-->
-`))
-	expectedEpilogue := bytes.NewBuffer([]byte(`PGh0bWw+Cg==`))
+`)
+	wantEpilogue := []byte(`PGh0bWw+Cg==`)
 
-	body, epilogue, err := splitEpilogue(bufio.NewReader(emailBody), boundary)
+	body, epilogue, err := splitEpilogue(bufio.NewReader(emailBody), "Enmime-Test-100")
 	if err != nil {
 		t.Error("Error getting epilogue", err)
 	}
-	if !bytes.Equal(body.Bytes(), expectedBody.Bytes()) {
+	if !bytes.Equal(body.Bytes(), wantBody) {
 		t.Error("Error mismatch body")
 	}
-	if !bytes.Equal(epilogue.Bytes(), expectedEpilogue.Bytes()) {
-		t.Error("Error mismatch epilogue")
+	if !bytes.Equal(epilogue.Bytes(), wantEpilogue) {
+		t.Errorf("epilogue == %v, want: %v", epilogue.Bytes(), wantEpilogue)
 	}
 }
