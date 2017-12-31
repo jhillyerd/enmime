@@ -764,7 +764,6 @@ func TestBadBoundaryTerm(t *testing.T) {
 }
 
 func TestSplitEpiloge(t *testing.T) {
-
 	emailBody := bytes.NewBuffer([]byte(`--Enmime-Test-100
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=us-ascii
