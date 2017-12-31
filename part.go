@@ -194,6 +194,10 @@ func splitEpilogue(
 	epilogue *bytes.Buffer,
 	err error,
 ) {
+	boundaryRegexp, err := regexp.Compile("^--" + boundary + "--.*")
+	if err != nil {
+		return nil, nil, err
+	}
 	body = new(bytes.Buffer)
 	epilogue = new(bytes.Buffer)
 	eof := false
@@ -206,18 +210,13 @@ func splitEpilogue(
 			}
 			eof = true
 		}
-		isClosingLine, err := regexp.MatchString("^--"+boundary+"--.*", string(line))
-		if err != nil {
+		if _, err = body.Write(line); err != nil {
 			return nil, nil, err
 		}
-		body.Write(line)
-		if err != nil {
-			return nil, nil, err
-		}
-		if isClosingLine {
-			// here we read what is left after the closing boundary
-			_, err = io.Copy(epilogue, br)
-			if err != nil {
+		// Check if this is the closing boundary line
+		if boundaryRegexp.Match(line) {
+			// Copy what is left after the closing boundary
+			if _, err = io.Copy(epilogue, br); err != nil {
 				return nil, nil, err
 			}
 			break
