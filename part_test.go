@@ -763,7 +763,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 	}
 }
 
-func TestSplitEpiloge(t *testing.T) {
+func TestSplitEpilogue(t *testing.T) {
 	emailBody := bytes.NewBuffer([]byte(`--Enmime-Test-100
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=us-ascii
@@ -799,9 +799,41 @@ PGh0bWw+Cg==
 		t.Error("Error getting epilogue", err)
 	}
 	if !bytes.Equal(body.Bytes(), wantBody) {
-		t.Error("Error mismatch body")
+		t.Errorf("len(body) == %v, want %v", body.Len(), len(wantBody))
 	}
 	if !bytes.Equal(epilogue.Bytes(), wantEpilogue) {
 		t.Errorf("epilogue == %v, want: %v", epilogue.Bytes(), wantEpilogue)
+	}
+}
+
+func BenchmarkSplitEpilogue(b *testing.B) {
+	// Build longish test MIME data
+	buf := new(bytes.Buffer)
+	buf.WriteString(`--Enmime-Test-100
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+
+`)
+	for i := 0; i < 1000; i++ {
+		buf.WriteString("the quick brown fox jumped over the lazy dog and achieved enlightenment\n")
+	}
+	buf.WriteString(`--Enmime-Test-100-->
+PGh0bWw+Cg==`)
+	bufBytes := buf.Bytes()
+	b.SetBytes(int64(buf.Len()))
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r := bufio.NewReader(bytes.NewReader(bufBytes))
+		body, epilogue, err := splitEpilogue(r, "Enmime-Test-100")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if body.Len() == 0 {
+			b.Fatal("body was empty")
+		}
+		if epilogue.Len() == 0 {
+			b.Fatal("epilogue was empty")
+		}
 	}
 }
