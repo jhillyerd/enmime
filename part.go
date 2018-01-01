@@ -9,7 +9,6 @@ import (
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -28,7 +27,7 @@ type Part struct {
 	Errors      []Error              // Errors encountered while parsing this part
 	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
 	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
-	Epilogue    *bytes.Buffer        // Content following the closing boundary marker
+	Epilogue    []byte               // Content following the closing boundary marker
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -166,13 +165,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
 		root.boundary = boundary
-		// Get Epilogue
-		emailContent, epilogue, err := splitEpilogue(br, boundary)
-		if err != nil {
-			return nil, err
-		}
-		root.Epilogue = epilogue
-		err = parseParts(root, bufio.NewReader(emailContent))
+		err = parseParts(root, br)
 		if err != nil {
 			return nil, err
 		}
@@ -184,45 +177,6 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 
 	return root, nil
-}
-
-func splitEpilogue(
-	br *bufio.Reader,
-	boundary string,
-) (
-	body *bytes.Buffer,
-	epilogue *bytes.Buffer,
-	err error,
-) {
-	boundaryRegexp, err := regexp.Compile("^--" + boundary + "--.*")
-	if err != nil {
-		return nil, nil, err
-	}
-	body = new(bytes.Buffer)
-	epilogue = new(bytes.Buffer)
-	eof := false
-	// Loop over lines in email
-	for !eof {
-		line, err := br.ReadBytes('\n')
-		if err != nil {
-			if err != io.EOF {
-				return nil, nil, err
-			}
-			eof = true
-		}
-		if _, err = body.Write(line); err != nil {
-			return nil, nil, err
-		}
-		// Check if this is the closing boundary line
-		if boundaryRegexp.Match(line) {
-			// Copy what is left after the closing boundary
-			if _, err = io.Copy(epilogue, br); err != nil {
-				return nil, nil, err
-			}
-			break
-		}
-	}
-	return body, epilogue, nil
 }
 
 func parseMediaType(ctype string) (string, map[string]string, error) {
@@ -361,6 +315,13 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			}
 		}
 	}
+
+	// Store any content following the closing boundary marker into the epilogue
+	epilogue := new(bytes.Buffer)
+	if _, err := io.Copy(epilogue, reader); err != nil {
+		return err
+	}
+	parent.Epilogue = epilogue.Bytes()
 
 	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
 	// i.e. it is the root of its MIME Part subtree

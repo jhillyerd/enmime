@@ -1024,12 +1024,13 @@ func TestBinaryOnlyBodyHeaders(t *testing.T) {
 func TestEnvelopeEpilogue(t *testing.T) {
 	msg := openTestData("mail", "epilogue-sample.raw")
 	e, err := ReadEnvelope(msg)
-
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	if e.Root.Epilogue.Len() == 0 {
-		t.Error("Epilogue extraction not working, len was 0")
+	got := string(e.Root.Epilogue)
+	want := "Potentially malicious content\n"
+	if got != want {
+		t.Errorf("Epilogue == %q, want: %q", got, want)
 	}
 }
