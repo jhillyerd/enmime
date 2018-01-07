@@ -7,6 +7,7 @@ import (
 type errorName string
 
 const (
+	errorMalformedBase64    errorName = "Malformed Base64"
 	errorMalformedHeader    errorName = "Malformed Header"
 	errorMissingBoundary    errorName = "Missing Boundary"
 	errorMissingContentType errorName = "Missing Content-Type"
