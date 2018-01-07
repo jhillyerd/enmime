@@ -93,7 +93,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 		contentReader = quotedprintable.NewReader(contentReader)
 	case "base64":
 		contentReader = newBase64Cleaner(contentReader)
-		contentReader = base64.NewDecoder(base64.StdEncoding, contentReader)
+		contentReader = base64.NewDecoder(base64.RawStdEncoding, contentReader)
 	case "8bit", "7bit", "binary", "":
 		// No decoding required
 	default:
