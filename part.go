@@ -87,6 +87,9 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	// Raw content reader
 	p.rawReader = contentReader
 
+	// Allow later access to Base64 errors
+	var b64cleaner *base64Cleaner
+
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
@@ -94,8 +97,8 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 		contentReader = newQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
 	case "base64":
-		contentReader = newBase64Cleaner(contentReader)
-		contentReader = base64.NewDecoder(base64.RawStdEncoding, contentReader)
+		b64cleaner = newBase64Cleaner(contentReader)
+		contentReader = base64.NewDecoder(base64.RawStdEncoding, b64cleaner)
 	case "8bit", "7bit", "binary", "":
 		// No decoding required
 	default:
@@ -136,6 +139,9 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	content, err := ioutil.ReadAll(contentReader)
 	p.Utf8Reader = contentReader
 	p.Content = content
+	if b64cleaner != nil {
+		p.Errors = append(p.Errors, b64cleaner.Errors...)
+	}
 	return err
 }
 
