@@ -2,7 +2,6 @@ package enmime
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/textproto"
 	"strings"
 	"testing"
@@ -305,9 +304,7 @@ func TestParseAttachment(t *testing.T) {
 	}
 
 	want = "<html>"
-	if ok, err := contentContainsString(e.Attachments[0], want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, e.Attachments[0].Content, want)
 }
 
 func TestParseAttachmentOctet(t *testing.T) {
@@ -345,11 +342,7 @@ func TestParseAttachmentOctet(t *testing.T) {
 		0xa2, 0xb2, 0xc0, 0x90, 0x59, 0xe3, 0x35, 0xf8, 0x60, 0xb7, 0xb1, 0x63, 0x77, 0xd7,
 		0x5f, 0x92, 0x58, 0xa8, 0x75,
 	}
-	allBytes, err := ioutil.ReadAll(e.Attachments[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(allBytes, wantBytes) {
+	if !bytes.Equal(e.Attachments[0].Content, wantBytes) {
 		t.Error("Attachment should have correct content")
 	}
 }
@@ -415,11 +408,7 @@ func TestParseOtherParts(t *testing.T) {
 		0x80, 0xf1, 0x18, 0x84, 0xc0, 0x9e, 0xd0, 0xe8, 0xf2, 0x1, 0xb5, 0x19, 0xad, 0x41,
 		0x53, 0x33, 0x9b, 0x0, 0x0, 0x3b,
 	}
-	allBytes, err := ioutil.ReadAll(e.OtherParts[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(allBytes, wantBytes) {
+	if !bytes.Equal(e.OtherParts[0].Content, wantBytes) {
 		t.Error("Other part should have correct content")
 	}
 }
@@ -453,11 +442,7 @@ func TestParseInline(t *testing.T) {
 	if got != want {
 		t.Error("FileName got:", got, "want:", want)
 	}
-	allBytes, err := ioutil.ReadAll(e.Inlines[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.HasPrefix(allBytes, []byte{0x89, 'P', 'N', 'G'}) {
+	if !bytes.HasPrefix(e.Inlines[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
 		t.Error("Inline should have correct content")
 	}
 }
@@ -501,11 +486,7 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 	if got != want {
 		t.Error("FileName got:", got, "want:", want)
 	}
-	allBytes, err := ioutil.ReadAll(e.Inlines[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.HasPrefix(allBytes, []byte{0x89, 'P', 'N', 'G'}) {
+	if !bytes.HasPrefix(e.Inlines[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
 		t.Error("Inline should have correct content")
 	}
 }
@@ -763,24 +744,18 @@ func TestAttachmentOnly(t *testing.T) {
 			t.Fatal("len(Attachments) got:", len(e.Attachments), "want:", a.attachmentsLen)
 		}
 		if a.attachmentsLen > 0 {
-			allBytes, err := ioutil.ReadAll(e.Attachments[0])
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.HasPrefix(allBytes, []byte{0x89, 'P', 'N', 'G'}) {
-				t.Errorf("Content should be PNG image, got: %v", allBytes)
+			got := e.Attachments[0].Content
+			if !bytes.HasPrefix(got, []byte{0x89, 'P', 'N', 'G'}) {
+				t.Errorf("Content should be PNG image, got: %v", got)
 			}
 		}
 		if len(e.Inlines) != a.inlinesLen {
 			t.Fatal("len(Inlines) got:", len(e.Inlines), "want:", a.inlinesLen)
 		}
 		if a.inlinesLen > 0 {
-			allBytes, err := ioutil.ReadAll(e.Inlines[0])
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.HasPrefix(allBytes, []byte{0x89, 'P', 'N', 'G'}) {
-				t.Errorf("Content should be PNG image, got: %v", allBytes)
+			got := e.Inlines[0].Content
+			if !bytes.HasPrefix(got, []byte{0x89, 'P', 'N', 'G'}) {
+				t.Errorf("Content should be PNG image, got: %v", got)
 			}
 		}
 		// Check, if root header is set

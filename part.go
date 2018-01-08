@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
@@ -16,6 +17,7 @@ import (
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
+	PartID      string               // PartID labels this parts position within the tree
 	Header      textproto.MIMEHeader // Header for this Part
 	Parent      *Part                // Parent of this part (can be nil)
 	FirstChild  *Part                // FirstChild is the top most child of this part
@@ -25,9 +27,9 @@ type Part struct {
 	FileName    string               // The file-name from disposition or type header
 	Charset     string               // The content charset encoding label
 	Errors      []Error              // Errors encountered while parsing this part
-	PartID      string               // The ID representing the part's exact position within the MIME Part Tree
-	Utf8Reader  io.Reader            // The decoded content converted to UTF-8
-	Epilogue    []byte               // Content following the closing boundary marker
+	Content     []byte               // Content after decoding, UTF-8 conversion if applicable
+	Epilogue    []byte               // Epilogue contains data following the closing boundary marker
+	Utf8Reader  io.Reader            // DEPRECATED: The decoded content converted to UTF-8
 
 	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
@@ -85,6 +87,9 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	// Raw content reader
 	p.rawReader = contentReader
 
+	// Allow later access to Base64 errors
+	var b64cleaner *base64Cleaner
+
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
@@ -92,8 +97,8 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 		contentReader = newQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
 	case "base64":
-		contentReader = newBase64Cleaner(contentReader)
-		contentReader = base64.NewDecoder(base64.StdEncoding, contentReader)
+		b64cleaner = newBase64Cleaner(contentReader)
+		contentReader = base64.NewDecoder(base64.RawStdEncoding, b64cleaner)
 	case "8bit", "7bit", "binary", "":
 		// No decoding required
 	default:
@@ -130,8 +135,14 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 			}
 		}
 	}
+	// Messy until Utf8Reader is removed
+	content, err := ioutil.ReadAll(contentReader)
 	p.Utf8Reader = contentReader
-	return nil
+	p.Content = content
+	if b64cleaner != nil {
+		p.Errors = append(p.Errors, b64cleaner.Errors...)
+	}
+	return err
 }
 
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.

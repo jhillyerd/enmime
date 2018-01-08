@@ -85,6 +85,7 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 		{"unk-encoding-part.raw", errorContentEncoding},
 		{"unk-charset-html-only.raw", errorCharsetConversion},
 		{"unk-charset-part.raw", errorCharsetConversion},
+		{"malformed-base64-attach.raw", errorMalformedBase64},
 	}
 
 	for _, tt := range files {
