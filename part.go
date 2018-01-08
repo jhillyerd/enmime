@@ -111,7 +111,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	}
 	p.decodedReader = contentReader
 
-	if valid && !isAttachment(p.Header) {
+	if valid && !detectAttachmentHeader(p.Header) {
 		// decodedReader is good; build character set conversion reader
 		if p.Charset != "" {
 			if reader, err := newCharsetReader(p.Charset, contentReader); err == nil {

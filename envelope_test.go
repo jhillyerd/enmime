@@ -7,64 +7,6 @@ import (
 	"testing"
 )
 
-func TestIdentifySinglePart(t *testing.T) {
-	r := openTestData("mail", "non-mime.raw")
-	msg, err := ReadParts(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if isMultipartMessage(msg) {
-		t.Error("Failed to identify non-multipart message")
-	}
-}
-
-func TestIdentifyMultiPart(t *testing.T) {
-	r := openTestData("mail", "html-mime-inline.raw")
-	msg, err := ReadParts(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !isMultipartMessage(msg) {
-		t.Error("Failed to identify multipart MIME message")
-	}
-}
-
-func TestIdentifyUnknownMultiPart(t *testing.T) {
-	r := openTestData("mail", "unknown-part-type.raw")
-	msg, err := ReadParts(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !isMultipartMessage(msg) {
-		t.Error("Failed to identify multipart MIME message of unknown type")
-	}
-}
-
-func TestIdentifyBinaryBody(t *testing.T) {
-	ttable := []struct {
-		filename    string
-		disposition string
-	}{
-		{filename: "attachment-only.raw", disposition: "attachment"},
-		{filename: "attachment-only-inline.raw", disposition: "inline"},
-		{filename: "attachment-only-no-disposition.raw", disposition: "none"},
-	}
-	for _, tt := range ttable {
-		r := openTestData("mail", tt.filename)
-		root, err := ReadParts(r)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if !isBinaryBody(root) {
-			t.Errorf("Failed to identify binary body %s in %q", tt.disposition, tt.filename)
-		}
-	}
-}
-
 func TestParseHeaderOnly(t *testing.T) {
 	want := ""
 
@@ -665,7 +607,7 @@ func TestIsAttachment(t *testing.T) {
 	}
 
 	for _, s := range htests {
-		got := isAttachment(s.header)
+		got := detectAttachmentHeader(s.header)
 		if got != s.want {
 			t.Errorf("IsAttachment(%v) == %v, want: %v", s.header, got, s.want)
 		}
@@ -716,7 +658,7 @@ func TestIsPlain(t *testing.T) {
 	}
 
 	for _, s := range htests {
-		got := isPlain(s.header, s.emptyIsPlain)
+		got := detectTextHeader(s.header, s.emptyIsPlain)
 		if got != s.want {
 			t.Errorf("IsPlain(%v, %v) == %v, want: %v", s.header, s.emptyIsPlain, got, s.want)
 		}
