@@ -4,7 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"os"
 	"path"
 
@@ -57,18 +57,9 @@ func main() {
 	fmt.Fprintf(os.Stderr, "\nExtracting attachments into %s...", *outdir)
 	for _, a := range e.Attachments {
 		newFileName := path.Join(*outdir, a.FileName)
-		f, err := os.Create(newFileName)
-		if err != nil {
-			fmt.Printf("Error creating file %q: %v\n", newFileName, err)
-			break
-		}
-		_, err = io.Copy(f, a)
+		err = ioutil.WriteFile(newFileName, a.Content, 0644)
 		if err != nil {
 			fmt.Printf("Error writing file %q: %v\n", newFileName, err)
-			break
-		}
-		if f.Close() != nil {
-			fmt.Printf("Error closing file %q: %v\n", newFileName, err)
 			break
 		}
 	}

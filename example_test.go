@@ -2,7 +2,6 @@ package enmime_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -125,9 +124,8 @@ hello again!
 	part3 := env.Root.FirstChild.NextSibling.NextSibling
 	fmt.Printf("Part 3 X-Comment: %q\n", part3.Header.Get("X-Comment"))
 
-	// The content of Attachments, Inlines and OtherParts is available to be read.
-	content, _ := ioutil.ReadAll(part3)
-	fmt.Printf("Part 3 Content: %q\n", content)
+	// The content of Attachments, Inlines and OtherParts are available as a slice of bytes
+	fmt.Printf("Part 3 Content: %q\n", part3.Content)
 
 	// part3 contained a malformed header line, enmime has attached an Error to it
 	p3error := part3.Errors[0]

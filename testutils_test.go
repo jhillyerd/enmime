@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -202,12 +201,8 @@ func TestHelperComparePartsInequal(t *testing.T) {
 }
 
 // contentContainsString checks if the provided readers content contains the specified substring
-func contentContainsString(r io.Reader, substr string) (ok bool, err error) {
-	allBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return false, err
-	}
-	got := string(allBytes)
+func contentContainsString(b []byte, substr string) (ok bool, err error) {
+	got := string(b)
 	if strings.Contains(got, substr) {
 		return true, nil
 	}
@@ -215,12 +210,8 @@ func contentContainsString(r io.Reader, substr string) (ok bool, err error) {
 }
 
 // contentEqualsString checks if the provided readers content is the specified string
-func contentEqualsString(r io.Reader, str string) (ok bool, err error) {
-	allBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return false, err
-	}
-	got := string(allBytes)
+func contentEqualsString(b []byte, str string) (ok bool, err error) {
+	got := string(b)
 	if got == str {
 		return true, nil
 	}
@@ -228,13 +219,9 @@ func contentEqualsString(r io.Reader, str string) (ok bool, err error) {
 }
 
 // contentEqualsBytes checks if the provided readers content is the specified []byte
-func contentEqualsBytes(r io.Reader, want []byte) (ok bool, err error) {
-	allBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return false, err
-	}
-	if bytes.Equal(allBytes, want) {
+func contentEqualsBytes(b []byte, want []byte) (ok bool, err error) {
+	if bytes.Equal(b, want) {
 		return true, nil
 	}
-	return false, fmt.Errorf("content:\n%v, want:\n%v", allBytes, want)
+	return false, fmt.Errorf("content:\n%v, want:\n%v", b, want)
 }

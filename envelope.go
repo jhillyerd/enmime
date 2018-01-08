@@ -1,10 +1,8 @@
 package enmime
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/mail"
 	"net/textproto"
 	"strings"
@@ -147,20 +145,15 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 	}
 
 	// Read transcoded text
-	bodyBytes, err := ioutil.ReadAll(root)
-	root.Utf8Reader = bytes.NewReader(bodyBytes)
-	if err != nil {
-		return err
-	}
 	if isHTML {
-		rawHTML := string(bodyBytes)
+		rawHTML := string(root.Content)
 		// Note: Empty e.Text will trigger html2text conversion
 		e.HTML = rawHTML
 		if charset == "" {
 			// Search for charset in HTML metadata
 			if charset = findCharsetInHTML(rawHTML); charset != "" {
 				// Found charset in HTML
-				if convHTML, err := convertToUTF8String(charset, bodyBytes); err == nil {
+				if convHTML, err := convertToUTF8String(charset, root.Content); err == nil {
 					// Successful conversion
 					e.HTML = convHTML
 				} else {
@@ -170,7 +163,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 			}
 		}
 	} else {
-		e.Text = string(bodyBytes)
+		e.Text = string(root.Content)
 	}
 
 	return nil
@@ -226,12 +219,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			return p.ContentType == ctTextPlain && p.Disposition != cdAttachment
 		})
 		if p != nil {
-			allBytes, ioerr := ioutil.ReadAll(p)
-			if ioerr != nil {
-				return ioerr
-			}
-			p.Utf8Reader = bytes.NewReader(allBytes)
-			e.Text = string(allBytes)
+			e.Text = string(p.Content)
 		}
 	} else {
 		// multipart is of a mixed type
@@ -242,24 +230,14 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 			if i > 0 {
 				e.Text += "\n--\n"
 			}
-			allBytes, ioerr := ioutil.ReadAll(p)
-			if ioerr != nil {
-				return ioerr
-			}
-			p.Utf8Reader = bytes.NewReader(allBytes)
-			e.Text += string(allBytes)
+			e.Text += string(p.Content)
 		}
 	}
 
 	// Locate HTML body
 	p := root.BreadthMatchFirst(matchHTMLBodyPart)
 	if p != nil {
-		allBytes, ioerr := ioutil.ReadAll(p)
-		if ioerr != nil {
-			return ioerr
-		}
-		p.Utf8Reader = bytes.NewReader(allBytes)
-		e.HTML += string(allBytes)
+		e.HTML += string(p.Content)
 	}
 
 	// Locate attachments

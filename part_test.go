@@ -29,7 +29,7 @@ func TestPlainTextPart(t *testing.T) {
 	}
 
 	want = "Test of text/plain section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -59,7 +59,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 
 	want = "Start=ABC=Finish"
-	if ok, err := contentEqualsString(p, want); !ok {
+	if ok, err := contentEqualsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -89,7 +89,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	}
 
 	want = "Stuffs’s Weekly Summary"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -115,7 +115,7 @@ func TestMultiAlternParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -131,7 +131,7 @@ func TestMultiAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -146,7 +146,7 @@ func TestMultiAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -195,7 +195,7 @@ func TestPartMissingContentType(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -210,7 +210,7 @@ func TestPartMissingContentType(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -225,7 +225,7 @@ func TestPartMissingContentType(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -251,7 +251,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -267,7 +267,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -282,7 +282,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -308,7 +308,7 @@ func TestMultiMixedParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -324,7 +324,7 @@ func TestMultiMixedParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section one"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -339,7 +339,7 @@ func TestMultiMixedParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section two"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -365,7 +365,7 @@ func TestMultiOtherParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -381,7 +381,7 @@ func TestMultiOtherParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section one"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -396,7 +396,7 @@ func TestMultiOtherParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section two"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -422,7 +422,7 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -438,7 +438,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -452,7 +452,7 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -468,7 +468,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -485,7 +485,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An inline text attachment"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -501,7 +501,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Another inline text attachment"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -527,7 +527,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -543,7 +543,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section one"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -557,7 +557,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -573,7 +573,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -588,7 +588,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -615,7 +615,7 @@ func TestBinaryDecode(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -631,7 +631,7 @@ func TestBinaryDecode(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -650,7 +650,7 @@ func TestBinaryDecode(t *testing.T) {
 	wantBytes := []byte{
 		0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x08, 0x00,
 		0x08, 0x00, 0xC2, 0x02, 0x29, 0x4A, 0x00, 0x00}
-	if ok, err := contentEqualsBytes(p, wantBytes); !ok {
+	if ok, err := contentEqualsBytes(p.Content, wantBytes); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -676,7 +676,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p, ""); !ok {
+	if ok, err := contentEqualsString(p.Content, ""); !ok {
 		t.Error("Part", err)
 	}
 
@@ -692,7 +692,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 
@@ -708,7 +708,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "<html>"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
@@ -756,7 +756,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p, want); !ok {
+	if ok, err := contentContainsString(p.Content, want); !ok {
 		t.Error("Part", err)
 	}
 }
