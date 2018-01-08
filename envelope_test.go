@@ -304,9 +304,7 @@ func TestParseAttachment(t *testing.T) {
 	}
 
 	want = "<html>"
-	if ok, err := contentContainsString(e.Attachments[0].Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, e.Attachments[0].Content, want)
 }
 
 func TestParseAttachmentOctet(t *testing.T) {

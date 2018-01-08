@@ -2,7 +2,6 @@ package enmime
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -25,9 +24,10 @@ func openTestData(subdir, filename string) io.Reader {
 	return raw
 }
 
-// comparePart test hehlper compares the contents of two parts, returning true if they are equal.
+// comparePart test helper compares the attributes of two parts, returning true if they are equal.
 // t.Errorf() will be called for each field that is not equal.  The presence of child and siblings
-// will be checked, but not the contents of them.  Header, Errors and unexported fields are ignored.
+// will be checked, but not the attributes of them.  Header, Errors and unexported fields are
+// ignored.
 func comparePart(t *testing.T, got *Part, want *Part) (equal bool) {
 	t.Helper()
 	if got == nil && want != nil {
@@ -201,27 +201,27 @@ func TestHelperComparePartsInequal(t *testing.T) {
 }
 
 // contentContainsString checks if the provided readers content contains the specified substring
-func contentContainsString(b []byte, substr string) (ok bool, err error) {
+func contentContainsString(t *testing.T, b []byte, substr string) {
+	t.Helper()
 	got := string(b)
-	if strings.Contains(got, substr) {
-		return true, nil
+	if !strings.Contains(got, substr) {
+		t.Errorf("content == %q, should contain: %q", got, substr)
 	}
-	return false, fmt.Errorf("content == %q, should contain: %q", got, substr)
 }
 
 // contentEqualsString checks if the provided readers content is the specified string
-func contentEqualsString(b []byte, str string) (ok bool, err error) {
+func contentEqualsString(t *testing.T, b []byte, str string) {
+	t.Helper()
 	got := string(b)
-	if got == str {
-		return true, nil
+	if got != str {
+		t.Errorf("content == %q, want: %q", got, str)
 	}
-	return false, fmt.Errorf("content == %q, want: %q", got, str)
 }
 
 // contentEqualsBytes checks if the provided readers content is the specified []byte
-func contentEqualsBytes(b []byte, want []byte) (ok bool, err error) {
-	if bytes.Equal(b, want) {
-		return true, nil
+func contentEqualsBytes(t *testing.T, b []byte, want []byte) {
+	t.Helper()
+	if !bytes.Equal(b, want) {
+		t.Errorf("content:\n%v, want:\n%v", b, want)
 	}
-	return false, fmt.Errorf("content:\n%v, want:\n%v", b, want)
 }

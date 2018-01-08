@@ -29,9 +29,7 @@ func TestPlainTextPart(t *testing.T) {
 	}
 
 	want = "Test of text/plain section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestQuotedPrintablePart(t *testing.T) {
@@ -59,9 +57,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 
 	want = "Start=ABC=Finish"
-	if ok, err := contentEqualsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, want)
 }
 
 func TestQuotedPrintableInvalidPart(t *testing.T) {
@@ -89,9 +85,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	}
 
 	want = "Stuffs’s Weekly Summary"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestMultiAlternParts(t *testing.T) {
@@ -115,9 +109,7 @@ func TestMultiAlternParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -131,9 +123,7 @@ func TestMultiAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -146,9 +136,7 @@ func TestMultiAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 // TestRootMissingContentType expects a default content type to be set for the root if not specified
@@ -195,9 +183,7 @@ func TestPartMissingContentType(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -210,9 +196,7 @@ func TestPartMissingContentType(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -225,9 +209,7 @@ func TestPartMissingContentType(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestPartEmptyHeader(t *testing.T) {
@@ -251,9 +233,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -267,9 +247,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -282,9 +260,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestMultiMixedParts(t *testing.T) {
@@ -308,9 +284,7 @@ func TestMultiMixedParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -324,9 +298,7 @@ func TestMultiMixedParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section one"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -339,9 +311,7 @@ func TestMultiMixedParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section two"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestMultiOtherParts(t *testing.T) {
@@ -365,9 +335,7 @@ func TestMultiOtherParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -381,9 +349,7 @@ func TestMultiOtherParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section one"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -396,9 +362,7 @@ func TestMultiOtherParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section two"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestNestedAlternParts(t *testing.T) {
@@ -422,9 +386,7 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -438,9 +400,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -452,9 +412,7 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// First nested
 	p = p.FirstChild
@@ -468,9 +426,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Second nested
 	p = p.NextSibling
@@ -485,9 +441,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An inline text attachment"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Third nested
 	p = p.NextSibling
@@ -501,9 +455,7 @@ func TestNestedAlternParts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Another inline text attachment"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestPartSimilarBoundary(t *testing.T) {
@@ -527,9 +479,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -543,9 +493,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "Section one"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -557,9 +505,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// First nested
 	p = p.FirstChild
@@ -573,9 +519,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Second nested
 	p = p.NextSibling
@@ -588,9 +532,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 // Check we don't UTF-8 decode attachments
@@ -615,9 +557,7 @@ func TestBinaryDecode(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -631,9 +571,7 @@ func TestBinaryDecode(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -650,9 +588,7 @@ func TestBinaryDecode(t *testing.T) {
 	wantBytes := []byte{
 		0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x08, 0x00,
 		0x08, 0x00, 0xC2, 0x02, 0x29, 0x4A, 0x00, 0x00}
-	if ok, err := contentEqualsBytes(p.Content, wantBytes); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsBytes(t, p.Content, wantBytes)
 }
 
 func TestMultiBase64Parts(t *testing.T) {
@@ -676,9 +612,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	}
 	comparePart(t, p, wantp)
 
-	if ok, err := contentEqualsString(p.Content, ""); !ok {
-		t.Error("Part", err)
-	}
+	contentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
@@ -692,9 +626,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "A text section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
@@ -708,9 +640,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "<html>"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
 
 func TestBadBoundaryTerm(t *testing.T) {
@@ -756,7 +686,5 @@ func TestBadBoundaryTerm(t *testing.T) {
 	comparePart(t, p, wantp)
 
 	want = "An HTML section"
-	if ok, err := contentContainsString(p.Content, want); !ok {
-		t.Error("Part", err)
-	}
+	contentContainsString(t, p.Content, want)
 }
