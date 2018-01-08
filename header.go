@@ -98,7 +98,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		}
 		if firstColon == 0 {
 			// Can't parse line starting with colon: skip
-			p.addError(errorMalformedHeader, "Header line %q started with a colon", s)
+			p.addError(ErrorMalformedHeader, "Header line %q started with a colon", s)
 			continue
 		}
 		if firstColon > 0 {
@@ -116,7 +116,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 				// Attempt to detect and repair a non-indented continuation of previous line
 				buf.WriteByte(' ')
 				buf.Write(s)
-				p.addWarning(errorMalformedHeader, "Continued line %q was not indented", s)
+				p.addWarning(ErrorMalformedHeader, "Continued line %q was not indented", s)
 			} else {
 				// Empty line, finish header parsing
 				buf.Write([]byte{'\r', '\n'})

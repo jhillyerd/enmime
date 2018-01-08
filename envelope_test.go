@@ -1,17 +1,19 @@
-package enmime
+package enmime_test
 
 import (
 	"bytes"
-	"net/textproto"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/internal/test"
 )
 
 func TestParseHeaderOnly(t *testing.T) {
 	want := ""
 
-	msg := openTestData("mail", "header-only.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "header-only.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
@@ -32,8 +34,8 @@ func TestParseHeaderOnly(t *testing.T) {
 
 func TestParseNonMime(t *testing.T) {
 	want := "This is a test mailing"
-	msg := openTestData("mail", "non-mime.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "non-mime.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
@@ -47,14 +49,14 @@ func TestParseNonMime(t *testing.T) {
 }
 
 func TestParseNonMimeHTML(t *testing.T) {
-	msg := openTestData("mail", "non-mime-html.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "non-mime-html.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
 	if len(e.Errors) == 1 {
-		want := string(errorPlainTextFromHTML)
+		want := enmime.ErrorPlainTextFromHTML
 		got := e.Errors[0].Name
 		if got != want {
 			t.Errorf("e.Errors[0] got: %v, want: %v", got, want)
@@ -75,8 +77,8 @@ func TestParseNonMimeHTML(t *testing.T) {
 }
 
 func TestParseMimeTree(t *testing.T) {
-	msg := openTestData("mail", "attachment.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "attachment.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -87,8 +89,8 @@ func TestParseMimeTree(t *testing.T) {
 }
 
 func TestParseInlineText(t *testing.T) {
-	msg := openTestData("mail", "html-mime-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-mime-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -101,8 +103,8 @@ func TestParseInlineText(t *testing.T) {
 }
 
 func TestParseInlineBadCharsetText(t *testing.T) {
-	msg := openTestData("mail", "html-mime-bad-charset-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-mime-bad-charset-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -115,8 +117,8 @@ func TestParseInlineBadCharsetText(t *testing.T) {
 }
 
 func TestParseInlineBadUknownCharsetText(t *testing.T) {
-	msg := openTestData("mail", "html-mime-bad-unknown-charset-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-mime-bad-unknown-charset-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -129,8 +131,8 @@ func TestParseInlineBadUknownCharsetText(t *testing.T) {
 }
 
 func TestParseMultiAlernativeText(t *testing.T) {
-	msg := openTestData("mail", "mime-alternative.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "mime-alternative.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -143,8 +145,8 @@ func TestParseMultiAlernativeText(t *testing.T) {
 }
 
 func TestParseMultiMixedText(t *testing.T) {
-	msg := openTestData("mail", "mime-mixed.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "mime-mixed.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -157,8 +159,8 @@ func TestParseMultiMixedText(t *testing.T) {
 }
 
 func TestParseMultiSignedText(t *testing.T) {
-	msg := openTestData("mail", "mime-signed.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "mime-signed.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -171,8 +173,8 @@ func TestParseMultiSignedText(t *testing.T) {
 }
 
 func TestParseQuotedPrintable(t *testing.T) {
-	msg := openTestData("mail", "quoted-printable.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "quoted-printable.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -185,8 +187,8 @@ func TestParseQuotedPrintable(t *testing.T) {
 }
 
 func TestParseQuotedPrintableMime(t *testing.T) {
-	msg := openTestData("mail", "quoted-printable-mime.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "quoted-printable-mime.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -199,8 +201,8 @@ func TestParseQuotedPrintableMime(t *testing.T) {
 }
 
 func TestParseInlineHTML(t *testing.T) {
-	msg := openTestData("mail", "html-mime-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-mime-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -218,8 +220,8 @@ func TestParseInlineHTML(t *testing.T) {
 }
 
 func TestParseAttachment(t *testing.T) {
-	msg := openTestData("mail", "attachment.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "attachment.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -246,12 +248,12 @@ func TestParseAttachment(t *testing.T) {
 	}
 
 	want = "<html>"
-	contentContainsString(t, e.Attachments[0].Content, want)
+	test.ContentContainsString(t, e.Attachments[0].Content, want)
 }
 
 func TestParseAttachmentOctet(t *testing.T) {
-	msg := openTestData("mail", "attachment-octet.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "attachment-octet.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -290,8 +292,8 @@ func TestParseAttachmentOctet(t *testing.T) {
 }
 
 func TestParseAttachmentApplication(t *testing.T) {
-	msg := openTestData("mail", "attachment-application.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "attachment-application.raw")
+	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -311,8 +313,8 @@ func TestParseAttachmentApplication(t *testing.T) {
 }
 
 func TestParseOtherParts(t *testing.T) {
-	msg := openTestData("mail", "other-parts.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "other-parts.raw")
+	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -356,8 +358,8 @@ func TestParseOtherParts(t *testing.T) {
 }
 
 func TestParseInline(t *testing.T) {
-	msg := openTestData("mail", "html-mime-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-mime-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -390,14 +392,14 @@ func TestParseInline(t *testing.T) {
 }
 
 func TestParseHTMLOnlyInline(t *testing.T) {
-	msg := openTestData("mail", "html-only-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-only-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
 	if len(e.Errors) == 1 {
-		want := string(errorPlainTextFromHTML)
+		want := enmime.ErrorPlainTextFromHTML
 		got := e.Errors[0].Name
 		if got != want {
 			t.Errorf("e.Errors[0] got: %v, want: %v", got, want)
@@ -434,8 +436,8 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 }
 
 func TestParseNestedHeaders(t *testing.T) {
-	msg := openTestData("mail", "html-mime-inline.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "html-mime-inline.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -457,21 +459,18 @@ func TestParseNestedHeaders(t *testing.T) {
 }
 
 func TestEnvelopeGetHeader(t *testing.T) {
-	var e *Envelope
-	var got, want string
-
 	// Test empty header
-	e = &Envelope{}
-	want = ""
-	got = e.GetHeader("Subject")
+	e := &enmime.Envelope{}
+	want := ""
+	got := e.GetHeader("Subject")
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
 	}
 
 	// Even non-MIME messages should support encoded-words in headers
 	// Also, encoded addresses should be suppored
-	r := openTestData("mail", "qp-ascii-header.raw")
-	e, err := ReadEnvelope(r)
+	r := test.OpenTestData("mail", "qp-ascii-header.raw")
+	e, err := enmime.ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
@@ -483,8 +482,8 @@ func TestEnvelopeGetHeader(t *testing.T) {
 	}
 
 	// Test UTF-8 subject line
-	r = openTestData("mail", "qp-utf8-header.raw")
-	e, err = ReadEnvelope(r)
+	r = test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err = enmime.ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -497,18 +496,15 @@ func TestEnvelopeGetHeader(t *testing.T) {
 }
 
 func TestEnvelopeAddressList(t *testing.T) {
-	var e *Envelope
-	var got, want string
-
 	// Test empty header
-	e = &Envelope{}
+	e := &enmime.Envelope{}
 	_, err := e.AddressList("To")
 	if err == nil {
 		t.Error("AddressList(\"Subject\") should have returned err, got nil")
 	}
 
-	r := openTestData("mail", "qp-utf8-header.raw")
-	e, err = ReadEnvelope(r)
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err = enmime.ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}
@@ -527,8 +523,8 @@ func TestEnvelopeAddressList(t *testing.T) {
 	}
 
 	// Confirm address name was decoded properly
-	want = "Mirosław Marczak"
-	got = toAddresses[0].Name
+	want := "Mirosław Marczak"
+	got := toAddresses[0].Name
 	if got != want {
 		t.Errorf("To was: %q, want: %q", got, want)
 	}
@@ -550,8 +546,8 @@ func TestEnvelopeAddressList(t *testing.T) {
 }
 
 func TestDetectCharacterSetInHTML(t *testing.T) {
-	msg := openTestData("mail", "non-mime-missing-charset.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "non-mime-missing-charset.raw")
+	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
@@ -560,108 +556,6 @@ func TestDetectCharacterSetInHTML(t *testing.T) {
 	}
 	if !strings.ContainsRune(e.HTML, 0x20ac) {
 		t.Error("HTML body should have contained a Unicode Euro Symbol")
-	}
-}
-
-func TestIsAttachment(t *testing.T) {
-	var htests = []struct {
-		want   bool
-		header textproto.MIMEHeader
-	}{
-		{
-			want: true,
-			header: textproto.MIMEHeader{
-				"Content-Disposition": []string{"attachment; filename=\"test.jpg\""}},
-		},
-		{
-			want: true,
-			header: textproto.MIMEHeader{
-				"Content-Disposition": []string{"ATTACHMENT; filename=\"test.jpg\""}},
-		},
-		{
-			want: true,
-			header: textproto.MIMEHeader{
-				"Content-Type":        []string{"image/jpg; name=\"test.jpg\""},
-				"Content-Disposition": []string{"attachment; filename=\"test.jpg\""},
-			},
-		},
-		{
-			want: true,
-			header: textproto.MIMEHeader{
-				"Content-Type": []string{"attachment; filename=\"test.jpg\""}},
-		},
-		{
-			want: true,
-			header: textproto.MIMEHeader{
-				"Content-Disposition": []string{"inline; filename=\"frog.jpg\""}},
-		},
-		{
-			want: false,
-			header: textproto.MIMEHeader{
-				"Content-Disposition": []string{"non-attachment; filename=\"frog.jpg\""}},
-		},
-		{
-			want:   false,
-			header: textproto.MIMEHeader{},
-		},
-	}
-
-	for _, s := range htests {
-		got := detectAttachmentHeader(s.header)
-		if got != s.want {
-			t.Errorf("IsAttachment(%v) == %v, want: %v", s.header, got, s.want)
-		}
-	}
-}
-
-func TestIsPlain(t *testing.T) {
-	var htests = []struct {
-		want         bool
-		header       textproto.MIMEHeader
-		emptyIsPlain bool
-	}{
-		{
-			want:         true,
-			header:       textproto.MIMEHeader{"Content-Type": []string{"text/plain"}},
-			emptyIsPlain: true,
-		},
-		{
-			want:         true,
-			header:       textproto.MIMEHeader{"Content-Type": []string{"text/html"}},
-			emptyIsPlain: true,
-		},
-		{
-			want:         true,
-			header:       textproto.MIMEHeader{"Content-Type": []string{"text/html; charset=utf-8"}},
-			emptyIsPlain: true,
-		},
-		{
-			want:         true,
-			header:       textproto.MIMEHeader{},
-			emptyIsPlain: true,
-		},
-		{
-			want:         false,
-			header:       textproto.MIMEHeader{},
-			emptyIsPlain: false,
-		},
-		{
-			want:         false,
-			header:       textproto.MIMEHeader{"Content-Type": []string{"image/jpeg;"}},
-			emptyIsPlain: true,
-		},
-		{
-			want:         false,
-			header:       textproto.MIMEHeader{"Content-Type": []string{"application/octet-stream"}},
-			emptyIsPlain: true,
-		},
-	}
-
-	for _, s := range htests {
-		got := detectTextHeader(s.header, s.emptyIsPlain)
-		if got != s.want {
-			t.Errorf("IsPlain(%v, %v) == %v, want: %v", s.header, s.emptyIsPlain, got, s.want)
-		}
 	}
 }
 
@@ -677,8 +571,8 @@ func TestAttachmentOnly(t *testing.T) {
 
 	for _, a := range aTests {
 		// Mail with disposition attachment
-		msg := openTestData("mail", a.filename)
-		e, err := ReadEnvelope(msg)
+		msg := test.OpenTestData("mail", a.filename)
+		e, err := enmime.ReadEnvelope(msg)
 		if err != nil {
 			t.Fatal("Failed to parse MIME:", err)
 		}
@@ -707,50 +601,9 @@ func TestAttachmentOnly(t *testing.T) {
 	}
 }
 
-func TestEnvelopeParseMultiPartBody(t *testing.T) {
-	var want string
-	var err error
-	root := &Part{}
-	e := &Envelope{}
-
-	// Empty root part
-	err = parseMultiPartBody(root, e)
-	want = "Unable to parse media type"
-	if err == nil {
-		t.Fatalf("err was %v, wanted: %v", err, want)
-	}
-	if !strings.Contains(err.Error(), want) {
-		t.Fatalf("err was %v, wanted: %v", err, want)
-	}
-
-	// Unexpected content type
-	root.Header = make(textproto.MIMEHeader)
-	root.Header.Set("Content-Type", "text/plain")
-	err = parseMultiPartBody(root, e)
-	want = "Unknown mediatype"
-	if err == nil {
-		t.Fatalf("err was %v, wanted: %v", err, want)
-	}
-	if !strings.Contains(err.Error(), want) {
-		t.Fatalf("err was %v, wanted: %v", err, want)
-	}
-
-	// No boundary param
-	root.Header = make(textproto.MIMEHeader)
-	root.Header.Set("Content-Type", "multipart/mixed")
-	err = parseMultiPartBody(root, e)
-	want = "Unable to locate boundary param"
-	if err == nil {
-		t.Fatalf("err was %v, wanted: %v", err, want)
-	}
-	if !strings.Contains(err.Error(), want) {
-		t.Fatalf("err was %v, wanted: %v", err, want)
-	}
-}
-
 func TestDuplicateParamsInMime(t *testing.T) {
-	msg := openTestData("mail", "mime-duplicate-param.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "mime-duplicate-param.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -762,8 +615,8 @@ func TestDuplicateParamsInMime(t *testing.T) {
 }
 
 func TestBadContentTypeInMime(t *testing.T) {
-	msg := openTestData("mail", "mime-bad-content-type.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "mime-bad-content-type.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -775,8 +628,8 @@ func TestBadContentTypeInMime(t *testing.T) {
 }
 
 func TestBlankMediaName(t *testing.T) {
-	msg := openTestData("mail", "mime-blank-media-name.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "mime-blank-media-name.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -808,8 +661,8 @@ func TestEnvelopeHeaders(t *testing.T) {
 		"Date":            "Fri, 10 Jul 2015 20:12:33 +0000",
 	}
 
-	msg := openTestData("mail", "ctype-bug.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "ctype-bug.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -853,8 +706,8 @@ func TestInlineTextBody(t *testing.T) {
 		"Date": "Wed, 8 Feb 2017 03:23:13 -0500",
 	}
 
-	msg := openTestData("mail", "attachment-only-inline-quoted-printable.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "attachment-only-inline-quoted-printable.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -906,8 +759,8 @@ func TestBinaryOnlyBodyHeaders(t *testing.T) {
 		"Content-Disposition":       `attachment; filename="favicon.jpg"`,
 	}
 
-	msg := openTestData("mail", "attachment-only.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "attachment-only.raw")
+	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
@@ -939,8 +792,8 @@ func TestBinaryOnlyBodyHeaders(t *testing.T) {
 }
 
 func TestEnvelopeEpilogue(t *testing.T) {
-	msg := openTestData("mail", "epilogue-sample.raw")
-	e, err := ReadEnvelope(msg)
+	msg := test.OpenTestData("mail", "epilogue-sample.raw")
+	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
 	}

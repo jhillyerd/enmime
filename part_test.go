@@ -1,14 +1,17 @@
-package enmime
+package enmime_test
 
 import (
 	"testing"
+
+	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/internal/test"
 )
 
 func TestPlainTextPart(t *testing.T) {
 	var want, got string
-	var wantp *Part
-	r := openTestData("parts", "textplain.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "textplain.raw")
+	p, err := enmime.ReadParts(r)
 	if err != nil {
 		t.Fatal("Unexpected parse error:", err)
 	}
@@ -16,11 +19,11 @@ func TestPlainTextPart(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
+	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "7bit"
 	got = p.Header.Get("Content-Transfer-Encoding")
@@ -29,14 +32,14 @@ func TestPlainTextPart(t *testing.T) {
 	}
 
 	want = "Test of text/plain section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestQuotedPrintablePart(t *testing.T) {
 	var want, got string
-	var wantp *Part
-	r := openTestData("parts", "quoted-printable.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "quoted-printable.raw")
+	p, err := enmime.ReadParts(r)
 	if err != nil {
 		t.Fatal("Unexpected parse error:", err)
 	}
@@ -44,11 +47,11 @@ func TestQuotedPrintablePart(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
+	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "quoted-printable"
 	got = p.Header.Get("Content-Transfer-Encoding")
@@ -57,14 +60,14 @@ func TestQuotedPrintablePart(t *testing.T) {
 	}
 
 	want = "Start=ABC=Finish"
-	contentEqualsString(t, p.Content, want)
+	test.ContentEqualsString(t, p.Content, want)
 }
 
 func TestQuotedPrintableInvalidPart(t *testing.T) {
 	var want, got string
-	var wantp *Part
-	r := openTestData("parts", "quoted-printable-invalid.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "quoted-printable-invalid.raw")
+	p, err := enmime.ReadParts(r)
 	if err != nil {
 		t.Fatal("Unexpected parse error:", err)
 	}
@@ -72,11 +75,11 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
+	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "utf-8",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "quoted-printable"
 	got = p.Header.Get("Content-Transfer-Encoding")
@@ -85,14 +88,14 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	}
 
 	want = "Stuffs’s Weekly Summary"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestMultiAlternParts(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "multialtern.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "multialtern.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -102,48 +105,48 @@ func TestMultiAlternParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/alternative",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An HTML section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 // TestRootMissingContentType expects a default content type to be set for the root if not specified
 func TestRootMissingContentType(t *testing.T) {
 	var want string
-	r := openTestData("parts", "missing-ctype-root.raw")
-	p, err := ReadParts(r)
+	r := test.OpenTestData("parts", "missing-ctype-root.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -164,9 +167,9 @@ func TestRootMissingContentType(t *testing.T) {
 
 func TestPartMissingContentType(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "missing-ctype.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "missing-ctype.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -176,47 +179,47 @@ func TestPartMissingContentType(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/alternative",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		// No ContentType
 		PartID: "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An HTML section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestPartEmptyHeader(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "empty-header.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "empty-header.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -226,48 +229,48 @@ func TestPartEmptyHeader(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/alternative",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
 
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		// No ContentType
 		PartID: "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An HTML section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestMultiMixedParts(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "multimixed.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "multimixed.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -277,48 +280,48 @@ func TestMultiMixedParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/mixed",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "Section one"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "Section two"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestMultiOtherParts(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "multiother.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "multiother.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -328,48 +331,48 @@ func TestMultiOtherParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/x-enmime",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "Section one"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "Section two"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestNestedAlternParts(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "nestedmulti.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "nestedmulti.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -379,90 +382,90 @@ func TestNestedAlternParts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
+	wantp = &enmime.Part{
 		ContentType: "multipart/alternative",
-		FirstChild:  partExists,
+		FirstChild:  test.PartExists,
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/related",
 		PartID:      "2.0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// First nested
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2.1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An HTML section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Second nested
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Disposition: "inline",
 		FileName:    "attach.txt",
 		PartID:      "2.2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An inline text attachment"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Third nested
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/plain",
 		Disposition: "inline",
 		FileName:    "attach2.txt",
 		PartID:      "2.3",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "Another inline text attachment"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestPartSimilarBoundary(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "similar-boundary.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "similar-boundary.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -472,75 +475,75 @@ func TestPartSimilarBoundary(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
+	wantp = &enmime.Part{
 		ContentType: "multipart/mixed",
-		FirstChild:  partExists,
+		FirstChild:  test.PartExists,
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "Section one"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/alternative",
 		PartID:      "2.0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// First nested
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "2.1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Second nested
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2.2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An HTML section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 // Check we don't UTF-8 decode attachments
 func TestBinaryDecode(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "bin-attach.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "bin-attach.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -550,52 +553,52 @@ func TestBinaryDecode(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/mixed",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "application/octet-stream",
 		Charset:     "us-ascii",
 		Disposition: "attachment",
 		FileName:    "test.bin",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	wantBytes := []byte{
 		0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x08, 0x00,
 		0x08, 0x00, 0xC2, 0x02, 0x29, 0x4A, 0x00, 0x00}
-	contentEqualsBytes(t, p.Content, wantBytes)
+	test.ContentEqualsBytes(t, p.Content, wantBytes)
 }
 
 func TestMultiBase64Parts(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "multibase64.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "multibase64.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -605,49 +608,49 @@ func TestMultiBase64Parts(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/mixed",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
-	contentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, "")
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "A text section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/html",
 		Disposition: "attachment",
 		FileName:    "test.html",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "<html>"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestBadBoundaryTerm(t *testing.T) {
 	var want string
-	var wantp *Part
-	r := openTestData("parts", "badboundary.raw")
-	p, err := ReadParts(r)
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "badboundary.raw")
+	p, err := enmime.ReadParts(r)
 
 	// Examine root
 	if err != nil {
@@ -657,34 +660,34 @@ func TestBadBoundaryTerm(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	wantp = &Part{
-		FirstChild:  partExists,
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
 		ContentType: "multipart/alternative",
 		PartID:      "0",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	// Examine first child
 	p = p.FirstChild
-	wantp = &Part{
-		Parent:      partExists,
-		NextSibling: partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
 		PartID:      "1",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	// Examine sibling
 	p = p.NextSibling
-	wantp = &Part{
-		Parent:      partExists,
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2",
 	}
-	comparePart(t, p, wantp)
+	test.ComparePart(t, p, wantp)
 
 	want = "An HTML section"
-	contentContainsString(t, p.Content, want)
+	test.ContentContainsString(t, p.Content, want)
 }

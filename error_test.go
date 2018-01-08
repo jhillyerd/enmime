@@ -1,6 +1,10 @@
 package enmime
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestErrorStringConversion(t *testing.T) {
 	e := &Error{
@@ -30,15 +34,15 @@ func TestErrorStringConversion(t *testing.T) {
 
 func TestErrorAddError(t *testing.T) {
 	p := &Part{}
-	p.addError(errorMalformedHeader, "1 %v %q", 2, "three")
+	p.addError(ErrorMalformedHeader, "1 %v %q", 2, "three")
 
 	if len(p.Errors) != 1 {
 		t.Fatal("len(p.Errors) ==", len(p.Errors), ", want: 1")
 	}
 	e := p.Errors[0]
 
-	if e.Name != string(errorMalformedHeader) {
-		t.Errorf("e.Name == %q, want: %q", e.Name, errorMalformedHeader)
+	if e.Name != ErrorMalformedHeader {
+		t.Errorf("e.Name == %q, want: %q", e.Name, ErrorMalformedHeader)
 	}
 	if !e.Severe {
 		t.Errorf("e.Severe == %v, want: true", e.Severe)
@@ -51,15 +55,15 @@ func TestErrorAddError(t *testing.T) {
 
 func TestErrorAddWarning(t *testing.T) {
 	p := &Part{}
-	p.addWarning(errorMalformedHeader, "1 %v %q", 2, "three")
+	p.addWarning(ErrorMalformedHeader, "1 %v %q", 2, "three")
 
 	if len(p.Errors) != 1 {
 		t.Fatal("len(p.Errors) ==", len(p.Errors), ", want: 1")
 	}
 	e := p.Errors[0]
 
-	if e.Name != string(errorMalformedHeader) {
-		t.Errorf("e.Name == %q, want: %q", e.Name, errorMalformedHeader)
+	if e.Name != ErrorMalformedHeader {
+		t.Errorf("e.Name == %q, want: %q", e.Name, ErrorMalformedHeader)
 	}
 	if e.Severe {
 		t.Errorf("e.Severe == %v, want: false", e.Severe)
@@ -75,23 +79,23 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 	// other errorNames.
 	var files = []struct {
 		filename string
-		perror   errorName
+		perror   string
 	}{
-		{"bad-final-boundary.raw", errorMissingBoundary},
-		{"bad-header-wrap.raw", errorMalformedHeader},
-		{"html-only-inline.raw", errorPlainTextFromHTML},
-		{"missing-content-type2.raw", errorMissingContentType},
-		{"empty-header.raw", errorMissingContentType},
-		{"unk-encoding-part.raw", errorContentEncoding},
-		{"unk-charset-html-only.raw", errorCharsetConversion},
-		{"unk-charset-part.raw", errorCharsetConversion},
-		{"malformed-base64-attach.raw", errorMalformedBase64},
+		{"bad-final-boundary.raw", ErrorMissingBoundary},
+		{"bad-header-wrap.raw", ErrorMalformedHeader},
+		{"html-only-inline.raw", ErrorPlainTextFromHTML},
+		{"missing-content-type2.raw", ErrorMissingContentType},
+		{"empty-header.raw", ErrorMissingContentType},
+		{"unk-encoding-part.raw", ErrorContentEncoding},
+		{"unk-charset-html-only.raw", ErrorCharsetConversion},
+		{"unk-charset-part.raw", ErrorCharsetConversion},
+		{"malformed-base64-attach.raw", ErrorMalformedBase64},
 	}
 
 	for _, tt := range files {
 		t.Run(tt.filename, func(t *testing.T) {
-			msg := openTestData("low-quality", tt.filename)
-			e, err := ReadEnvelope(msg)
+			r, _ := os.Open(filepath.Join("testdata", "low-quality", tt.filename))
+			e, err := ReadEnvelope(r)
 			if err != nil {
 				t.Fatal("Failed to parse MIME:", err)
 			}
@@ -102,7 +106,7 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 
 			satisfied := false
 			for _, perr := range e.Errors {
-				if perr.Name == string(tt.perror) {
+				if perr.Name == tt.perror {
 					satisfied = true
 					if perr.Severe {
 						t.Errorf("Expected Severe to be false, got true for %q", perr.Name)

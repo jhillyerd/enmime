@@ -1,4 +1,4 @@
-package enmime
+package test
 
 import (
 	"bytes"
@@ -7,14 +7,16 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime"
 )
 
 // Syntatic sugar for Part comparisons
-var partExists = &Part{}
+var PartExists = &enmime.Part{}
 
-// openTestData is a utility function to open a file in testdata for reading, it will panic if there
+// OpenTestData is a utility function to open a file in testdata for reading, it will panic if there
 // is an error.
-func openTestData(subdir, filename string) io.Reader {
+func OpenTestData(subdir, filename string) io.Reader {
 	// Open test part for parsing
 	raw, err := os.Open(filepath.Join("testdata", subdir, filename))
 	if err != nil {
@@ -24,11 +26,11 @@ func openTestData(subdir, filename string) io.Reader {
 	return raw
 }
 
-// comparePart test helper compares the attributes of two parts, returning true if they are equal.
+// ComparePart test helper compares the attributes of two parts, returning true if they are equal.
 // t.Errorf() will be called for each field that is not equal.  The presence of child and siblings
 // will be checked, but not the attributes of them.  Header, Errors and unexported fields are
 // ignored.
-func comparePart(t *testing.T, got *Part, want *Part) (equal bool) {
+func ComparePart(t *testing.T, got *enmime.Part, want *enmime.Part) (equal bool) {
 	t.Helper()
 	if got == nil && want != nil {
 		t.Error("Part == nil, want not nil")
@@ -106,23 +108,23 @@ func comparePart(t *testing.T, got *Part, want *Part) (equal bool) {
 func TestHelperComparePartsEqual(t *testing.T) {
 	testCases := []struct {
 		name string
-		part *Part
+		part *enmime.Part
 	}{
 		{"nil", nil},
-		{"empty", &Part{}},
-		{"Parent", &Part{Parent: &Part{}}},
-		{"FirstChild", &Part{FirstChild: &Part{}}},
-		{"NextSibling", &Part{NextSibling: &Part{}}},
-		{"ContentType", &Part{ContentType: "such/wow"}},
-		{"Disposition", &Part{Disposition: "irritable"}},
-		{"FileName", &Part{FileName: "readme.txt"}},
-		{"Charset", &Part{Charset: "utf-7.999"}},
-		{"PartID", &Part{PartID: "0.1"}},
+		{"empty", &enmime.Part{}},
+		{"Parent", &enmime.Part{Parent: &enmime.Part{}}},
+		{"FirstChild", &enmime.Part{FirstChild: &enmime.Part{}}},
+		{"NextSibling", &enmime.Part{NextSibling: &enmime.Part{}}},
+		{"ContentType", &enmime.Part{ContentType: "such/wow"}},
+		{"Disposition", &enmime.Part{Disposition: "irritable"}},
+		{"FileName", &enmime.Part{FileName: "readme.txt"}},
+		{"Charset", &enmime.Part{Charset: "utf-7.999"}},
+		{"PartID", &enmime.Part{PartID: "0.1"}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockt := &testing.T{}
-			if !comparePart(mockt, tc.part, tc.part) {
+			if !ComparePart(mockt, tc.part, tc.part) {
 				t.Errorf("Got false while comparing a Part %v to itself: %+v", tc.name, tc.part)
 			}
 			if mockt.Failed() {
@@ -136,59 +138,59 @@ func TestHelperComparePartsEqual(t *testing.T) {
 func TestHelperComparePartsInequal(t *testing.T) {
 	testCases := []struct {
 		name string
-		a, b *Part
+		a, b *enmime.Part
 	}{
 		{
 			name: "nil",
 			a:    nil,
-			b:    &Part{},
+			b:    &enmime.Part{},
 		},
 		{
 			name: "Parent",
-			a:    &Part{},
-			b:    &Part{Parent: &Part{}},
+			a:    &enmime.Part{},
+			b:    &enmime.Part{Parent: &enmime.Part{}},
 		},
 		{
 			name: "FirstChild",
-			a:    &Part{},
-			b:    &Part{FirstChild: &Part{}},
+			a:    &enmime.Part{},
+			b:    &enmime.Part{FirstChild: &enmime.Part{}},
 		},
 		{
 			name: "NextSibling",
-			a:    &Part{},
-			b:    &Part{NextSibling: &Part{}},
+			a:    &enmime.Part{},
+			b:    &enmime.Part{NextSibling: &enmime.Part{}},
 		},
 		{
 			name: "ContentType",
-			a:    &Part{ContentType: "text/plain"},
-			b:    &Part{ContentType: "text/html"},
+			a:    &enmime.Part{ContentType: "text/plain"},
+			b:    &enmime.Part{ContentType: "text/html"},
 		},
 		{
 			name: "Disposition",
-			a:    &Part{Disposition: "happy"},
-			b:    &Part{Disposition: "sad"},
+			a:    &enmime.Part{Disposition: "happy"},
+			b:    &enmime.Part{Disposition: "sad"},
 		},
 		{
 			name: "FileName",
-			a:    &Part{FileName: "foo.gif"},
-			b:    &Part{FileName: "bar.jpg"},
+			a:    &enmime.Part{FileName: "foo.gif"},
+			b:    &enmime.Part{FileName: "bar.jpg"},
 		},
 		{
 			name: "Charset",
-			a:    &Part{Charset: "foo"},
-			b:    &Part{Charset: "bar"},
+			a:    &enmime.Part{Charset: "foo"},
+			b:    &enmime.Part{Charset: "bar"},
 		},
 		{
 			name: "PartID",
-			a:    &Part{PartID: "0"},
-			b:    &Part{PartID: "1.1"},
+			a:    &enmime.Part{PartID: "0"},
+			b:    &enmime.Part{PartID: "1.1"},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockt := &testing.T{}
-			if comparePart(mockt, tc.a, tc.b) {
+			if ComparePart(mockt, tc.a, tc.b) {
 				t.Errorf(
 					"Got true while comparing inequal Parts (%v):\n"+
 						"Part A: %+v\nPart B: %+v", tc.name, tc.a, tc.b)
@@ -200,8 +202,8 @@ func TestHelperComparePartsInequal(t *testing.T) {
 	}
 }
 
-// contentContainsString checks if the provided readers content contains the specified substring
-func contentContainsString(t *testing.T, b []byte, substr string) {
+// ContentContainsString checks if the provided readers content contains the specified substring
+func ContentContainsString(t *testing.T, b []byte, substr string) {
 	t.Helper()
 	got := string(b)
 	if !strings.Contains(got, substr) {
@@ -209,8 +211,8 @@ func contentContainsString(t *testing.T, b []byte, substr string) {
 	}
 }
 
-// contentEqualsString checks if the provided readers content is the specified string
-func contentEqualsString(t *testing.T, b []byte, str string) {
+// ContentEqualsString checks if the provided readers content is the specified string
+func ContentEqualsString(t *testing.T, b []byte, str string) {
 	t.Helper()
 	got := string(b)
 	if got != str {
@@ -218,8 +220,8 @@ func contentEqualsString(t *testing.T, b []byte, str string) {
 	}
 }
 
-// contentEqualsBytes checks if the provided readers content is the specified []byte
-func contentEqualsBytes(t *testing.T, b []byte, want []byte) {
+// ContentEqualsBytes checks if the provided readers content is the specified []byte
+func ContentEqualsBytes(t *testing.T, b []byte, want []byte) {
 	t.Helper()
 	if !bytes.Equal(b, want) {
 		t.Errorf("content:\n%v, want:\n%v", b, want)

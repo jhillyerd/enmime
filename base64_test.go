@@ -53,8 +53,8 @@ func TestBase64CleanerErrors(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(cleaner.Errors) == 1 {
-				if cleaner.Errors[0].Name != string(errorMalformedBase64) {
-					t.Errorf("got: %q, want: %q", cleaner.Errors[0].Name, errorMalformedBase64)
+				if cleaner.Errors[0].Name != ErrorMalformedBase64 {
+					t.Errorf("got: %q, want: %q", cleaner.Errors[0].Name, ErrorMalformedBase64)
 				}
 			} else {
 				t.Errorf("got %d Errors, wanted 1", len(cleaner.Errors))

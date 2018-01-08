@@ -56,7 +56,7 @@ func (bc *base64Cleaner) Read(p []byte) (n int, err error) {
 		case -1:
 			// Strip these, but warn the client
 			bc.Errors = append(bc.Errors, Error{
-				Name:   string(errorMalformedBase64),
+				Name:   ErrorMalformedBase64,
 				Detail: fmt.Sprintf("Unexpected %q in Base64 stream", buf[i]),
 				Severe: false,
 			})

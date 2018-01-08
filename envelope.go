@@ -99,7 +99,7 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	if e.Text == "" && e.HTML != "" {
 		// We always warn when this happens
 		e.Root.addWarning(
-			errorPlainTextFromHTML,
+			ErrorPlainTextFromHTML,
 			"Message did not contain a text/plain part")
 		var err error
 		if e.Text, err = html2text.FromString(e.HTML); err != nil {
@@ -107,7 +107,7 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 			e.Text = ""
 			p := e.Root.BreadthMatchFirst(matchHTMLBodyPart)
 			p.addError(
-				errorPlainTextFromHTML,
+				ErrorPlainTextFromHTML,
 				"Failed to downconvert HTML: %v",
 				err)
 		}
@@ -158,7 +158,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 					e.HTML = convHTML
 				} else {
 					// Conversion failed
-					root.addWarning(errorCharsetConversion, err.Error())
+					root.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
 		}

@@ -105,7 +105,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 		// Unknown encoding
 		valid = false
 		p.addWarning(
-			errorContentEncoding,
+			ErrorContentEncoding,
 			"Unrecognized Content-Transfer-Encoding type %q",
 			encoding)
 	}
@@ -126,11 +126,11 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 						contentReader = reader
 					} else {
 						// Failed to get a conversion reader
-						p.addWarning(errorCharsetConversion, err.Error())
+						p.addWarning(ErrorCharsetConversion, err.Error())
 					}
 				} else {
 					// Failed to get a conversion reader
-					p.addWarning(errorCharsetConversion, err.Error())
+					p.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
 		}
@@ -276,7 +276,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 						owner = prevSibling
 					}
 					owner.addWarning(
-						errorMissingBoundary,
+						ErrorMissingBoundary,
 						"Boundary %q was not closed correctly",
 						parent.boundary)
 					break
@@ -290,7 +290,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		ctype := header.Get(hnContentType)
 		if ctype == "" {
 			p.addWarning(
-				errorMissingContentType,
+				ErrorMissingContentType,
 				"MIME parts should have a Content-Type header")
 		} else {
 			// Parse Content-Type header
