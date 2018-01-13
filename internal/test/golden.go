@@ -33,10 +33,18 @@ func DiffLines(t *testing.T, got []byte, want []byte) {
 			return
 		}
 		if gerr != nil {
+			if gerr == io.EOF {
+				t.Fatalf("Got %v lines, wanted more", line-1)
+				return
+			}
 			t.Fatalf("Error on got: %s", gerr)
 			return
 		}
 		if werr != nil {
+			if werr == io.EOF {
+				t.Fatalf("Wanted %v lines, got more", line-1)
+				return
+			}
 			t.Fatalf("Error on want: %s", werr)
 			return
 		}
@@ -62,6 +70,7 @@ func DiffGolden(t *testing.T, got []byte, path ...string) {
 				t.Fatal(err)
 			}
 		} else {
+			t.Errorf("Test output did not match %s", pathstr)
 			// Fail test with differences
 			DiffLines(t, got, golden)
 		}
