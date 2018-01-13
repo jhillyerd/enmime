@@ -1,0 +1,15 @@
+Content-Type: multipart/alternative
+
+Do you even MIME bro?
+
+--enmime-1234567890-parent
+Content-Type: text/html
+
+<div>HTML part</div>
+
+--enmime-1234567890-parent
+Content-Type: text/plain
+
+Plain text part
+
+--enmime-1234567890-parent--
