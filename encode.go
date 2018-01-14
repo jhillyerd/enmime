@@ -5,8 +5,13 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"mime"
 	"sort"
 )
+
+// b64Percent determines the percent of non-ASCII characters enmime will tolerate in a header before
+// switching from quoted-printable to base64 encoding
+const b64Percent = 20
 
 var crnl = []byte{'\r', '\n'}
 
@@ -68,8 +73,9 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	sort.Strings(keys)
 	for _, k := range keys {
 		for _, v := range p.Header[k] {
-			// TODO limit line lengths, qp encoding, etc
-			if _, err := b.WriteString(k + ": " + v + "\r\n"); err != nil {
+			// TODO split long lines
+			we := selectEncoder(v)
+			if _, err := b.WriteString(k + ": " + we.Encode("utf-8", v) + "\r\n"); err != nil {
 				return err
 			}
 		}
@@ -91,4 +97,19 @@ func newUUID() (string, error) {
 	uuid[6] = uuid[6]&^0xf0 | 0x40
 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]),
 		nil
+}
+
+// selectEncoder scans the string for non-ASCII characters and selects 'b' or 'q' encoding
+func selectEncoder(s string) mime.WordEncoder {
+	// binary chars remaining before we choose b64 encoding
+	binrem := b64Percent * 100 / len(s)
+	for _, b := range s {
+		if (b < ' ' || b > '~') && b != '\t' {
+			binrem--
+			if binrem <= 0 {
+				return mime.BEncoding
+			}
+		}
+	}
+	return mime.QEncoding
 }
