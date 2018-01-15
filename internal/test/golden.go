@@ -3,53 +3,90 @@ package test
 import (
 	"bytes"
 	"flag"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 var update = flag.Bool("update", false, "Update .golden files")
 
+type section struct {
+	ctype byte
+	s     []string
+}
+
+// Inspired by https://github.com/paulgb/simplediff
+func diff(before, after []string) []section {
+	beforeMap := make(map[string][]int)
+	for i, s := range before {
+		beforeMap[s] = append(beforeMap[s], i)
+	}
+	overlap := make([]int, len(before))
+	// Track start/len of largest overlapping match in old/new
+	var startBefore, startAfter, subLen int
+	for iafter, s := range after {
+		o := make([]int, len(before))
+		for _, ibefore := range beforeMap[s] {
+			idx := 1
+			if ibefore > 0 && overlap[ibefore-1] > 0 {
+				idx = overlap[ibefore-1] + 1
+			}
+			o[ibefore] = idx
+			if idx > subLen {
+				// largest substring so far, store indices
+				subLen = o[ibefore]
+				startBefore = ibefore - subLen + 1
+				startAfter = iafter - subLen + 1
+			}
+		}
+		overlap = o
+	}
+	if subLen == 0 {
+		// No common substring, issue - and +
+		r := make([]section, 0)
+		if len(before) > 0 {
+			r = append(r, section{'-', before})
+		}
+		if len(after) > 0 {
+			r = append(r, section{'+', after})
+		}
+		return r
+	}
+	// common substring unchanged, recurse on before/after substring
+	r := diff(before[0:startBefore], after[0:startAfter])
+	r = append(r, section{' ', after[startAfter : startAfter+subLen]})
+	r = append(r, diff(before[startBefore+subLen:], after[startAfter+subLen:])...)
+	return r
+}
+
 // DiffLines does a line by line comparison of got and want, reporting up to five
 // differences before giving up
 func DiffLines(t *testing.T, got []byte, want []byte) {
 	t.Helper()
-	gbuf := bytes.NewBuffer(got)
-	wbuf := bytes.NewBuffer(want)
-	diffs := 0
-	for line := 1; diffs < 5; line++ {
-		g, gerr := gbuf.ReadString('\n')
-		w, werr := wbuf.ReadString('\n')
-		// fmt.Printf("g: %q, err: %v\n", g, gerr)
-		// fmt.Printf("w: %q, err: %v\n", w, werr)
-		if g != w {
-			// We compare before EOF test in case the final line has no \n
-			diffs++
-			t.Errorf("Line %v differed\n got: %q\nwant: %q", line, g, w)
-		}
-		if gerr == io.EOF && werr == io.EOF {
-			return
-		}
-		if gerr != nil {
-			if gerr == io.EOF {
-				t.Fatalf("Got %v lines, wanted more", line-1)
-				return
+	if !bytes.Equal(got, want) {
+		t.Error("diff -want +got:")
+		glines := strings.Split(string(got), "\n")
+		wlines := strings.Split(string(want), "\n")
+		sections := diff(wlines, glines)
+		for _, s := range sections {
+			if s.ctype == ' ' && len(s.s) > 5 {
+				// Omit excess unchanged lines
+				for i := 0; i < 2; i++ {
+					t.Logf("|%c%s", s.ctype, s.s[i])
+				}
+				t.Log("...")
+				for i := len(s.s) - 2; i < len(s.s); i++ {
+					t.Logf("|%c%s", s.ctype, s.s[i])
+				}
+				continue
 			}
-			t.Fatalf("Error on got: %s", gerr)
-			return
-		}
-		if werr != nil {
-			if werr == io.EOF {
-				t.Fatalf("Wanted %v lines, got more", line-1)
-				return
+			for _, l := range s.s {
+				t.Logf("|%c%s", s.ctype, l)
 			}
-			t.Fatalf("Error on want: %s", werr)
-			return
 		}
 	}
-	t.Fatalf("Reached maximum of %v differences", diffs)
 }
 
 func DiffGolden(t *testing.T, got []byte, path ...string) {
