@@ -7,6 +7,8 @@ import (
 	"io"
 	"mime"
 	"sort"
+
+	"github.com/jhillyerd/enmime/internal/stringutil"
 )
 
 // b64Percent determines the percent of non-ASCII characters enmime will tolerate in a header before
@@ -73,9 +75,11 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	sort.Strings(keys)
 	for _, k := range keys {
 		for _, v := range p.Header[k] {
-			// TODO split long lines
 			we := selectEncoder(v)
-			if _, err := b.WriteString(k + ": " + we.Encode("utf-8", v) + "\r\n"); err != nil {
+			// _ used to prevent early wrapping
+			wb := stringutil.Wrap(76, k, ":_", we.Encode("utf-8", v), "\r\n")
+			wb[len(k)+1] = ' '
+			if _, err := b.Write(wb); err != nil {
 				return err
 			}
 		}
