@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net/textproto"
 	"sort"
 
 	"github.com/jhillyerd/enmime/internal/stringutil"
@@ -19,8 +20,42 @@ var crnl = []byte{'\r', '\n'}
 
 // Encode writes this Part and all its children to the specified writer in MIME format
 func (p *Part) Encode(writer io.Writer) error {
-	b := bufio.NewWriter(writer)
+	// Setup headers
+	if p.Header == nil {
+		p.Header = make(textproto.MIMEHeader)
+	}
+	if p.FirstChild != nil && p.Boundary == "" {
+		// Generate random boundary marker
+		uuid, err := newUUID()
+		if err != nil {
+			return err
+		}
+		p.Boundary = "enmime-boundary-" + uuid
+	}
+	if p.ContentType != "" {
+		// Build content type header
+		param := make(map[string]string)
+		if p.Charset != "" {
+			param[hpCharset] = p.Charset
+		}
+		if p.FileName != "" {
+			param[hpName] = p.FileName
+		}
+		if p.Boundary != "" {
+			param[hpBoundary] = p.Boundary
+		}
+		p.Header.Set(hnContentType, mime.FormatMediaType(p.ContentType, param))
+	}
+	if p.Disposition != "" {
+		// Build disposition header
+		param := make(map[string]string)
+		if p.FileName != "" {
+			param[hpFilename] = p.FileName
+		}
+		p.Header.Set(hnContentDisposition, mime.FormatMediaType(p.Disposition, param))
+	}
 	// Encode this part
+	b := bufio.NewWriter(writer)
 	if err := p.encodeHeader(b); err != nil {
 		return err
 	}
@@ -32,14 +67,6 @@ func (p *Part) Encode(writer io.Writer) error {
 	}
 	if p.FirstChild != nil {
 		// Encode children
-		if p.Boundary == "" {
-			// Generate random boundary marker
-			uuid, err := newUUID()
-			if err != nil {
-				return err
-			}
-			p.Boundary = "enmime-boundary-" + uuid
-		}
 		endMarker := []byte("\r\n--" + p.Boundary + "--")
 		marker := endMarker[:len(endMarker)-2]
 		c := p.FirstChild

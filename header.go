@@ -27,6 +27,7 @@ const (
 	hnContentDisposition = "Content-Disposition"
 	hnContentEncoding    = "Content-Transfer-Encoding"
 	hnContentType        = "Content-Type"
+	hnMIMEVersion        = "MIME-Version"
 
 	// Standard MIME header parameters
 	hpBoundary = "boundary"
