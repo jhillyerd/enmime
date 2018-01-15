@@ -111,3 +111,31 @@ func TestEncodePartWithChildren(t *testing.T) {
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-with-children.golden")
 }
+
+func TestEncodePartContentQuotable(t *testing.T) {
+	p := enmime.NewPart(nil, "text/plain")
+	p.Content = []byte("¡Hola, señor! Welcome to MIME")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-content.golden")
+}
+
+func TestEncodePartContentBinary(t *testing.T) {
+	c := make([]byte, 2000)
+	for i := range c {
+		c[i] = byte(i % 256)
+	}
+	p := enmime.NewPart(nil, "image/jpeg")
+	p.Content = c
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-bin-content.golden")
+}

@@ -3,9 +3,11 @@ package enmime
 import (
 	"bufio"
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"mime"
+	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
 
@@ -28,12 +30,30 @@ var crnl = []byte{'\r', '\n'}
 
 // Encode writes this Part and all its children to the specified writer in MIME format
 func (p *Part) Encode(writer io.Writer) error {
+	// Determine content transfer encoding
+	cte := te7Bit
+	if len(p.Content) > 0 {
+		cte = teBase64
+		if p.TextContent() {
+			cte = selectTransferEncoding(string(p.Content), false)
+			if p.Charset == "" {
+				p.Charset = "utf-8" // Default
+			}
+		}
+		// RFC 2045: 7bit is assumed if CTE header not present
+		switch cte {
+		case teBase64:
+			p.Header.Set(hnContentEncoding, cteBase64)
+		case teQuoted:
+			p.Header.Set(hnContentEncoding, cteQuotedPrintable)
+		}
+	}
 	// Setup headers
 	if p.Header == nil {
 		p.Header = make(textproto.MIMEHeader)
 	}
 	if p.FirstChild != nil && p.Boundary == "" {
-		// Generate random boundary marker
+		// Multipart, generate random boundary marker
 		uuid, err := newUUID()
 		if err != nil {
 			return err
@@ -62,27 +82,12 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 		p.Header.Set(hnContentDisposition, mime.FormatMediaType(p.Disposition, param))
 	}
-	// Determine content transfer encoding
-	cte := te7Bit
-	if len(p.Content) > 0 {
-		cte = teBase64
-		if p.TextContent() {
-			cte = selectTransferEncoding(string(p.Content), false)
-		}
-		// RFC 2045: 7bit is assumed if CTE header not present
-		switch cte {
-		case teBase64:
-			p.Header.Set(hnContentEncoding, cteBase64)
-		case teQuoted:
-			p.Header.Set(hnContentEncoding, cteQuotedPrintable)
-		}
-	}
 	// Encode this part
 	b := bufio.NewWriter(writer)
 	if err := p.encodeHeader(b); err != nil {
 		return err
 	}
-	if _, err := b.Write(p.Content); err != nil {
+	if err := p.encodeContent(b, cte); err != nil {
 		return err
 	}
 	if _, err := b.Write(crnl); err != nil {
@@ -145,8 +150,37 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 }
 
 // encodeContent writes out the content in the selected encoding
-func (p *Part) encodeContent(b *bufio.Writer) error {
-	return nil
+func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) {
+	switch cte {
+	case teBase64:
+		enc := base64.StdEncoding
+		text := make([]byte, enc.EncodedLen(len(p.Content)))
+		base64.StdEncoding.Encode(text, p.Content)
+		lineLen := 76
+		for len(text) > 0 {
+			// Wrap lines
+			if lineLen > len(text) {
+				lineLen = len(text)
+			}
+			if _, err = b.Write(text[:lineLen]); err != nil {
+				return err
+			}
+			if _, err = b.Write(crnl); err != nil {
+				return err
+			}
+			text = text[lineLen:]
+		}
+		_, err = b.Write(text)
+	case teQuoted:
+		qp := quotedprintable.NewWriter(b)
+		if _, err = qp.Write(p.Content); err != nil {
+			return err
+		}
+		err = qp.Close()
+	default:
+		_, err = b.Write(p.Content)
+	}
+	return err
 }
 
 // newUUID generates a random UUID according to RFC 4122
