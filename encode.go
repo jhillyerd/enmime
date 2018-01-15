@@ -12,9 +12,17 @@ import (
 	"github.com/jhillyerd/enmime/internal/stringutil"
 )
 
-// b64Percent determines the percent of non-ASCII characters enmime will tolerate in a header before
-// switching from quoted-printable to base64 encoding
+// b64Percent determines the percent of non-ASCII characters enmime will tolerate before switching
+// from quoted-printable to base64 encoding
 const b64Percent = 20
+
+type transferEncoding byte
+
+const (
+	te7Bit transferEncoding = iota
+	teQuoted
+	teBase64
+)
 
 var crnl = []byte{'\r', '\n'}
 
@@ -53,6 +61,21 @@ func (p *Part) Encode(writer io.Writer) error {
 			param[hpFilename] = p.FileName
 		}
 		p.Header.Set(hnContentDisposition, mime.FormatMediaType(p.Disposition, param))
+	}
+	// Determine content transfer encoding
+	cte := te7Bit
+	if len(p.Content) > 0 {
+		cte = teBase64
+		if p.TextContent() {
+			cte = selectTransferEncoding(string(p.Content), false)
+		}
+		// RFC 2045: 7bit is assumed if CTE header not present
+		switch cte {
+		case teBase64:
+			p.Header.Set(hnContentEncoding, cteBase64)
+		case teQuoted:
+			p.Header.Set(hnContentEncoding, cteQuotedPrintable)
+		}
 	}
 	// Encode this part
 	b := bufio.NewWriter(writer)
@@ -102,9 +125,15 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	sort.Strings(keys)
 	for _, k := range keys {
 		for _, v := range p.Header[k] {
-			we := selectEncoder(v)
+			encv := v
+			switch selectTransferEncoding(v, true) {
+			case teBase64:
+				encv = mime.BEncoding.Encode("utf-8", v)
+			case teQuoted:
+				encv = mime.QEncoding.Encode("utf-8", v)
+			}
 			// _ used to prevent early wrapping
-			wb := stringutil.Wrap(76, k, ":_", we.Encode("utf-8", v), "\r\n")
+			wb := stringutil.Wrap(76, k, ":_", encv, "\r\n")
 			wb[len(k)+1] = ' '
 			if _, err := b.Write(wb); err != nil {
 				return err
@@ -113,6 +142,11 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	}
 	_, err := b.Write([]byte{'\r', '\n'})
 	return err
+}
+
+// encodeContent writes out the content in the selected encoding
+func (p *Part) encodeContent(b *bufio.Writer) error {
+	return nil
 }
 
 // newUUID generates a random UUID according to RFC 4122
@@ -130,17 +164,24 @@ func newUUID() (string, error) {
 		nil
 }
 
-// selectEncoder scans the string for non-ASCII characters and selects 'b' or 'q' encoding
-func selectEncoder(s string) mime.WordEncoder {
+// selectTransferEncoding scans the string for non-ASCII characters and selects 'b' or 'q' encoding
+func selectTransferEncoding(s string, quoteLineBreaks bool) transferEncoding {
 	// binary chars remaining before we choose b64 encoding
-	binrem := b64Percent * 100 / len(s)
+	threshold := b64Percent * 100 / len(s)
+	bincount := 0
 	for _, b := range s {
 		if (b < ' ' || b > '~') && b != '\t' {
-			binrem--
-			if binrem <= 0 {
-				return mime.BEncoding
+			if !quoteLineBreaks && (b == '\r' || b == '\n') {
+				continue
+			}
+			bincount++
+			if bincount >= threshold {
+				return teBase64
 			}
 		}
 	}
-	return mime.QEncoding
+	if bincount == 0 {
+		return te7Bit
+	}
+	return teQuoted
 }

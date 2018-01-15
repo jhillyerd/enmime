@@ -51,6 +51,17 @@ func (p *Part) Read(b []byte) (n int, err error) {
 	return p.Utf8Reader.Read(b)
 }
 
+// TextContent indicates whether the content is text based on its content type.  This value
+// determines what content transfer encoding scheme to use.
+func (p *Part) TextContent() bool {
+	if p.ContentType == "" {
+		// RFC 2045: no CT is equivalent to "text/plain; charset=us-ascii"
+		return true
+	}
+	return strings.HasPrefix(p.ContentType, "text/") ||
+		strings.HasPrefix(p.ContentType, ctMultipartPrefix)
+}
+
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
