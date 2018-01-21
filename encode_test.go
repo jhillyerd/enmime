@@ -112,6 +112,27 @@ func TestEncodePartWithChildren(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-with-children.golden")
 }
 
+func TestEncodePartNoContentWithChildren(t *testing.T) {
+	p := enmime.NewPart(nil, "multipart/alternative")
+	p.Boundary = "enmime-1234567890-parent"
+	root := p
+
+	p = enmime.NewPart(root, "text/html")
+	p.Content = []byte("<div>HTML part</div>")
+	root.FirstChild = p
+
+	p = enmime.NewPart(root, "text/plain")
+	p.Content = []byte("Plain text part")
+	root.FirstChild.NextSibling = p
+
+	b := &bytes.Buffer{}
+	err := root.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "nocontent-with-children.golden")
+}
+
 func TestEncodePartContentQuotable(t *testing.T) {
 	p := enmime.NewPart(nil, "text/plain")
 	p.Content = []byte("¡Hola, señor! Welcome to MIME")

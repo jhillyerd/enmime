@@ -87,11 +87,13 @@ func (p *Part) Encode(writer io.Writer) error {
 	if err := p.encodeHeader(b); err != nil {
 		return err
 	}
-	if err := p.encodeContent(b, cte); err != nil {
-		return err
-	}
-	if _, err := b.Write(crnl); err != nil {
-		return err
+	if len(p.Content) > 0 {
+		if err := p.encodeContent(b, cte); err != nil {
+			return err
+		}
+		if _, err := b.Write(crnl); err != nil {
+			return err
+		}
 	}
 	if p.FirstChild != nil {
 		// Encode children
@@ -200,6 +202,9 @@ func newUUID() (string, error) {
 
 // selectTransferEncoding scans the string for non-ASCII characters and selects 'b' or 'q' encoding
 func selectTransferEncoding(s string, quoteLineBreaks bool) transferEncoding {
+	if len(s) == 0 {
+		return te7Bit
+	}
 	// binary chars remaining before we choose b64 encoding
 	threshold := b64Percent * 100 / len(s)
 	bincount := 0
