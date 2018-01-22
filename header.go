@@ -23,10 +23,16 @@ const (
 	ctTextPlain       = "text/plain"
 	ctTextHTML        = "text/html"
 
+	// Standard Transfer encodings
+	cte7Bit            = "7bit"
+	cteBase64          = "base64"
+	cteQuotedPrintable = "quoted-printable"
+
 	// Standard MIME header names
 	hnContentDisposition = "Content-Disposition"
 	hnContentEncoding    = "Content-Transfer-Encoding"
 	hnContentType        = "Content-Type"
+	hnMIMEVersion        = "MIME-Version"
 
 	// Standard MIME header parameters
 	hpBoundary = "boundary"

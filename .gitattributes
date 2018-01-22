@@ -1,6 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-*.raw  -text
+*.golden -text
+*.raw    -text
 
 # Custom for Visual Studio
 *.cs     diff=csharp

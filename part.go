@@ -22,6 +22,7 @@ type Part struct {
 	Parent      *Part                // Parent of this part (can be nil)
 	FirstChild  *Part                // FirstChild is the top most child of this part
 	NextSibling *Part                // NextSibling of this part
+	Boundary    string               // Boundary marker used within this part
 	ContentType string               // ContentType header without parameters
 	Disposition string               // Content-Disposition header without parameters
 	FileName    string               // The file-name from disposition or type header
@@ -31,14 +32,15 @@ type Part struct {
 	Epilogue    []byte               // Epilogue contains data following the closing boundary marker
 	Utf8Reader  io.Reader            // DEPRECATED: The decoded content converted to UTF-8
 
-	boundary      string    // Boundary marker used within this part
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader // The content decoded from quoted-printable or base64
 }
 
 // NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
 func NewPart(parent *Part, contentType string) *Part {
-	return &Part{Parent: parent, ContentType: contentType}
+	header := make(textproto.MIMEHeader)
+	header.Set(hnContentType, contentType)
+	return &Part{Parent: parent, Header: header, ContentType: contentType}
 }
 
 // Read returns the decoded & UTF-8 converted content; implements io.Reader.
@@ -47,6 +49,17 @@ func (p *Part) Read(b []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 	return p.Utf8Reader.Read(b)
+}
+
+// TextContent indicates whether the content is text based on its content type.  This value
+// determines what content transfer encoding scheme to use.
+func (p *Part) TextContent() bool {
+	if p.ContentType == "" {
+		// RFC 2045: no CT is equivalent to "text/plain; charset=us-ascii"
+		return true
+	}
+	return strings.HasPrefix(p.ContentType, "text/") ||
+		strings.HasPrefix(p.ContentType, ctMultipartPrefix)
 }
 
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
@@ -175,7 +188,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
 		// Content is multipart, parse it
 		boundary := params[hpBoundary]
-		root.boundary = boundary
+		root.Boundary = boundary
 		err = parseParts(root, br)
 		if err != nil {
 			return nil, err
@@ -241,7 +254,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	var indexPartID int
 
 	// Loop over MIME parts
-	br := newBoundaryReader(reader, parent.boundary)
+	br := newBoundaryReader(reader, parent.Boundary)
 	for {
 		indexPartID++
 
@@ -278,10 +291,10 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 					owner.addWarning(
 						ErrorMissingBoundary,
 						"Boundary %q was not closed correctly",
-						parent.boundary)
+						parent.Boundary)
 					break
 				}
-				return fmt.Errorf("Error at boundary %v: %v", parent.boundary, err)
+				return fmt.Errorf("Error at boundary %v: %v", parent.Boundary, err)
 			}
 		} else if err != nil {
 			return err
@@ -302,7 +315,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 
 			// Set disposition, filename, charset if available
 			p.setupContentHeaders(mparams)
-			p.boundary = mparams[hpBoundary]
+			p.Boundary = mparams[hpBoundary]
 		}
 
 		// Insert this Part into the MIME tree
@@ -313,7 +326,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		}
 		prevSibling = p
 
-		if p.boundary != "" {
+		if p.Boundary != "" {
 			// Content is another multipart
 			err = parseParts(p, bbr)
 			if err != nil {
