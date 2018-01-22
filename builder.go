@@ -88,6 +88,23 @@ func (p *MailBuilder) AddAttachment(b []byte, contentType string, fileName strin
 	return &c
 }
 
+// AddInline returns a copy of MailBuilder that includes the specified inline.  fileName and
+// contentID may be left empty.
+func (p *MailBuilder) AddInline(
+	b []byte,
+	contentType string,
+	fileName string,
+	contentID string,
+) *MailBuilder {
+	part := NewPart(nil, contentType)
+	part.Content = b
+	part.FileName = fileName
+	part.ContentID = contentID
+	c := *p
+	c.inlines = append(c.inlines, part)
+	return &c
+}
+
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 func (p *MailBuilder) Build() (*Part, error) {
@@ -101,20 +118,18 @@ func (p *MailBuilder) Build() (*Part, error) {
 	if len(p.to)+len(p.cc)+len(p.bcc) == 0 {
 		return nil, errors.New("no recipients (to, cc, bcc) set")
 	}
-	/**
-	 * Fully loaded structure; the presence of text, html, inlines, and attachments will determine
-	 * how much is necessary:
-	 *
-	 * multipart/mixed
-	 * |- multipart/related
-	 * |  |- multipart/alternative
-	 * |  |  |- text/plain
-	 * |  |  `- text/html
-	 * |  `- inlines..
-	 * `- attachments..
-	 *
-	 * We build this tree starting at the leaves, re-rooting as needed.
-	 */
+	// Fully loaded structure; the presence of text, html, inlines, and attachments will determine
+	// how much is necessary:
+	//
+	//  multipart/mixed
+	//  |- multipart/related
+	//  |  |- multipart/alternative
+	//  |  |  |- text/plain
+	//  |  |  `- text/html
+	//  |  `- inlines..
+	//  `- attachments..
+	//
+	// We build this tree starting at the leaves, re-rooting as needed.
 	var root, part *Part
 	if p.text != nil || p.html == nil {
 		root = NewPart(nil, ctTextPlain)
@@ -136,6 +151,18 @@ func (p *MailBuilder) Build() (*Part, error) {
 		part = root
 		root = NewPart(nil, ctMultipartAltern)
 		root.AddChild(part)
+	}
+	if len(p.inlines) > 0 {
+		part = root
+		root = NewPart(nil, ctMultipartRelated)
+		root.AddChild(part)
+		for _, ip := range p.inlines {
+			// Copy inline Part to isolate mutations
+			part = &Part{}
+			*part = *ip
+			part.Header = make(textproto.MIMEHeader)
+			root.AddChild(part)
+		}
 	}
 	if len(p.attachments) > 0 {
 		part = root

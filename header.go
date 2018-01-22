@@ -17,12 +17,13 @@ const (
 	cdInline     = "inline"
 
 	// Standard MIME content types
-	ctAppOctetStream  = "application/octet-stream"
-	ctMultipartAltern = "multipart/alternative"
-	ctMultipartMixed  = "multipart/mixed"
-	ctMultipartPrefix = "multipart/"
-	ctTextPlain       = "text/plain"
-	ctTextHTML        = "text/html"
+	ctAppOctetStream   = "application/octet-stream"
+	ctMultipartAltern  = "multipart/alternative"
+	ctMultipartMixed   = "multipart/mixed"
+	ctMultipartPrefix  = "multipart/"
+	ctMultipartRelated = "multipart/related"
+	ctTextPlain        = "text/plain"
+	ctTextHTML         = "text/html"
 
 	// Standard Transfer encodings
 	cte7Bit            = "7bit"
@@ -32,6 +33,7 @@ const (
 	// Standard MIME header names
 	hnContentDisposition = "Content-Disposition"
 	hnContentEncoding    = "Content-Transfer-Encoding"
+	hnContentID          = "Content-ID"
 	hnContentType        = "Content-Type"
 	hnMIMEVersion        = "MIME-Version"
 

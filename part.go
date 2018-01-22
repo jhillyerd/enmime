@@ -23,6 +23,7 @@ type Part struct {
 	FirstChild  *Part                // FirstChild is the top most child of this part
 	NextSibling *Part                // NextSibling of this part
 	Boundary    string               // Boundary marker used within this part
+	ContentID   string               // ContentID header for cid URL scheme
 	ContentType string               // ContentType header without parameters
 	Disposition string               // Content-Disposition header without parameters
 	FileName    string               // The file-name from disposition or type header

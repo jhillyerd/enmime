@@ -60,6 +60,9 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 		p.Boundary = "enmime-boundary-" + uuid
 	}
+	if p.ContentID != "" {
+		p.Header.Set(hnContentID, p.ContentID)
+	}
 	if p.ContentType != "" {
 		// Build content type header
 		param := make(map[string]string)

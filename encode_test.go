@@ -32,10 +32,11 @@ func TestEncodePartHeaderOnly(t *testing.T) {
 
 func TestEncodePartDefaultHeaders(t *testing.T) {
 	p := enmime.NewPart(nil, "application/zip")
+	p.Boundary = "enmime-abcdefg0123456789"
+	p.Charset = "binary"
+	p.ContentID = "<mycontentid>"
 	p.Disposition = "attachment"
 	p.FileName = "stuff.zip"
-	p.Charset = "binary"
-	p.Boundary = "enmime-abcdefg0123456789"
 	p.Content = []byte("ZIPZIPZIP")
 
 	b := &bytes.Buffer{}

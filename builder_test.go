@@ -378,3 +378,99 @@ func TestBuilderAddAttachment(t *testing.T) {
 	}
 	test.DiffSlices(t, wantTypes, gotTypes)
 }
+
+func TestBuilderAddInline(t *testing.T) {
+	a := enmime.Builder().AddInline([]byte("same"), "ct", "fn", "cid")
+	b := enmime.Builder().AddInline([]byte("same"), "ct", "fn", "cid")
+	if !a.Equals(b) {
+		t.Error("Same AddInline(value) should be equal")
+	}
+
+	a = enmime.Builder().AddInline([]byte("foo"), "ct", "fn", "cid")
+	b = enmime.Builder().AddInline([]byte("bar"), "ct", "fn", "cid")
+	if a.Equals(b) {
+		t.Error("Different AddInline(value) should not be equal")
+	}
+
+	a = enmime.Builder().AddInline([]byte("foo"), "ct", "fn", "cid")
+	b = a.AddInline([]byte("bar"), "ct", "fn", "cid")
+	b1 := b.AddInline([]byte("baz"), "ct", "fn", "cid")
+	b2 := b.AddInline([]byte("bax"), "ct", "fn", "cid")
+	if a.Equals(b) || b.Equals(b1) || b1.Equals(b2) {
+		t.Error("AddInline() should not mutate receiver, failed")
+	}
+
+	want := "fake JPG data"
+	name := "photo.jpg"
+	cid := "<mycid>"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("foo").
+		Subject("foo").
+		To(strSlice).
+		AddInline([]byte(want), "image/jpeg", name, cid)
+	root, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == cid })
+	if p == nil {
+		t.Fatalf("Did not find a %q part", cid)
+	}
+	got := string(p.Content)
+	if got != want {
+		t.Errorf("Content: %q, want: %q", got, want)
+	}
+
+	// Check structure
+	wantTypes := []string{
+		"multipart/related",
+		"multipart/alternative",
+		"text/plain",
+		"text/html",
+		"image/jpeg",
+	}
+	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotTypes := make([]string, 0)
+	for _, p := range gotParts {
+		gotTypes = append(gotTypes, p.ContentType)
+	}
+	test.DiffSlices(t, wantTypes, gotTypes)
+}
+
+func TestBuilderFullStructure(t *testing.T) {
+	a := enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("foo").
+		Subject("foo").
+		To(strSlice).
+		AddAttachment([]byte("attach data"), "image/jpeg", "image.jpg").
+		AddInline([]byte("inline data"), "image/png", "image.png", "")
+	root, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check structure via "parent > child" content types
+	wantTypes := []string{
+		" > multipart/mixed",
+		"multipart/mixed > multipart/related",
+		"multipart/related > multipart/alternative",
+		"multipart/alternative > text/plain",
+		"multipart/alternative > text/html",
+		"multipart/related > image/png",
+		"multipart/mixed > image/jpeg",
+	}
+	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotTypes := make([]string, 0)
+	for _, p := range gotParts {
+		pct := ""
+		if p.Parent != nil {
+			pct = p.Parent.ContentType
+		}
+		gotTypes = append(gotTypes, pct+" > "+p.ContentType)
+	}
+	test.DiffSlices(t, wantTypes, gotTypes)
+}
