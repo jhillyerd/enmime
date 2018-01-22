@@ -61,8 +61,32 @@ func diff(before, after []string) []section {
 	return r
 }
 
-// DiffLines does a line by line comparison of got and want, reporting up to five
-// differences before giving up
+// DiffSlices does a entry by entry comparison of got and want
+func DiffSlices(t *testing.T, got []string, want []string) {
+	t.Helper()
+	sections := diff(want, got)
+	if len(sections) > 1 {
+		t.Error("diff -want +got:")
+	}
+	for _, s := range sections {
+		if s.ctype == ' ' && len(s.s) > 5 {
+			// Omit excess unchanged lines
+			for i := 0; i < 2; i++ {
+				t.Logf("|%c%s", s.ctype, s.s[i])
+			}
+			t.Log("...")
+			for i := len(s.s) - 2; i < len(s.s); i++ {
+				t.Logf("|%c%s", s.ctype, s.s[i])
+			}
+			continue
+		}
+		for _, l := range s.s {
+			t.Logf("|%c%s", s.ctype, l)
+		}
+	}
+}
+
+// DiffLines does a line by line comparison of got and want
 func DiffLines(t *testing.T, got []byte, want []byte) {
 	t.Helper()
 	if !bytes.Equal(got, want) {

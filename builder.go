@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"net/smtp"
+	"net/textproto"
 	"reflect"
 	"strings"
 	"time"
@@ -14,10 +15,11 @@ import (
 // modify the string and byte slices passed in.  Immutability allows the headers or entire message
 // to be reused across multiple threads.
 type MailBuilder struct {
-	to, cc, bcc   []string
-	from, subject string
-	date          time.Time
-	text, html    []byte
+	to, cc, bcc          []string
+	from, subject        string
+	date                 time.Time
+	text, html           []byte
+	inlines, attachments []*Part
 }
 
 // Builder returns an empty MailBuilder struct
@@ -76,6 +78,16 @@ func (p *MailBuilder) HTML(body []byte) *MailBuilder {
 	return &c
 }
 
+// AddAttachment returns a copy of MailBuilder that includes the specified attachment
+func (p *MailBuilder) AddAttachment(b []byte, contentType string, fileName string) *MailBuilder {
+	part := NewPart(nil, contentType)
+	part.Content = b
+	part.FileName = fileName
+	c := *p
+	c.attachments = append(c.attachments, part)
+	return &c
+}
+
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 func (p *MailBuilder) Build() (*Part, error) {
@@ -89,28 +101,53 @@ func (p *MailBuilder) Build() (*Part, error) {
 	if len(p.to)+len(p.cc)+len(p.bcc) == 0 {
 		return nil, errors.New("no recipients (to, cc, bcc) set")
 	}
-	var root *Part
-	if p.text != nil && p.html != nil {
-		// Multipart
-		root = NewPart(nil, ctMultipartAltern)
-		t := NewPart(root, ctTextPlain)
-		root.FirstChild = t
-		t.Content = p.text
-		t.Charset = "utf-8"
-		h := NewPart(root, ctTextHTML)
-		t.NextSibling = h
-		h.Content = p.html
-		h.Charset = "utf-8"
-	} else if p.html != nil {
-		// HTML only
-		root = NewPart(nil, ctTextHTML)
-		root.Content = p.html
-		root.Charset = "utf-8"
-	} else {
-		// Default to text only, even if empty
+	/**
+	 * Fully loaded structure; the presence of text, html, inlines, and attachments will determine
+	 * how much is necessary:
+	 *
+	 * multipart/mixed
+	 * |- multipart/related
+	 * |  |- multipart/alternative
+	 * |  |  |- text/plain
+	 * |  |  `- text/html
+	 * |  `- inlines..
+	 * `- attachments..
+	 *
+	 * We build this tree starting at the leaves, re-rooting as needed.
+	 */
+	var root, part *Part
+	if p.text != nil || p.html == nil {
 		root = NewPart(nil, ctTextPlain)
 		root.Content = p.text
 		root.Charset = "utf-8"
+	}
+	if p.html != nil {
+		part = NewPart(nil, ctTextHTML)
+		part.Content = p.html
+		part.Charset = "utf-8"
+		if root == nil {
+			root = part
+		} else {
+			root.NextSibling = part
+		}
+	}
+	if p.text != nil && p.html != nil {
+		// Wrap Text & HTML bodies
+		part = root
+		root = NewPart(nil, ctMultipartAltern)
+		root.AddChild(part)
+	}
+	if len(p.attachments) > 0 {
+		part = root
+		root = NewPart(nil, ctMultipartMixed)
+		root.AddChild(part)
+		for _, ap := range p.attachments {
+			// Copy attachment Part to isolate mutations
+			part = &Part{}
+			*part = *ap
+			part.Header = make(textproto.MIMEHeader)
+			root.AddChild(part)
+		}
 	}
 	// Headers
 	h := root.Header

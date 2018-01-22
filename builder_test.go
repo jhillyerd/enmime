@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/internal/test"
 )
 
 var strSlice = []string{"word"}
@@ -317,4 +318,63 @@ func TestBuilderMultiBody(t *testing.T) {
 	if got != want {
 		t.Errorf("Charset: %q, want: %q", got, want)
 	}
+}
+
+func TestBuilderAddAttachment(t *testing.T) {
+	a := enmime.Builder().AddAttachment([]byte("same"), "ct", "fn")
+	b := enmime.Builder().AddAttachment([]byte("same"), "ct", "fn")
+	if !a.Equals(b) {
+		t.Error("Same AddAttachment(value) should be equal")
+	}
+
+	a = enmime.Builder().AddAttachment([]byte("foo"), "ct", "fn")
+	b = enmime.Builder().AddAttachment([]byte("bar"), "ct", "fn")
+	if a.Equals(b) {
+		t.Error("Different AddAttachment(value) should not be equal")
+	}
+
+	a = enmime.Builder().AddAttachment([]byte("foo"), "ct", "fn")
+	b = a.AddAttachment([]byte("bar"), "ct", "fn")
+	b1 := b.AddAttachment([]byte("baz"), "ct", "fn")
+	b2 := b.AddAttachment([]byte("bax"), "ct", "fn")
+	if a.Equals(b) || b.Equals(b1) || b1.Equals(b2) {
+		t.Error("AddAttachment() should not mutate receiver, failed")
+	}
+
+	want := "fake JPG data"
+	name := "photo.jpg"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("foo").
+		Subject("foo").
+		To(strSlice).
+		AddAttachment([]byte(want), "image/jpeg", name)
+	root, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.FileName == name })
+	if p == nil {
+		t.Fatalf("Did not find a %q part", name)
+	}
+	got := string(p.Content)
+	if got != want {
+		t.Errorf("Content: %q, want: %q", got, want)
+	}
+
+	// Check structure
+	wantTypes := []string{
+		"multipart/mixed",
+		"multipart/alternative",
+		"text/plain",
+		"text/html",
+		"image/jpeg",
+	}
+	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotTypes := make([]string, 0)
+	for _, p := range gotParts {
+		gotTypes = append(gotTypes, p.ContentType)
+	}
+	test.DiffSlices(t, wantTypes, gotTypes)
 }

@@ -43,6 +43,41 @@ func NewPart(parent *Part, contentType string) *Part {
 	return &Part{Parent: parent, Header: header, ContentType: contentType}
 }
 
+// AddChild adds a child part to either FirstChild or the end of the children NextSibling chain.
+// The child may have siblings and children attached.  This method will set the Parent field on
+// child and all its siblings. Safe to call on nil.
+func (p *Part) AddChild(child *Part) {
+	if p == child {
+		// Prevent paradox
+		return
+	}
+	if p != nil {
+		if p.FirstChild == nil {
+			// Make it the first child
+			p.FirstChild = child
+		} else {
+			// Append to sibling chain
+			current := p.FirstChild
+			for current.NextSibling != nil {
+				current = current.NextSibling
+			}
+			if current == child {
+				// Prevent infinite loop
+				return
+			}
+			current.NextSibling = child
+		}
+	}
+	// Update all new first-level children Parent pointers
+	for c := child; c != nil; c = c.NextSibling {
+		if c == c.NextSibling {
+			// Prevent infinite loop
+			return
+		}
+		c.Parent = p
+	}
+}
+
 // Read returns the decoded & UTF-8 converted content; implements io.Reader.
 func (p *Part) Read(b []byte) (n int, err error) {
 	if p.Utf8Reader == nil {
