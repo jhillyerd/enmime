@@ -47,6 +47,23 @@ func TestEncodePartDefaultHeaders(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-default-headers.golden")
 }
 
+func TestEncodePartQuotedHeaders(t *testing.T) {
+	p := enmime.NewPart(nil, "application/zip")
+	p.Boundary = "enmime-abcdefg0123456789"
+	p.Charset = "binary"
+	p.ContentID = "<mycontentid>"
+	p.Disposition = "attachment"
+	p.FileName = "árvíztűrő tükörfúrógép.zip"
+	p.Content = []byte("ZIPZIPZIP")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-headers.golden")
+}
+
 func TestEncodePartBinaryHeader(t *testing.T) {
 	p := enmime.NewPart(nil, "text/plain")
 	p.Header.Set("Subject", "¡Hola, señor!")
