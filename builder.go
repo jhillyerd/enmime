@@ -31,6 +31,13 @@ func Builder() *MailBuilder {
 	return &MailBuilder{}
 }
 
+// Date returns a copy of MailBuilder with the specified Date header.
+func (p *MailBuilder) Date(date time.Time) *MailBuilder {
+	c := *p
+	c.date = date
+	return &c
+}
+
 // From returns a copy of MailBuilder with the specified From header.
 func (p *MailBuilder) From(name, addr string) *MailBuilder {
 	c := *p
