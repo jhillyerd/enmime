@@ -1,6 +1,7 @@
 package enmime_test
 
 import (
+	"net/mail"
 	"reflect"
 	"testing"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/jhillyerd/enmime/internal/test"
 )
 
-var strSlice = []string{"word"}
+var addrSlice = []mail.Address{{Name: "name", Address: "addr"}}
 
 func TestBuilderEquals(t *testing.T) {
 	var a, b *enmime.MailBuilder
@@ -25,32 +26,32 @@ func TestBuilderEquals(t *testing.T) {
 }
 
 func TestBuilderFrom(t *testing.T) {
-	a := enmime.Builder().From("same")
-	b := enmime.Builder().From("same")
+	a := enmime.Builder().From("name", "same")
+	b := enmime.Builder().From("name", "same")
 	if !a.Equals(b) {
 		t.Error("Same From(value) should be equal")
 	}
 
-	a = enmime.Builder().From("foo")
-	b = enmime.Builder().From("bar")
+	a = enmime.Builder().From("name", "foo")
+	b = enmime.Builder().From("name", "bar")
 	if a.Equals(b) {
 		t.Error("Different From(value) should not be equal")
 	}
 
-	a = enmime.Builder().From("foo")
-	b = a.From("bar")
+	a = enmime.Builder().From("name", "foo")
+	b = a.From("name", "bar")
 	if a.Equals(b) {
 		t.Error("From() should not mutate receiver, failed")
 	}
 
-	want := "from@inbucket.org"
-	a = enmime.Builder().From(want).Subject("foo").To(strSlice)
+	want := mail.Address{Name: "name", Address: "from@inbucket.org"}
+	a = enmime.Builder().From(want.Name, want.Address).Subject("foo").ToAddrs(addrSlice)
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := p.Header.Get("From")
-	if got != want {
+	if got != want.String() {
 		t.Errorf("From: %q, want: %q", got, want)
 	}
 }
@@ -75,7 +76,7 @@ func TestBuilderSubject(t *testing.T) {
 	}
 
 	want := "engaging subject"
-	a = enmime.Builder().Subject(want).From("foo").To(strSlice)
+	a = enmime.Builder().Subject(want).From("name", "foo").ToAddrs(addrSlice)
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -87,27 +88,63 @@ func TestBuilderSubject(t *testing.T) {
 }
 
 func TestBuilderTo(t *testing.T) {
-	a := enmime.Builder().To([]string{"same"})
-	b := enmime.Builder().To([]string{"same"})
+	a := enmime.Builder().To("name", "same")
+	b := enmime.Builder().To("name", "same")
 	if !a.Equals(b) {
 		t.Error("Same To(value) should be equal")
 	}
 
-	a = enmime.Builder().To([]string{"foo"})
-	b = enmime.Builder().To([]string{"bar"})
+	a = enmime.Builder().To("name", "foo")
+	b = enmime.Builder().To("name", "bar")
 	if a.Equals(b) {
 		t.Error("Different To(value) should not be equal")
 	}
 
-	a = enmime.Builder().To([]string{"foo"})
-	b = a.To([]string{"bar"})
+	a = enmime.Builder().To("name", "foo")
+	b = a.To("name", "bar")
 	if a.Equals(b) {
 		t.Error("To() should not mutate receiver, failed")
 	}
 
-	input := []string{"one@inbucket.org", "two@inbucket.org"}
-	want := "one@inbucket.org, two@inbucket.org"
-	a = enmime.Builder().To(input).From("foo").Subject("foo")
+	a = enmime.Builder().From("name", "foo").Subject("foo")
+	a = a.To("one", "one@inbucket.org")
+	a = a.To("two", "two@inbucket.org")
+	want := "\"one\" <one@inbucket.org>, \"two\" <two@inbucket.org>"
+	p, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := p.Header.Get("To")
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("To: %q, want: %q", got, want)
+	}
+}
+
+func TestBuilderToAddrs(t *testing.T) {
+	a := enmime.Builder().ToAddrs([]mail.Address{{Name: "name", Address: "same"}})
+	b := enmime.Builder().ToAddrs([]mail.Address{{Name: "name", Address: "same"}})
+	if !a.Equals(b) {
+		t.Error("Same To(value) should be equal")
+	}
+
+	a = enmime.Builder().ToAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = enmime.Builder().ToAddrs([]mail.Address{{Name: "name", Address: "bar"}})
+	if a.Equals(b) {
+		t.Error("Different To(value) should not be equal")
+	}
+
+	a = enmime.Builder().ToAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = a.ToAddrs([]mail.Address{{Name: "name", Address: "bar"}})
+	if a.Equals(b) {
+		t.Error("To() should not mutate receiver, failed")
+	}
+
+	input := []mail.Address{
+		{Name: "one", Address: "one@inbucket.org"},
+		{Name: "two", Address: "two@inbucket.org"},
+	}
+	want := "\"one\" <one@inbucket.org>, \"two\" <two@inbucket.org>"
+	a = enmime.Builder().ToAddrs(input).From("name", "foo").Subject("foo")
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -119,27 +156,63 @@ func TestBuilderTo(t *testing.T) {
 }
 
 func TestBuilderCC(t *testing.T) {
-	a := enmime.Builder().CC([]string{"same"})
-	b := enmime.Builder().CC([]string{"same"})
+	a := enmime.Builder().CC("name", "same")
+	b := enmime.Builder().CC("name", "same")
 	if !a.Equals(b) {
 		t.Error("Same CC(value) should be equal")
 	}
 
-	a = enmime.Builder().CC([]string{"foo"})
-	b = enmime.Builder().CC([]string{"bar"})
+	a = enmime.Builder().CC("name", "foo")
+	b = enmime.Builder().CC("name", "bar")
 	if a.Equals(b) {
 		t.Error("Different CC(value) should not be equal")
 	}
 
-	a = enmime.Builder().CC([]string{"foo"})
-	b = a.CC([]string{"bar"})
+	a = enmime.Builder().CC("name", "foo")
+	b = a.CC("name", "bar")
 	if a.Equals(b) {
 		t.Error("CC() should not mutate receiver, failed")
 	}
 
-	input := []string{"one@inbucket.org", "two@inbucket.org"}
-	want := "one@inbucket.org, two@inbucket.org"
-	a = enmime.Builder().CC(input).From("foo").Subject("foo")
+	a = enmime.Builder().From("name", "foo").Subject("foo")
+	a = a.CC("one", "one@inbucket.org")
+	a = a.CC("two", "two@inbucket.org")
+	want := "\"one\" <one@inbucket.org>, \"two\" <two@inbucket.org>"
+	p, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := p.Header.Get("CC")
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("CC: %q, want: %q", got, want)
+	}
+}
+
+func TestBuilderCCAddrs(t *testing.T) {
+	a := enmime.Builder().CCAddrs([]mail.Address{{Name: "name", Address: "same"}})
+	b := enmime.Builder().CCAddrs([]mail.Address{{Name: "name", Address: "same"}})
+	if !a.Equals(b) {
+		t.Error("Same CC(value) should be equal")
+	}
+
+	a = enmime.Builder().CCAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = enmime.Builder().CCAddrs([]mail.Address{{Name: "name", Address: "bar"}})
+	if a.Equals(b) {
+		t.Error("Different CC(value) should not be equal")
+	}
+
+	a = enmime.Builder().CCAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = a.CCAddrs([]mail.Address{{Name: "name", Address: "bar"}})
+	if a.Equals(b) {
+		t.Error("CC() should not mutate receiver, failed")
+	}
+
+	input := []mail.Address{
+		{Name: "one", Address: "one@inbucket.org"},
+		{Name: "two", Address: "two@inbucket.org"},
+	}
+	want := "\"one\" <one@inbucket.org>, \"two\" <two@inbucket.org>"
+	a = enmime.Builder().CCAddrs(input).From("name", "foo").Subject("foo")
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -151,28 +224,64 @@ func TestBuilderCC(t *testing.T) {
 }
 
 func TestBuilderBCC(t *testing.T) {
-	a := enmime.Builder().BCC([]string{"same"})
-	b := enmime.Builder().BCC([]string{"same"})
+	a := enmime.Builder().BCC("name", "same")
+	b := enmime.Builder().BCC("name", "same")
 	if !a.Equals(b) {
 		t.Error("Same BCC(value) should be equal")
 	}
 
-	a = enmime.Builder().BCC([]string{"foo"})
-	b = enmime.Builder().BCC([]string{"bar"})
+	a = enmime.Builder().BCC("name", "foo")
+	b = enmime.Builder().BCC("name", "bar")
 	if a.Equals(b) {
 		t.Error("Different BCC(value) should not be equal")
 	}
 
-	a = enmime.Builder().BCC([]string{"foo"})
-	b = a.BCC([]string{"bar"})
+	a = enmime.Builder().BCC("name", "foo")
+	b = a.BCC("name", "bar")
+	if a.Equals(b) {
+		t.Error("BCC() should not mutate receiver, failed")
+	}
+
+	a = enmime.Builder().From("name", "foo").Subject("foo")
+	a = a.BCC("one", "one@inbucket.org")
+	a = a.BCC("two", "two@inbucket.org")
+	want := ""
+	p, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := p.Header.Get("BCC")
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("BCC: %q, want: %q", got, want)
+	}
+}
+
+func TestBuilderBCCAddrs(t *testing.T) {
+	a := enmime.Builder().BCCAddrs([]mail.Address{{Name: "name", Address: "same"}})
+	b := enmime.Builder().BCCAddrs([]mail.Address{{Name: "name", Address: "same"}})
+	if !a.Equals(b) {
+		t.Error("Same BCC(value) should be equal")
+	}
+
+	a = enmime.Builder().BCCAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = enmime.Builder().BCCAddrs([]mail.Address{{Name: "name", Address: "bar"}})
+	if a.Equals(b) {
+		t.Error("Different BCC(value) should not be equal")
+	}
+
+	a = enmime.Builder().BCCAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = a.BCCAddrs([]mail.Address{{Name: "name", Address: "bar"}})
 	if a.Equals(b) {
 		t.Error("BCC() should not mutate receiver, failed")
 	}
 
 	// BCC doesn't show up in headers
-	input := []string{"one@inbucket.org", "two@inbucket.org"}
+	input := []mail.Address{
+		{Name: "one", Address: "one@inbucket.org"},
+		{Name: "two", Address: "two@inbucket.org"},
+	}
 	want := ""
-	a = enmime.Builder().BCC(input).From("foo").Subject("foo")
+	a = enmime.Builder().BCCAddrs(input).From("name", "foo").Subject("foo")
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +312,7 @@ func TestBuilderText(t *testing.T) {
 	}
 
 	want := "test text body"
-	a = enmime.Builder().Text([]byte(want)).From("foo").Subject("foo").To(strSlice)
+	a = enmime.Builder().Text([]byte(want)).From("name", "foo").Subject("foo").ToAddrs(addrSlice)
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -244,7 +353,7 @@ func TestBuilderHTML(t *testing.T) {
 	}
 
 	want := "test html body"
-	a = enmime.Builder().HTML([]byte(want)).From("foo").Subject("foo").To(strSlice)
+	a = enmime.Builder().HTML([]byte(want)).From("name", "foo").Subject("foo").ToAddrs(addrSlice)
 	p, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -271,9 +380,9 @@ func TestBuilderMultiBody(t *testing.T) {
 	a := enmime.Builder().
 		Text([]byte(text)).
 		HTML([]byte(html)).
-		From("foo").
+		From("name", "foo").
 		Subject("foo").
-		To(strSlice)
+		ToAddrs(addrSlice)
 	root, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
@@ -346,9 +455,9 @@ func TestBuilderAddAttachment(t *testing.T) {
 	a = enmime.Builder().
 		Text([]byte("text")).
 		HTML([]byte("html")).
-		From("foo").
+		From("name", "foo").
 		Subject("foo").
-		To(strSlice).
+		ToAddrs(addrSlice).
 		AddAttachment([]byte(want), "image/jpeg", name)
 	root, err := a.Build()
 	if err != nil {
@@ -406,9 +515,9 @@ func TestBuilderAddInline(t *testing.T) {
 	a = enmime.Builder().
 		Text([]byte("text")).
 		HTML([]byte("html")).
-		From("foo").
+		From("name", "foo").
 		Subject("foo").
-		To(strSlice).
+		ToAddrs(addrSlice).
 		AddInline([]byte(want), "image/jpeg", name, cid)
 	root, err := a.Build()
 	if err != nil {
@@ -443,9 +552,9 @@ func TestBuilderFullStructure(t *testing.T) {
 	a := enmime.Builder().
 		Text([]byte("text")).
 		HTML([]byte("html")).
-		From("foo").
+		From("name", "foo").
 		Subject("foo").
-		To(strSlice).
+		ToAddrs(addrSlice).
 		AddAttachment([]byte("attach data"), "image/jpeg", "image.jpg").
 		AddInline([]byte("inline data"), "image/png", "image.png", "")
 	root, err := a.Build()

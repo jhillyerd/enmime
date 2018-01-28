@@ -3,11 +3,13 @@ package enmime
 import (
 	"bytes"
 	"errors"
+	"net/mail"
 	"net/smtp"
 	"net/textproto"
 	"reflect"
-	"strings"
 	"time"
+
+	"github.com/jhillyerd/enmime/internal/stringutil"
 )
 
 // MailBuilder facilitates the easy construction of a MIME message.  Each manipulation method
@@ -15,70 +17,96 @@ import (
 // modify the string and byte slices passed in.  Immutability allows the headers or entire message
 // to be reused across multiple threads.
 type MailBuilder struct {
-	to, cc, bcc          []string
-	from, subject        string
+	to, cc, bcc          []mail.Address
+	from                 mail.Address
+	subject              string
 	date                 time.Time
 	text, html           []byte
 	inlines, attachments []*Part
 }
 
-// Builder returns an empty MailBuilder struct
+// Builder returns an empty MailBuilder struct.
 func Builder() *MailBuilder {
 	return &MailBuilder{}
 }
 
-// From returns a copy of MailBuilder with the specified From header
-func (p *MailBuilder) From(from string) *MailBuilder {
+// From returns a copy of MailBuilder with the specified From header.
+func (p *MailBuilder) From(name, addr string) *MailBuilder {
 	c := *p
-	c.from = from
+	c.from = mail.Address{Name: name, Address: addr}
 	return &c
 }
 
-// Subject returns a copy of MailBuilder with the specified Subject header
+// Subject returns a copy of MailBuilder with the specified Subject header.
 func (p *MailBuilder) Subject(subject string) *MailBuilder {
 	c := *p
 	c.subject = subject
 	return &c
 }
 
-// To returns a copy of MailBuilder with the specified To header
-func (p *MailBuilder) To(to []string) *MailBuilder {
+// To returns a copy of MailBuilder with this name & address appended to the To header.  name may be
+// empty.
+func (p *MailBuilder) To(name, addr string) *MailBuilder {
+	c := *p
+	c.to = append(p.to, mail.Address{Name: name, Address: addr})
+	return &c
+}
+
+// ToAddrs returns a copy of MailBuilder with the specified To addresses.
+func (p *MailBuilder) ToAddrs(to []mail.Address) *MailBuilder {
 	c := *p
 	c.to = to
 	return &c
 }
 
-// CC returns a copy of MailBuilder with the specified Cc header
-func (p *MailBuilder) CC(cc []string) *MailBuilder {
+// CC returns a copy of MailBuilder with this name & address appended to the CC header.  name may be
+// empty.
+func (p *MailBuilder) CC(name, addr string) *MailBuilder {
+	c := *p
+	c.cc = append(p.cc, mail.Address{Name: name, Address: addr})
+	return &c
+}
+
+// CCAddrs returns a copy of MailBuilder with the specified CC addresses.
+func (p *MailBuilder) CCAddrs(cc []mail.Address) *MailBuilder {
 	c := *p
 	c.cc = cc
 	return &c
 }
 
-// BCC returns a copy of MailBuilder with the specified recipients added to the blind CC list.  This
-// method only has an effect if the Send method is used to transmit the message, there is no effect
-// on the parts returned by the Build()
-func (p *MailBuilder) BCC(bcc []string) *MailBuilder {
+// BCC returns a copy of MailBuilder with this name & address appended to the BCC list.  name may be
+// empty.  This method only has an effect if the Send method is used to transmit the message, there
+// is no effect on the parts returned by Build().
+func (p *MailBuilder) BCC(name, addr string) *MailBuilder {
+	c := *p
+	c.bcc = append(p.bcc, mail.Address{Name: name, Address: addr})
+	return &c
+}
+
+// BCCAddrs returns a copy of MailBuilder with the specified as the blind CC list.  This method only
+// has an effect if the Send method is used to transmit the message, there is no effect on the parts
+// returned by Build().
+func (p *MailBuilder) BCCAddrs(bcc []mail.Address) *MailBuilder {
 	c := *p
 	c.bcc = bcc
 	return &c
 }
 
-// Text returns a copy of MailBuilder that will use the provided bytes for its text/plain Part
+// Text returns a copy of MailBuilder that will use the provided bytes for its text/plain Part.
 func (p *MailBuilder) Text(body []byte) *MailBuilder {
 	c := *p
 	c.text = body
 	return &c
 }
 
-// HTML returns a copy of MailBuilder that will use the provided bytes for its text/html Part
+// HTML returns a copy of MailBuilder that will use the provided bytes for its text/html Part.
 func (p *MailBuilder) HTML(body []byte) *MailBuilder {
 	c := *p
 	c.html = body
 	return &c
 }
 
-// AddAttachment returns a copy of MailBuilder that includes the specified attachment
+// AddAttachment returns a copy of MailBuilder that includes the specified attachment.
 func (p *MailBuilder) AddAttachment(b []byte, contentType string, fileName string) *MailBuilder {
 	part := NewPart(nil, contentType)
 	part.Content = b
@@ -109,7 +137,7 @@ func (p *MailBuilder) AddInline(
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 func (p *MailBuilder) Build() (*Part, error) {
 	// Validations
-	if p.from == "" {
+	if p.from.Address == "" {
 		return nil, errors.New("from not set")
 	}
 	if p.subject == "" {
@@ -178,13 +206,13 @@ func (p *MailBuilder) Build() (*Part, error) {
 	}
 	// Headers
 	h := root.Header
-	h.Set("From", p.from)
+	h.Set("From", p.from.String())
 	h.Set("Subject", p.subject)
 	if len(p.to) > 0 {
-		h.Set("To", strings.Join(p.to, ", "))
+		h.Set("To", stringutil.JoinAddress(p.to))
 	}
 	if len(p.cc) > 0 {
-		h.Set("Cc", strings.Join(p.cc, ", "))
+		h.Set("Cc", stringutil.JoinAddress(p.cc))
 	}
 	date := p.date
 	if date.IsZero() {
@@ -207,14 +235,20 @@ func (p *MailBuilder) Send(addr string, a smtp.Auth) error {
 		return err
 	}
 	recips := make([]string, 0, len(p.to)+len(p.cc)+len(p.bcc))
-	recips = append(recips, p.to...)
-	recips = append(recips, p.cc...)
-	recips = append(recips, p.bcc...)
-	return smtp.SendMail(addr, a, p.from, recips, buf.Bytes())
+	for _, a := range p.to {
+		recips = append(recips, a.Address)
+	}
+	for _, a := range p.cc {
+		recips = append(recips, a.Address)
+	}
+	for _, a := range p.bcc {
+		recips = append(recips, a.Address)
+	}
+	return smtp.SendMail(addr, a, p.from.Address, recips, buf.Bytes())
 }
 
 // Equals uses the reflect package to test two MailBuilder structs for equality, primarily for unit
-// tests
+// tests.
 func (p *MailBuilder) Equals(o *MailBuilder) bool {
 	if p == nil {
 		return o == nil
