@@ -17,7 +17,7 @@ import (
 )
 
 // b64Percent determines the percent of non-ASCII characters enmime will tolerate before switching
-// from quoted-printable to base64 encoding
+// from quoted-printable to base64 encoding.
 const b64Percent = 20
 
 type transferEncoding byte
@@ -30,9 +30,9 @@ const (
 
 var crnl = []byte{'\r', '\n'}
 
-// Encode writes this Part and all its children to the specified writer in MIME format
+// Encode writes this Part and all its children to the specified writer in MIME format.
 func (p *Part) Encode(writer io.Writer) error {
-	// Determine content transfer encoding
+	// Determine content transfer encoding.
 	cte := te7Bit
 	if p.Header == nil {
 		p.Header = make(textproto.MIMEHeader)
@@ -40,12 +40,12 @@ func (p *Part) Encode(writer io.Writer) error {
 	if len(p.Content) > 0 {
 		cte = teBase64
 		if p.TextContent() {
-			cte = selectTransferEncodingBytes(p.Content, false)
+			cte = selectTransferEncoding(p.Content, false)
 			if p.Charset == "" {
-				p.Charset = "utf-8" // Default
+				p.Charset = utf8 // Default
 			}
 		}
-		// RFC 2045: 7bit is assumed if CTE header not present
+		// RFC 2045: 7bit is assumed if CTE header not present.
 		switch cte {
 		case teBase64:
 			p.Header.Set(hnContentEncoding, cteBase64)
@@ -53,9 +53,9 @@ func (p *Part) Encode(writer io.Writer) error {
 			p.Header.Set(hnContentEncoding, cteQuotedPrintable)
 		}
 	}
-	// Setup headers
+	// Setup headers.
 	if p.FirstChild != nil && p.Boundary == "" {
-		// Multipart, generate random boundary marker
+		// Multipart, generate random boundary marker.
 		uuid, err := newUUID()
 		if err != nil {
 			return err
@@ -66,7 +66,7 @@ func (p *Part) Encode(writer io.Writer) error {
 		p.Header.Set(hnContentID, p.ContentID)
 	}
 	if p.ContentType != "" {
-		// Build content type header
+		// Build content type header.
 		param := make(map[string]string)
 		if p.Charset != "" {
 			param[hpCharset] = p.Charset
@@ -79,20 +79,20 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 		mt := mime.FormatMediaType(p.ContentType, param)
 		if mt == "" {
-			// there was some error, FormatMediaType couldn't encode it with the params
+			// There was an error, FormatMediaType couldn't encode it with the params.
 			mt = p.ContentType
 		}
 		p.Header.Set(hnContentType, mt)
 	}
 	if p.Disposition != "" {
-		// Build disposition header
+		// Build disposition header.
 		param := make(map[string]string)
 		if p.FileName != "" {
 			param[hpFilename] = quotedString(p.FileName)
 		}
 		p.Header.Set(hnContentDisposition, mime.FormatMediaType(p.Disposition, param))
 	}
-	// Encode this part
+	// Encode this part.
 	b := bufio.NewWriter(writer)
 	if err := p.encodeHeader(b); err != nil {
 		return err
@@ -111,7 +111,7 @@ func (p *Part) Encode(writer io.Writer) error {
 	if p.FirstChild == nil {
 		return b.Flush()
 	}
-	// Encode children
+	// Encode children.
 	endMarker := []byte("\r\n--" + p.Boundary + "--")
 	marker := endMarker[:len(endMarker)-2]
 	c := p.FirstChild
@@ -136,7 +136,7 @@ func (p *Part) Encode(writer io.Writer) error {
 	return b.Flush()
 }
 
-// encodeHeader writes out a sorted list of headers
+// encodeHeader writes out a sorted list of headers.
 func (p *Part) encodeHeader(b *bufio.Writer) error {
 	keys := make([]string, 0, len(p.Header))
 	for k := range p.Header {
@@ -146,11 +146,11 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	for _, k := range keys {
 		for _, v := range p.Header[k] {
 			encv := v
-			switch selectTransferEncoding(v, true) {
+			switch selectTransferEncoding([]byte(v), true) {
 			case teBase64:
-				encv = mime.BEncoding.Encode("utf-8", v)
+				encv = mime.BEncoding.Encode(utf8, v)
 			case teQuoted:
-				encv = mime.QEncoding.Encode("utf-8", v)
+				encv = mime.QEncoding.Encode(utf8, v)
 			}
 			// _ used to prevent early wrapping
 			wb := stringutil.Wrap(76, k, ":_", encv, "\r\n")
@@ -163,7 +163,7 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	return nil
 }
 
-// encodeContent writes out the content in the selected encoding
+// encodeContent writes out the content in the selected encoding.
 func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) {
 	switch cte {
 	case teBase64:
@@ -197,7 +197,7 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 	return err
 }
 
-// newUUID generates a random UUID according to RFC 4122
+// newUUID generates a random UUID according to RFC 4122.
 func newUUID() (string, error) {
 	uuid := make([]byte, 16)
 	n, err := io.ReadFull(rand.Reader, uuid)
@@ -212,15 +212,15 @@ func newUUID() (string, error) {
 		nil
 }
 
-// selectTransferEncoding scans the string for non-ASCII characters and selects 'b' or 'q' encoding
-func selectTransferEncoding(s string, quoteLineBreaks bool) transferEncoding {
-	if len(s) == 0 {
+// selectTransferEncoding scans content for non-ASCII characters and selects 'b' or 'q' encoding.
+func selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncoding {
+	if len(content) == 0 {
 		return te7Bit
 	}
-	// binary chars remaining before we choose b64 encoding
-	threshold := b64Percent * 100 / len(s)
+	// Binary chars remaining before we choose b64 encoding.
+	threshold := b64Percent * 100 / len(content)
 	bincount := 0
-	for _, b := range s {
+	for _, b := range content {
 		if (b < ' ' || b > '~') && b != '\t' {
 			if !quoteLineBreaks && (b == '\r' || b == '\n') {
 				continue
@@ -237,31 +237,7 @@ func selectTransferEncoding(s string, quoteLineBreaks bool) transferEncoding {
 	return teQuoted
 }
 
-// selectTransferEncodingBytes scans the []byte for non-ASCII characters and selects 'b' or 'q' encoding
-func selectTransferEncodingBytes(s []byte, quoteLineBreaks bool) transferEncoding {
-	if len(s) == 0 {
-		return te7Bit
-	}
-	// binary chars remaining before we choose b64 encoding
-	threshold := b64Percent * 100 / len(s)
-	bincount := 0
-	for _, b := range s {
-		if (b < ' ' || b > '~') && b != '\t' {
-			if !quoteLineBreaks && (b == '\r' || b == '\n') {
-				continue
-			}
-			bincount++
-			if bincount >= threshold {
-				return teBase64
-			}
-		}
-	}
-	if bincount == 0 {
-		return te7Bit
-	}
-	return teQuoted
-}
-
+// quotedString escapes non-ASCII characters in s.
 func quotedString(s string) string {
 	if strings.IndexFunc(s, func(r rune) bool { return r&0x80 != 0 }) >= 0 {
 		return strings.Trim(strconv.QuoteToASCII(s), `"`)
