@@ -10,6 +10,8 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/jhillyerd/enmime/internal/stringutil"
 )
@@ -32,10 +34,13 @@ var crnl = []byte{'\r', '\n'}
 func (p *Part) Encode(writer io.Writer) error {
 	// Determine content transfer encoding
 	cte := te7Bit
+	if p.Header == nil {
+		p.Header = make(textproto.MIMEHeader)
+	}
 	if len(p.Content) > 0 {
 		cte = teBase64
 		if p.TextContent() {
-			cte = selectTransferEncoding(string(p.Content), false)
+			cte = selectTransferEncodingBytes(p.Content, false)
 			if p.Charset == "" {
 				p.Charset = "utf-8" // Default
 			}
@@ -49,9 +54,6 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 	}
 	// Setup headers
-	if p.Header == nil {
-		p.Header = make(textproto.MIMEHeader)
-	}
 	if p.FirstChild != nil && p.Boundary == "" {
 		// Multipart, generate random boundary marker
 		uuid, err := newUUID()
@@ -70,18 +72,23 @@ func (p *Part) Encode(writer io.Writer) error {
 			param[hpCharset] = p.Charset
 		}
 		if p.FileName != "" {
-			param[hpName] = p.FileName
+			param[hpName] = quotedString(p.FileName)
 		}
 		if p.Boundary != "" {
 			param[hpBoundary] = p.Boundary
 		}
-		p.Header.Set(hnContentType, mime.FormatMediaType(p.ContentType, param))
+		mt := mime.FormatMediaType(p.ContentType, param)
+		if mt == "" {
+			// there was some error, FormatMediaType couldn't encode it with the params
+			mt = p.ContentType
+		}
+		p.Header.Set(hnContentType, mt)
 	}
 	if p.Disposition != "" {
 		// Build disposition header
 		param := make(map[string]string)
 		if p.FileName != "" {
-			param[hpFilename] = p.FileName
+			param[hpFilename] = quotedString(p.FileName)
 		}
 		p.Header.Set(hnContentDisposition, mime.FormatMediaType(p.Disposition, param))
 	}
@@ -98,30 +105,30 @@ func (p *Part) Encode(writer io.Writer) error {
 			return err
 		}
 	}
-	if p.FirstChild != nil {
-		// Encode children
-		endMarker := []byte("\r\n--" + p.Boundary + "--")
-		marker := endMarker[:len(endMarker)-2]
-		c := p.FirstChild
-		for c != nil {
-			if _, err := b.Write(marker); err != nil {
-				return err
-			}
-			if _, err := b.Write(crnl); err != nil {
-				return err
-			}
-			if err := c.Encode(b); err != nil {
-				return err
-			}
-			c = c.NextSibling
-		}
-		if _, err := b.Write(endMarker); err != nil {
+	if p.FirstChild == nil {
+		return b.Flush()
+	}
+	// Encode children
+	endMarker := []byte("\r\n--" + p.Boundary + "--")
+	marker := endMarker[:len(endMarker)-2]
+	c := p.FirstChild
+	for c != nil {
+		if _, err := b.Write(marker); err != nil {
 			return err
 		}
 		if _, err := b.Write(crnl); err != nil {
 			return err
 		}
-
+		if err := c.Encode(b); err != nil {
+			return err
+		}
+		c = c.NextSibling
+	}
+	if _, err := b.Write(endMarker); err != nil {
+		return err
+	}
+	if _, err := b.Write(crnl); err != nil {
+		return err
 	}
 	return b.Flush()
 }
@@ -226,4 +233,36 @@ func selectTransferEncoding(s string, quoteLineBreaks bool) transferEncoding {
 		return te7Bit
 	}
 	return teQuoted
+}
+
+// selectTransferEncodingBytes scans the []byte for non-ASCII characters and selects 'b' or 'q' encoding
+func selectTransferEncodingBytes(s []byte, quoteLineBreaks bool) transferEncoding {
+	if len(s) == 0 {
+		return te7Bit
+	}
+	// binary chars remaining before we choose b64 encoding
+	threshold := b64Percent * 100 / len(s)
+	bincount := 0
+	for _, b := range s {
+		if (b < ' ' || b > '~') && b != '\t' {
+			if !quoteLineBreaks && (b == '\r' || b == '\n') {
+				continue
+			}
+			bincount++
+			if bincount >= threshold {
+				return teBase64
+			}
+		}
+	}
+	if bincount == 0 {
+		return te7Bit
+	}
+	return teQuoted
+}
+
+func quotedString(s string) string {
+	if strings.IndexFunc(s, func(r rune) bool { return r&0x80 != 0 }) >= 0 {
+		return strings.Trim(strconv.QuoteToASCII(s), `"`)
+	}
+	return s
 }
