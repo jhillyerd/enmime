@@ -176,12 +176,12 @@ func (p *MailBuilder) Build() (*Part, error) {
 	if p.text != nil || p.html == nil {
 		root = NewPart(nil, ctTextPlain)
 		root.Content = p.text
-		root.Charset = "utf-8"
+		root.Charset = utf8
 	}
 	if p.html != nil {
 		part = NewPart(nil, ctTextHTML)
 		part.Content = p.html
-		part.Charset = "utf-8"
+		part.Charset = utf8
 		if root == nil {
 			root = part
 		} else {
@@ -220,11 +220,7 @@ func (p *MailBuilder) Build() (*Part, error) {
 	}
 	// Headers
 	h := root.Header
-	for k, v := range p.header {
-		for _, s := range v {
-			h.Add(k, s)
-		}
-	}
+	h.Set(hnMIMEVersion, "1.0")
 	h.Set("From", p.from.String())
 	h.Set("Subject", p.subject)
 	if len(p.to) > 0 {
@@ -238,6 +234,11 @@ func (p *MailBuilder) Build() (*Part, error) {
 		date = time.Now()
 	}
 	h.Set("Date", date.Format(time.RFC1123Z))
+	for k, v := range p.header {
+		for _, s := range v {
+			h.Add(k, s)
+		}
+	}
 	return root, nil
 }
 

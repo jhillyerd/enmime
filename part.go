@@ -142,13 +142,13 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
-	case "quoted-printable":
+	case cteQuotedPrintable:
 		contentReader = newQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
-	case "base64":
+	case cteBase64:
 		b64cleaner = newBase64Cleaner(contentReader)
 		contentReader = base64.NewDecoder(base64.RawStdEncoding, b64cleaner)
-	case "8bit", "7bit", "binary", "":
+	case cte8Bit, cte7Bit, cteBinary, "":
 		// No decoding required
 	default:
 		// Unknown encoding
@@ -207,7 +207,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 	root.Header = header
 
 	// Content-Type, default is text/plain us-ascii according to RFC 822
-	mediatype := "text/plain"
+	mediatype := ctTextPlain
 	params := map[string]string{
 		"charset": "us-ascii",
 	}

@@ -27,7 +27,9 @@ const (
 
 	// Standard Transfer encodings
 	cte7Bit            = "7bit"
+	cte8Bit            = "8bit"
 	cteBase64          = "base64"
+	cteBinary          = "binary"
 	cteQuotedPrintable = "quoted-printable"
 
 	// Standard MIME header names

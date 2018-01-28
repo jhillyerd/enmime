@@ -61,13 +61,15 @@ func diff(before, after []string) []section {
 	return r
 }
 
-// DiffSlices does a entry by entry comparison of got and want
-func DiffSlices(t *testing.T, got []string, want []string) {
+// DiffStrings does a entry by entry comparison of got and want.
+func DiffStrings(t *testing.T, got []string, want []string) {
 	t.Helper()
 	sections := diff(want, got)
-	if len(sections) > 1 || len(sections) == 1 && sections[0].ctype != ' ' {
-		t.Error("diff -want +got:")
+	if len(sections) == 1 && sections[0].ctype == ' ' {
+		// Equal
+		return
 	}
+	t.Error("diff -want +got:")
 	for _, s := range sections {
 		if s.ctype == ' ' && len(s.s) > 5 {
 			// Omit excess unchanged lines
@@ -86,7 +88,7 @@ func DiffSlices(t *testing.T, got []string, want []string) {
 	}
 }
 
-// DiffLines does a line by line comparison of got and want
+// DiffLines does a line by line comparison of got and want.
 func DiffLines(t *testing.T, got []byte, want []byte) {
 	t.Helper()
 	if !bytes.Equal(got, want) {
@@ -113,6 +115,8 @@ func DiffLines(t *testing.T, got []byte, want []byte) {
 	}
 }
 
+// DiffGolden does a line by comparison of got to the golden file specified by path. If the update
+// flag is true, differing golden files will be updated with lines in got.
 func DiffGolden(t *testing.T, got []byte, path ...string) {
 	t.Helper()
 	pathstr := filepath.Join(path...)

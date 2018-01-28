@@ -485,7 +485,7 @@ func TestBuilderAddAttachment(t *testing.T) {
 	for _, p := range gotParts {
 		gotTypes = append(gotTypes, p.ContentType)
 	}
-	test.DiffSlices(t, gotTypes, wantTypes)
+	test.DiffStrings(t, gotTypes, wantTypes)
 }
 
 func TestBuilderAddInline(t *testing.T) {
@@ -545,7 +545,7 @@ func TestBuilderAddInline(t *testing.T) {
 	for _, p := range gotParts {
 		gotTypes = append(gotTypes, p.ContentType)
 	}
-	test.DiffSlices(t, gotTypes, wantTypes)
+	test.DiffStrings(t, gotTypes, wantTypes)
 }
 
 func TestBuilderFullStructure(t *testing.T) {
@@ -560,6 +560,12 @@ func TestBuilderFullStructure(t *testing.T) {
 	root, err := a.Build()
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	want := "1.0"
+	got := root.Header.Get("MIME-Version")
+	if got != want {
+		t.Errorf("MIME-Version: %q, want: %q", got, want)
 	}
 
 	// Check structure via "parent > child" content types
@@ -581,7 +587,7 @@ func TestBuilderFullStructure(t *testing.T) {
 		}
 		gotTypes = append(gotTypes, pct+" > "+p.ContentType)
 	}
-	test.DiffSlices(t, gotTypes, wantTypes)
+	test.DiffStrings(t, gotTypes, wantTypes)
 }
 
 func TestHeader(t *testing.T) {
@@ -613,5 +619,5 @@ func TestHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := p.Header["X-Test"]
-	test.DiffSlices(t, got, want)
+	test.DiffStrings(t, got, want)
 }

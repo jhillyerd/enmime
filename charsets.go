@@ -18,14 +18,16 @@ import (
 	"golang.org/x/text/transform"
 )
 
+const utf8 = "utf-8"
+
 /* copy from golang.org/x/net/html/charset/table.go */
 var encodings = map[string]struct {
 	e    encoding.Encoding
 	name string
 }{
-	"unicode-1-1-utf-8":   {encoding.Nop, "utf-8"},
-	"utf-8":               {encoding.Nop, "utf-8"},
-	"utf8":                {encoding.Nop, "utf-8"},
+	"unicode-1-1-utf-8":   {encoding.Nop, utf8},
+	"utf-8":               {encoding.Nop, utf8},
+	"utf8":                {encoding.Nop, utf8},
 	"866":                 {charmap.CodePage866, "ibm866"},
 	"cp866":               {charmap.CodePage866, "ibm866"},
 	"csibm866":            {charmap.CodePage866, "ibm866"},
@@ -268,7 +270,7 @@ func init() {
 // convertToUTF8String uses the provided charset to decode a slice of bytes into a normal
 // UTF-8 string.
 func convertToUTF8String(charset string, textBytes []byte) (string, error) {
-	if strings.ToLower(charset) == "utf-8" {
+	if strings.ToLower(charset) == utf8 {
 		return string(textBytes), nil
 	}
 	csentry, ok := encodings[strings.ToLower(charset)]
@@ -289,7 +291,7 @@ func convertToUTF8String(charset string, textBytes []byte) (string, error) {
 //
 // This function is similar to: https://godoc.org/golang.org/x/net/html/charset#NewReaderLabel
 func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
-	if strings.ToLower(charset) == "utf-8" {
+	if strings.ToLower(charset) == utf8 {
 		return input, nil
 	}
 	csentry, ok := encodings[strings.ToLower(charset)]
