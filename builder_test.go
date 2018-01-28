@@ -485,7 +485,7 @@ func TestBuilderAddAttachment(t *testing.T) {
 	for _, p := range gotParts {
 		gotTypes = append(gotTypes, p.ContentType)
 	}
-	test.DiffSlices(t, wantTypes, gotTypes)
+	test.DiffSlices(t, gotTypes, wantTypes)
 }
 
 func TestBuilderAddInline(t *testing.T) {
@@ -545,7 +545,7 @@ func TestBuilderAddInline(t *testing.T) {
 	for _, p := range gotParts {
 		gotTypes = append(gotTypes, p.ContentType)
 	}
-	test.DiffSlices(t, wantTypes, gotTypes)
+	test.DiffSlices(t, gotTypes, wantTypes)
 }
 
 func TestBuilderFullStructure(t *testing.T) {
@@ -581,5 +581,37 @@ func TestBuilderFullStructure(t *testing.T) {
 		}
 		gotTypes = append(gotTypes, pct+" > "+p.ContentType)
 	}
-	test.DiffSlices(t, wantTypes, gotTypes)
+	test.DiffSlices(t, gotTypes, wantTypes)
+}
+
+func TestHeader(t *testing.T) {
+	a := enmime.Builder().Header("name", "same")
+	b := enmime.Builder().Header("name", "same")
+	if !a.Equals(b) {
+		t.Error("Same Header(value) should be equal")
+	}
+
+	a = enmime.Builder().Header("name", "foo")
+	b = enmime.Builder().Header("name", "bar")
+	if a.Equals(b) {
+		t.Error("Different Header(value) should not be equal")
+	}
+
+	a = enmime.Builder().Header("name", "foo")
+	b = a.Header("name", "bar")
+	if a.Equals(b) {
+		t.Error("Header() should not mutate receiver, failed")
+	}
+
+	want := []string{"value one", "another value"}
+	a = enmime.Builder().ToAddrs(addrSlice).From("name", "foo").Subject("foo")
+	for _, s := range want {
+		a = a.Header("X-Test", s)
+	}
+	p, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := p.Header["X-Test"]
+	test.DiffSlices(t, got, want)
 }

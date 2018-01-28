@@ -65,7 +65,7 @@ func diff(before, after []string) []section {
 func DiffSlices(t *testing.T, got []string, want []string) {
 	t.Helper()
 	sections := diff(want, got)
-	if len(sections) > 1 {
+	if len(sections) > 1 || len(sections) == 1 && sections[0].ctype != ' ' {
 		t.Error("diff -want +got:")
 	}
 	for _, s := range sections {

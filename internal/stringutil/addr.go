@@ -11,7 +11,6 @@ func JoinAddress(addrs []mail.Address) string {
 		return ""
 	}
 	buf := &bytes.Buffer{}
-	// BUG(jhillyerd) Does not wrap long lines.
 	for i, a := range addrs {
 		if i > 0 {
 			_, _ = buf.WriteString(", ")

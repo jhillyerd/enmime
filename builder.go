@@ -21,6 +21,7 @@ type MailBuilder struct {
 	from                 mail.Address
 	subject              string
 	date                 time.Time
+	header               textproto.MIMEHeader
 	text, html           []byte
 	inlines, attachments []*Part
 }
@@ -89,6 +90,19 @@ func (p *MailBuilder) BCC(name, addr string) *MailBuilder {
 func (p *MailBuilder) BCCAddrs(bcc []mail.Address) *MailBuilder {
 	c := *p
 	c.bcc = bcc
+	return &c
+}
+
+// Header returns a copy of MailBuilder with the specified value added to the named header.
+func (p *MailBuilder) Header(name, value string) *MailBuilder {
+	c := *p
+	// Copy existing header map
+	h := textproto.MIMEHeader{}
+	for k, v := range p.header {
+		h[k] = v
+	}
+	h.Add(name, value)
+	c.header = h
 	return &c
 }
 
@@ -206,6 +220,11 @@ func (p *MailBuilder) Build() (*Part, error) {
 	}
 	// Headers
 	h := root.Header
+	for k, v := range p.header {
+		for _, s := range v {
+			h.Add(k, s)
+		}
+	}
 	h.Set("From", p.from.String())
 	h.Set("Subject", p.subject)
 	if len(p.to) > 0 {
