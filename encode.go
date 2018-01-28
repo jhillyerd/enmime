@@ -98,6 +98,9 @@ func (p *Part) Encode(writer io.Writer) error {
 		return err
 	}
 	if len(p.Content) > 0 {
+		if _, err := b.Write(crnl); err != nil {
+			return err
+		}
 		if err := p.encodeContent(b, cte); err != nil {
 			return err
 		}
@@ -157,8 +160,7 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 			}
 		}
 	}
-	_, err := b.Write([]byte{'\r', '\n'})
-	return err
+	return nil
 }
 
 // encodeContent writes out the content in the selected encoding
