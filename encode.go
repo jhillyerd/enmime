@@ -79,7 +79,7 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 		mt := mime.FormatMediaType(p.ContentType, param)
 		if mt == "" {
-			// fmt.Printf("cannot encode %q with %q", p.ContentType, param)
+			// there was some error, FormatMediaType couldn't encode it with the params
 			mt = p.ContentType
 		}
 		p.Header.Set(hnContentType, mt)
@@ -261,8 +261,8 @@ func selectTransferEncodingBytes(s []byte, quoteLineBreaks bool) transferEncodin
 }
 
 func quotedString(s string) string {
-	if strings.IndexFunc(s, func(r rune) bool { return r > 127 || r == '"' }) >= 0 {
-		return strconv.QuoteToASCII(s)
+	if strings.IndexFunc(s, func(r rune) bool { return r&0x80 != 0 }) >= 0 {
+		return strings.Trim(strconv.QuoteToASCII(s), `"`)
 	}
 	return s
 }
