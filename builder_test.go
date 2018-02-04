@@ -293,6 +293,38 @@ func TestBuilderBCCAddrs(t *testing.T) {
 	}
 }
 
+func TestBuilderReplyTo(t *testing.T) {
+	a := enmime.Builder().ReplyTo("name", "same")
+	b := enmime.Builder().ReplyTo("name", "same")
+	if !a.Equals(b) {
+		t.Error("Same ReplyTo(value) should be equal")
+	}
+
+	a = enmime.Builder().ReplyTo("name", "foo")
+	b = enmime.Builder().ReplyTo("name", "bar")
+	if a.Equals(b) {
+		t.Error("Different ReplyTo(value) should not be equal")
+	}
+
+	a = enmime.Builder().ReplyTo("name", "foo")
+	b = a.ReplyTo("name", "bar")
+	if a.Equals(b) {
+		t.Error("ReplyTo() should not mutate receiver, failed")
+	}
+
+	a = enmime.Builder().ToAddrs(addrSlice).From("name", "foo").Subject("foo")
+	a = a.ReplyTo("one", "one@inbucket.org")
+	want := "\"one\" <one@inbucket.org>"
+	p, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := p.Header.Get("Reply-To")
+	if got != want {
+		t.Errorf("Reply-To: %q, want: %q", got, want)
+	}
+}
+
 func TestBuilderText(t *testing.T) {
 	a := enmime.Builder().Text([]byte("same"))
 	b := enmime.Builder().Text([]byte("same"))

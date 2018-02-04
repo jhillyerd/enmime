@@ -23,6 +23,7 @@ import (
 type MailBuilder struct {
 	to, cc, bcc          []mail.Address
 	from                 mail.Address
+	replyTo              mail.Address
 	subject              string
 	date                 time.Time
 	header               textproto.MIMEHeader
@@ -107,6 +108,14 @@ func (p *MailBuilder) BCC(name, addr string) *MailBuilder {
 func (p *MailBuilder) BCCAddrs(bcc []mail.Address) *MailBuilder {
 	c := *p
 	c.bcc = bcc
+	return &c
+}
+
+// ReplyTo returns a copy of MailBuilder with this name & address appended to the To header.  name
+// may be empty.
+func (p *MailBuilder) ReplyTo(name, addr string) *MailBuilder {
+	c := *p
+	c.replyTo = mail.Address{Name: name, Address: addr}
 	return &c
 }
 
@@ -298,6 +307,9 @@ func (p *MailBuilder) Build() (*Part, error) {
 	}
 	if len(p.cc) > 0 {
 		h.Set("Cc", stringutil.JoinAddress(p.cc))
+	}
+	if p.replyTo.Address != "" {
+		h.Set("Reply-To", p.replyTo.String())
 	}
 	date := p.date
 	if date.IsZero() {
