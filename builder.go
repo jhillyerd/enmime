@@ -3,9 +3,13 @@ package enmime
 import (
 	"bytes"
 	"errors"
+	"io/ioutil"
+	"mime"
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
+	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -24,11 +28,17 @@ type MailBuilder struct {
 	header               textproto.MIMEHeader
 	text, html           []byte
 	inlines, attachments []*Part
+	err                  error
 }
 
 // Builder returns an empty MailBuilder struct.
 func Builder() *MailBuilder {
 	return &MailBuilder{}
+}
+
+// Error returns the stored error from a file attachment/inline read or nil.
+func (p *MailBuilder) Error() error {
+	return p.err
 }
 
 // Date returns a copy of MailBuilder with the specified Date header.
@@ -132,9 +142,34 @@ func (p *MailBuilder) AddAttachment(b []byte, contentType string, fileName strin
 	part := NewPart(nil, contentType)
 	part.Content = b
 	part.FileName = fileName
+	part.Disposition = cdAttachment
 	c := *p
 	c.attachments = append(c.attachments, part)
 	return &c
+}
+
+// AddFileAttachment returns a copy of MailBuilder that includes the specified attachment.
+// fileName, will be populated from the base name of path.  Content type will be detected from the
+// path extension.
+func (p *MailBuilder) AddFileAttachment(path string) *MailBuilder {
+	c := *p
+	// Only allow first p.err value
+	if c.err != nil {
+		return &c
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		c.err = err
+		return &c
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		c.err = err
+		return &c
+	}
+	name := filepath.Base(path)
+	ctype := mime.TypeByExtension(filepath.Ext(name))
+	return p.AddAttachment(b, ctype, name)
 }
 
 // AddInline returns a copy of MailBuilder that includes the specified inline.  fileName and
@@ -148,15 +183,43 @@ func (p *MailBuilder) AddInline(
 	part := NewPart(nil, contentType)
 	part.Content = b
 	part.FileName = fileName
+	part.Disposition = cdInline
 	part.ContentID = contentID
 	c := *p
 	c.inlines = append(c.inlines, part)
 	return &c
 }
 
+// AddFileInline returns a copy of MailBuilder that includes the specified inline.  fileName and
+// contentID will be populated from the base name of path.  Content type will be detected from the
+// path extension.
+func (p *MailBuilder) AddFileInline(path string) *MailBuilder {
+	c := *p
+	// Only allow first p.err value
+	if c.err != nil {
+		return &c
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		c.err = err
+		return &c
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		c.err = err
+		return &c
+	}
+	name := filepath.Base(path)
+	ctype := mime.TypeByExtension(filepath.Ext(name))
+	return p.AddInline(b, ctype, name, name)
+}
+
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 func (p *MailBuilder) Build() (*Part, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
 	// Validations
 	if p.from.Address == "" {
 		return nil, errors.New("from not set")

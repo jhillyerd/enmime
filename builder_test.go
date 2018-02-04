@@ -2,6 +2,7 @@ package enmime_test
 
 import (
 	"net/mail"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -452,6 +453,7 @@ func TestBuilderAddAttachment(t *testing.T) {
 
 	want := "fake JPG data"
 	name := "photo.jpg"
+	disposition := "attachment"
 	a = enmime.Builder().
 		Text([]byte("text")).
 		HTML([]byte("html")).
@@ -466,6 +468,9 @@ func TestBuilderAddAttachment(t *testing.T) {
 	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.FileName == name })
 	if p == nil {
 		t.Fatalf("Did not find a %q part", name)
+	}
+	if p.Disposition != disposition {
+		t.Errorf("Content disposition: %s, want: %s", p.Disposition, disposition)
 	}
 	got := string(p.Content)
 	if got != want {
@@ -486,6 +491,84 @@ func TestBuilderAddAttachment(t *testing.T) {
 		gotTypes = append(gotTypes, p.ContentType)
 	}
 	test.DiffStrings(t, gotTypes, wantTypes)
+}
+
+func TestBuilderAddFileAttachment(t *testing.T) {
+	a := enmime.Builder().AddFileAttachment("zzzDOESNOTEXIST")
+	if a.Error() == nil {
+		t.Error("Expected an error, got nil")
+	}
+	want := a.Error()
+	_, got := a.Build()
+	if got != want {
+		t.Errorf("Build should abort; got: %v, want: %v", got, want)
+	}
+	b := a.AddFileAttachment("zzzDOESNOTEXIST2")
+	got = b.Error()
+	if got != want {
+		// Only the first error should be stored
+		t.Errorf("Error redefined; got %v, wanted %v", got, want)
+	}
+
+	a = enmime.Builder().From("name", "from")
+	b = a.AddFileAttachment("zzzDOESNOTEXIST")
+	if a.Error() != nil {
+		t.Error("AddFileAttachment error mutated receiver")
+	}
+
+	a = enmime.Builder().AddFileAttachment("builder_test.go")
+	b = enmime.Builder().AddFileAttachment("builder_test.go")
+	if a.Error() != nil {
+		t.Fatalf("Expected no error, got %v", a.Error())
+	}
+	if b.Error() != nil {
+		t.Fatalf("Expected no error, got %v", b.Error())
+	}
+	if !a.Equals(b) {
+		t.Error("Same AddFileAttachment(value) should be equal")
+	}
+
+	a = enmime.Builder().AddFileAttachment("builder_test.go")
+	b = enmime.Builder().AddFileAttachment("builder.go")
+	if a.Error() != nil {
+		t.Fatalf("Expected no error, got %v", a.Error())
+	}
+	if b.Error() != nil {
+		t.Fatalf("Expected no error, got %v", b.Error())
+	}
+	if a.Equals(b) {
+		t.Error("Different AddFileAttachment(value) should not be equal")
+	}
+
+	a = enmime.Builder().AddFileAttachment("builder_test.go")
+	b = a.AddFileAttachment("builder_test.go")
+	b1 := b.AddFileAttachment("builder_test.go")
+	b2 := b.AddFileAttachment("builder.go")
+	if a.Equals(b) || b.Equals(b1) || b1.Equals(b2) {
+		t.Error("AddFileAttachment() should not mutate receiver, failed")
+	}
+
+	name := "fake.png"
+	ctype := "image/png"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("name", "foo").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		AddFileAttachment(filepath.Join("testdata", "attach", "fake.png"))
+	root, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.FileName == name })
+	if p == nil {
+		t.Fatalf("Did not find a %q part", name)
+	}
+	p = root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentType == ctype })
+	if p == nil {
+		t.Fatalf("Did not find a %q part", ctype)
+	}
 }
 
 func TestBuilderAddInline(t *testing.T) {
@@ -511,6 +594,7 @@ func TestBuilderAddInline(t *testing.T) {
 
 	want := "fake JPG data"
 	name := "photo.jpg"
+	disposition := "inline"
 	cid := "<mycid>"
 	a = enmime.Builder().
 		Text([]byte("text")).
@@ -526,6 +610,9 @@ func TestBuilderAddInline(t *testing.T) {
 	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == cid })
 	if p == nil {
 		t.Fatalf("Did not find a %q part", cid)
+	}
+	if p.Disposition != disposition {
+		t.Errorf("Content disposition: %s, want: %s", p.Disposition, disposition)
 	}
 	got := string(p.Content)
 	if got != want {
@@ -546,6 +633,84 @@ func TestBuilderAddInline(t *testing.T) {
 		gotTypes = append(gotTypes, p.ContentType)
 	}
 	test.DiffStrings(t, gotTypes, wantTypes)
+}
+
+func TestBuilderAddFileInline(t *testing.T) {
+	a := enmime.Builder().AddFileInline("zzzDOESNOTEXIST")
+	if a.Error() == nil {
+		t.Error("Expected an error, got nil")
+	}
+	want := a.Error()
+	_, got := a.Build()
+	if got != want {
+		t.Errorf("Build should abort; got: %v, want: %v", got, want)
+	}
+	b := a.AddFileInline("zzzDOESNOTEXIST2")
+	got = b.Error()
+	if got != want {
+		// Only the first error should be stored
+		t.Errorf("Error redefined; got %v, wanted %v", got, want)
+	}
+
+	a = enmime.Builder().From("name", "from")
+	b = a.AddFileInline("zzzDOESNOTEXIST")
+	if a.Error() != nil {
+		t.Error("AddFileInline error mutated receiver")
+	}
+
+	a = enmime.Builder().AddFileInline("builder_test.go")
+	b = enmime.Builder().AddFileInline("builder_test.go")
+	if a.Error() != nil {
+		t.Fatalf("Expected no error, got %v", a.Error())
+	}
+	if b.Error() != nil {
+		t.Fatalf("Expected no error, got %v", b.Error())
+	}
+	if !a.Equals(b) {
+		t.Error("Same AddFileInline(value) should be equal")
+	}
+
+	a = enmime.Builder().AddFileInline("builder_test.go")
+	b = enmime.Builder().AddFileInline("builder.go")
+	if a.Error() != nil {
+		t.Fatalf("Expected no error, got %v", a.Error())
+	}
+	if b.Error() != nil {
+		t.Fatalf("Expected no error, got %v", b.Error())
+	}
+	if a.Equals(b) {
+		t.Error("Different AddFileInline(value) should not be equal")
+	}
+
+	a = enmime.Builder().AddFileInline("builder_test.go")
+	b = a.AddFileInline("builder_test.go")
+	b1 := b.AddFileInline("builder_test.go")
+	b2 := b.AddFileInline("builder.go")
+	if a.Equals(b) || b.Equals(b1) || b1.Equals(b2) {
+		t.Error("AddFileInline() should not mutate receiver, failed")
+	}
+
+	name := "fake.png"
+	ctype := "image/png"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("name", "foo").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		AddFileInline(filepath.Join("testdata", "attach", "fake.png"))
+	root, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == name })
+	if p == nil {
+		t.Fatalf("Did not find a %q part", name)
+	}
+	p = root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentType == ctype })
+	if p == nil {
+		t.Fatalf("Did not find a %q part", ctype)
+	}
 }
 
 func TestBuilderFullStructure(t *testing.T) {
