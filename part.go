@@ -137,7 +137,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	p.rawReader = contentReader
 
 	// Allow later access to Base64 errors
-	var b64cleaner *base64Cleaner
+	var b64cleaner *Base64Cleaner
 
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
@@ -146,7 +146,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 		contentReader = newQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
 	case cteBase64:
-		b64cleaner = newBase64Cleaner(contentReader)
+		b64cleaner = NewBase64Cleaner(contentReader)
 		contentReader = base64.NewDecoder(base64.RawStdEncoding, b64cleaner)
 	case cte8Bit, cte7Bit, cteBinary, "":
 		// No decoding required
@@ -189,7 +189,13 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	p.Utf8Reader = contentReader
 	p.Content = content
 	if b64cleaner != nil {
-		p.Errors = append(p.Errors, b64cleaner.Errors...)
+		for _, err := range b64cleaner.Errors {
+			p.Errors = append(p.Errors, Error{
+				Name:   ErrorMalformedBase64,
+				Detail: err.Error(),
+				Severe: false,
+			})
+		}
 	}
 	return err
 }
