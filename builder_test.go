@@ -543,7 +543,7 @@ func TestBuilderAddFileAttachment(t *testing.T) {
 	}
 
 	a = enmime.Builder().From("name", "from")
-	b = a.AddFileAttachment("zzzDOESNOTEXIST")
+	_ = a.AddFileAttachment("zzzDOESNOTEXIST")
 	if a.Error() != nil {
 		t.Error("AddFileAttachment error mutated receiver")
 	}
@@ -685,7 +685,7 @@ func TestBuilderAddFileInline(t *testing.T) {
 	}
 
 	a = enmime.Builder().From("name", "from")
-	b = a.AddFileInline("zzzDOESNOTEXIST")
+	_ = a.AddFileInline("zzzDOESNOTEXIST")
 	if a.Error() != nil {
 		t.Error("AddFileInline error mutated receiver")
 	}

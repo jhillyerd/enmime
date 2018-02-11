@@ -118,7 +118,7 @@ func EnvelopeToMarkdown(w io.Writer, e *enmime.Envelope, name string) error {
 	return md.Flush()
 }
 
-// printPart pretty prints the Part tree
+// FormatPart pretty prints the Part tree
 func FormatPart(w io.Writer, p *enmime.Part, indent string) {
 	if p == nil {
 		return

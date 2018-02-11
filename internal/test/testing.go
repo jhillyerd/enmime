@@ -11,7 +11,7 @@ import (
 	"github.com/jhillyerd/enmime"
 )
 
-// Syntatic sugar for Part comparisons
+// PartExists indicates to ComparePart that this part is expect to exist
 var PartExists = &enmime.Part{}
 
 // OpenTestData is a utility function to open a file in testdata for reading, it will panic if there
