@@ -9,6 +9,8 @@ import (
 	"mime"
 	"net/textproto"
 	"strings"
+
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 const (
@@ -45,6 +47,8 @@ const (
 	hpFile     = "file"
 	hpFilename = "filename"
 	hpName     = "name"
+
+	utf8 = "utf-8"
 )
 
 var errEmptyHeaderBlock = errors.New("empty header block")
@@ -149,7 +153,7 @@ func decodeHeader(input string) string {
 	}
 
 	dec := new(mime.WordDecoder)
-	dec.CharsetReader = newCharsetReader
+	dec.CharsetReader = coding.NewCharsetReader
 	header, err := dec.DecodeHeader(input)
 	if err != nil {
 		return input
