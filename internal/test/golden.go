@@ -64,6 +64,9 @@ func diff(before, after []string) []section {
 // DiffStrings does a entry by entry comparison of got and want.
 func DiffStrings(t *testing.T, got []string, want []string) {
 	t.Helper()
+	if len(got) == 0 && len(want) == 0 {
+		return
+	}
 	sections := diff(want, got)
 	if len(sections) == 1 && sections[0].ctype == ' ' {
 		// Equal
