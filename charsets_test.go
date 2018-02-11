@@ -1,16 +1,18 @@
-package enmime
+package enmime_test
 
 import (
 	"bytes"
 	"io/ioutil"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime"
 )
 
 // Test an invalid character set with the CharsetReader
 func TestInvalidCharsetReader(t *testing.T) {
 	inputReader := strings.NewReader("unused")
-	outputReader, err := newCharsetReader("INVALIDcharsetZZZ", inputReader)
+	outputReader, err := enmime.NewCharsetReader("INVALIDcharsetZZZ", inputReader)
 	if outputReader != nil {
 		t.Error("outputReader should be nil")
 	}
@@ -33,7 +35,7 @@ func TestCharsetReader(t *testing.T) {
 
 	for _, tt := range testTable {
 		inputReader := bytes.NewReader(tt.input)
-		outputReader, err := newCharsetReader(tt.charset, inputReader)
+		outputReader, err := enmime.NewCharsetReader(tt.charset, inputReader)
 		if err != nil {
 			t.Error("err should be nil, got:", err)
 		}
@@ -61,7 +63,7 @@ func TestFindCharsetInHTML(t *testing.T) {
 	}
 
 	for _, tt := range ttable {
-		got := findCharsetInHTML(tt.input)
+		got := enmime.FindCharsetInHTML(tt.input)
 		if got != tt.want {
 			t.Errorf("Got: %q, want: %q, for: %q", got, tt.want, tt.input)
 		}

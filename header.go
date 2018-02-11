@@ -149,7 +149,7 @@ func decodeHeader(input string) string {
 	}
 
 	dec := new(mime.WordDecoder)
-	dec.CharsetReader = newCharsetReader
+	dec.CharsetReader = NewCharsetReader
 	header, err := dec.DecodeHeader(input)
 	if err != nil {
 		return input

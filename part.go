@@ -163,7 +163,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	if valid && !detectAttachmentHeader(p.Header) {
 		// decodedReader is good; build character set conversion reader
 		if p.Charset != "" {
-			if reader, err := newCharsetReader(p.Charset, contentReader); err == nil {
+			if reader, err := NewCharsetReader(p.Charset, contentReader); err == nil {
 				contentReader = reader
 			} else {
 				// Try to parse charset again here to see if we can salvage some badly formed ones
@@ -171,7 +171,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 				charsetp := strings.Split(p.Charset, "=")
 				if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
 					p.Charset = charsetp[1]
-					if reader, err := newCharsetReader(p.Charset, contentReader); err == nil {
+					if reader, err := NewCharsetReader(p.Charset, contentReader); err == nil {
 						contentReader = reader
 					} else {
 						// Failed to get a conversion reader
