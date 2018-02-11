@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jaytaylor/html2text"
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 // Envelope is a simplified wrapper for MIME email messages.
@@ -151,9 +152,9 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 		e.HTML = rawHTML
 		if charset == "" {
 			// Search for charset in HTML metadata
-			if charset = FindCharsetInHTML(rawHTML); charset != "" {
+			if charset = coding.FindCharsetInHTML(rawHTML); charset != "" {
 				// Found charset in HTML
-				if convHTML, err := ConvertToUTF8String(charset, root.Content); err == nil {
+				if convHTML, err := coding.ConvertToUTF8String(charset, root.Content); err == nil {
 					// Successful conversion
 					e.HTML = convHTML
 				} else {

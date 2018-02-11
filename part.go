@@ -12,6 +12,8 @@ import (
 	"net/textproto"
 	"strconv"
 	"strings"
+
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
@@ -137,16 +139,16 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	p.rawReader = contentReader
 
 	// Allow later access to Base64 errors
-	var b64cleaner *Base64Cleaner
+	var b64cleaner *coding.Base64Cleaner
 
 	// Build content decoding reader
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
 	case cteQuotedPrintable:
-		contentReader = NewQPCleaner(contentReader)
+		contentReader = coding.NewQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
 	case cteBase64:
-		b64cleaner = NewBase64Cleaner(contentReader)
+		b64cleaner = coding.NewBase64Cleaner(contentReader)
 		contentReader = base64.NewDecoder(base64.RawStdEncoding, b64cleaner)
 	case cte8Bit, cte7Bit, cteBinary, "":
 		// No decoding required
@@ -163,7 +165,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	if valid && !detectAttachmentHeader(p.Header) {
 		// decodedReader is good; build character set conversion reader
 		if p.Charset != "" {
-			if reader, err := NewCharsetReader(p.Charset, contentReader); err == nil {
+			if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
 				contentReader = reader
 			} else {
 				// Try to parse charset again here to see if we can salvage some badly formed ones
@@ -171,7 +173,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 				charsetp := strings.Split(p.Charset, "=")
 				if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
 					p.Charset = charsetp[1]
-					if reader, err := NewCharsetReader(p.Charset, contentReader); err == nil {
+					if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
 						contentReader = reader
 					} else {
 						// Failed to get a conversion reader

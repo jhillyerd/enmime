@@ -1,4 +1,4 @@
-package enmime
+package coding
 
 import (
 	"fmt"

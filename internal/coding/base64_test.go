@@ -1,11 +1,11 @@
-package enmime_test
+package coding_test
 
 import (
 	"io"
 	"strings"
 	"testing"
 
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 func TestBase64Cleaner(t *testing.T) {
@@ -19,7 +19,7 @@ func TestBase64Cleaner(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.want, func(t *testing.T) {
-			cleaner := enmime.NewBase64Cleaner(strings.NewReader(tc.input))
+			cleaner := coding.NewBase64Cleaner(strings.NewReader(tc.input))
 			n, err := cleaner.Read(buf)
 			if err != nil && err != io.EOF {
 				t.Fatal(err)
@@ -49,7 +49,7 @@ func TestBase64CleanerErrors(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.want, func(t *testing.T) {
-			cleaner := enmime.NewBase64Cleaner(strings.NewReader(tc.input))
+			cleaner := coding.NewBase64Cleaner(strings.NewReader(tc.input))
 			n, err := cleaner.Read(buf)
 			if err != nil && err != io.EOF {
 				t.Fatal(err)

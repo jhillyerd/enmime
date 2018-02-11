@@ -1,4 +1,4 @@
-package enmime_test
+package coding_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 func TestQPCleaner(t *testing.T) {
@@ -28,7 +28,7 @@ func TestQPCleaner(t *testing.T) {
 
 	for _, tc := range ttable {
 		// Run cleaner
-		cleaner := enmime.NewQPCleaner(strings.NewReader(tc.input))
+		cleaner := coding.NewQPCleaner(strings.NewReader(tc.input))
 		buf := new(bytes.Buffer)
 		_, err := buf.ReadFrom(cleaner)
 		if err != nil {
@@ -47,7 +47,7 @@ func TestQPCleanerOverflow(t *testing.T) {
 	input := bytes.Repeat([]byte("pédagogues =\r\n"), 1000)
 	want := bytes.Repeat([]byte("p=C3=A9dagogues =\r\n"), 1000)
 	inbuf := bytes.NewBuffer(input)
-	qp := enmime.NewQPCleaner(inbuf)
+	qp := coding.NewQPCleaner(inbuf)
 
 	offset := 0
 	for len := 1000; len > 0; len -= 100 {
@@ -78,7 +78,7 @@ func (r peekBreakReader) Read(p []byte) (int, error) {
 }
 
 func TestQPPeekError(t *testing.T) {
-	qp := enmime.NewQPCleaner(peekBreakReader("=a"))
+	qp := coding.NewQPCleaner(peekBreakReader("=a"))
 
 	buf := make([]byte, 100)
 	_, err := qp.Read(buf)
@@ -94,7 +94,7 @@ func BenchmarkQPCleaner(b *testing.B) {
 	input := bytes.Repeat([]byte("pédagogues =\r\n"), b.N)
 	b.SetBytes(int64(len(input)))
 	inbuf := bytes.NewBuffer(input)
-	qp := enmime.NewQPCleaner(inbuf)
+	qp := coding.NewQPCleaner(inbuf)
 	p := make([]byte, 1024)
 	b.StartTimer()
 
