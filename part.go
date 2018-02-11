@@ -143,7 +143,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	encoding := p.Header.Get(hnContentEncoding)
 	switch strings.ToLower(encoding) {
 	case cteQuotedPrintable:
-		contentReader = newQPCleaner(contentReader)
+		contentReader = NewQPCleaner(contentReader)
 		contentReader = quotedprintable.NewReader(contentReader)
 	case cteBase64:
 		b64cleaner = NewBase64Cleaner(contentReader)
