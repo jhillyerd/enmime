@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
@@ -85,6 +86,38 @@ func TestBuilderSubject(t *testing.T) {
 	got := p.Header.Get("Subject")
 	if got != want {
 		t.Errorf("Subject: %q, want: %q", got, want)
+	}
+}
+
+func TestBuilderDate(t *testing.T) {
+	a := enmime.Builder().Date(time.Date(2017, 1, 1, 13, 14, 15, 16, time.UTC))
+	b := enmime.Builder().Date(time.Date(2017, 1, 1, 13, 14, 15, 16, time.UTC))
+	if !a.Equals(b) {
+		t.Error("Same Date(value) should be equal")
+	}
+
+	a = enmime.Builder().Date(time.Date(2017, 1, 1, 13, 14, 15, 16, time.UTC))
+	b = enmime.Builder().Date(time.Date(2018, 1, 1, 13, 14, 15, 16, time.UTC))
+	if a.Equals(b) {
+		t.Error("Different Date(value) should not be equal")
+	}
+
+	a = enmime.Builder().Date(time.Date(2017, 1, 1, 13, 14, 15, 16, time.UTC))
+	b = a.Date(time.Date(2018, 1, 1, 13, 14, 15, 16, time.UTC))
+	if a.Equals(b) {
+		t.Error("Date() should not mutate receiver, failed")
+	}
+
+	input := time.Date(2017, 1, 1, 13, 14, 15, 16, time.UTC)
+	want := "Sun, 01 Jan 2017 13:14:15 +0000"
+	a = enmime.Builder().Date(input).Subject("hi").From("name", "foo").ToAddrs(addrSlice)
+	p, err := a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := p.Header.Get("Date")
+	if got != want {
+		t.Errorf("Date: %q, want: %q", got, want)
 	}
 }
 
@@ -742,6 +775,59 @@ func TestBuilderAddFileInline(t *testing.T) {
 	p = root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentType == ctype })
 	if p == nil {
 		t.Fatalf("Did not find a %q part", ctype)
+	}
+}
+
+func TestValidation(t *testing.T) {
+	_, err := enmime.Builder().
+		To("name", "address").
+		From("name", "address").
+		Subject("subject").
+		Build()
+	if err != nil {
+		t.Errorf("error %v, expected nil", err)
+	}
+
+	_, err = enmime.Builder().
+		CC("name", "address").
+		From("name", "address").
+		Subject("subject").
+		Build()
+	if err != nil {
+		t.Errorf("error %v, expected nil", err)
+	}
+
+	_, err = enmime.Builder().
+		BCC("name", "address").
+		From("name", "address").
+		Subject("subject").
+		Build()
+	if err != nil {
+		t.Errorf("error %v, expected nil", err)
+	}
+
+	_, err = enmime.Builder().
+		From("name", "address").
+		Subject("subject").
+		Build()
+	if err == nil {
+		t.Error("error nil, expected value")
+	}
+
+	_, err = enmime.Builder().
+		To("name", "address").
+		Subject("subject").
+		Build()
+	if err == nil {
+		t.Error("error nil, expected value")
+	}
+
+	_, err = enmime.Builder().
+		To("name", "address").
+		From("name", "address").
+		Build()
+	if err == nil {
+		t.Error("error nil, expected value")
 	}
 }
 
