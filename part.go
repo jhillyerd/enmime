@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
 	"strconv"
@@ -245,44 +244,6 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 
 	return root, nil
-}
-
-func parseMediaType(ctype string) (string, map[string]string, error) {
-	// Parse Content-Type header
-	mtype, mparams, err := mime.ParseMediaType(ctype)
-	if err != nil {
-		// Small hack to remove harmless charset duplicate params
-		mctype := parseBadContentType(ctype, ";")
-		mtype, mparams, err = mime.ParseMediaType(mctype)
-		if err != nil {
-			// Some badly formed content-types forget to send a ; between fields
-			mctype := parseBadContentType(ctype, " ")
-			if strings.Contains(mctype, `name=""`) {
-				mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-			}
-			mtype, mparams, err = mime.ParseMediaType(mctype)
-			if err != nil {
-				return "", make(map[string]string), err
-			}
-		}
-	}
-	return mtype, mparams, err
-}
-
-func parseBadContentType(ctype, sep string) string {
-	cp := strings.Split(ctype, sep)
-	mctype := ""
-	for _, p := range cp {
-		if strings.Contains(p, "=") {
-			params := strings.Split(p, "=")
-			if !strings.Contains(mctype, params[0]+"=") {
-				mctype += p + ";"
-			}
-		} else {
-			mctype += p + ";"
-		}
-	}
-	return mctype
 }
 
 // parseParts recursively parses a mime multipart document and sets each Part's PartID.

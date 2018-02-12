@@ -158,6 +158,40 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 	}
 }
 
+func TestFixMangledMediaType(t *testing.T) {
+	testCases := []struct {
+		input, sep, want string
+	}{
+		{
+			input: "",
+			sep:   "",
+			want:  ""},
+		{
+			input: "application/pdf name=\"file.pdf\"",
+			sep:   " ",
+			want:  "application/pdf;name=\"file.pdf\";",
+		},
+		{
+			input: "one/two; name=\"file.two\"; name=\"file.two\"",
+			sep:   ";",
+			want:  "one/two; name=\"file.two\";",
+		},
+		{
+			input: "one/two name=\"file.two\" name=\"file.two\"",
+			sep:   " ",
+			want:  "one/two;name=\"file.two\";",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := fixMangledMediaType(tc.input, tc.sep)
+			if got != tc.want {
+				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestReadHeader(t *testing.T) {
 	prefix := "From: hooman\n \n being\n"
 	suffix := "Subject: hi\n\nPart body\n"
