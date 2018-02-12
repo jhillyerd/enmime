@@ -22,6 +22,7 @@ func TestPlainTextPart(t *testing.T) {
 	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "0",
 	}
 	test.ComparePart(t, p, wantp)
 
@@ -50,6 +51,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "us-ascii",
+		PartID:      "0",
 	}
 	test.ComparePart(t, p, wantp)
 
@@ -78,6 +80,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "utf-8",
+		PartID:      "0",
 	}
 	test.ComparePart(t, p, wantp)
 

@@ -99,6 +99,30 @@ func (p *Part) TextContent() bool {
 		strings.HasPrefix(p.ContentType, ctMultipartPrefix)
 }
 
+// setupHeaders reads the header, then populates the MIME header values for this Part.
+func (p *Part) setupHeaders(r *bufio.Reader) error {
+	header, err := readHeader(r, p)
+	if err != nil {
+		return err
+	}
+	p.Header = header
+	ctype := header.Get(hnContentType)
+	if ctype == "" {
+		p.addWarning(ErrorMissingContentType, "MIME parts should have a Content-Type header")
+	} else {
+		// Parse Content-Type header
+		mtype, mparams, err := parseMediaType(ctype)
+		if err != nil {
+			return err
+		}
+		p.ContentType = mtype
+		// Set disposition, filename, charset if available
+		p.setupContentHeaders(mparams)
+		p.Boundary = mparams[hpBoundary]
+	}
+	return nil
+}
+
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
@@ -204,7 +228,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
 func ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
-	root := &Part{}
+	root := &Part{PartID: "0"}
 
 	// Read header
 	header, err := readHeader(br, root)
@@ -246,23 +270,12 @@ func ReadParts(r io.Reader) (*Part, error) {
 	return root, nil
 }
 
-// parseParts recursively parses a mime multipart document and sets each Part's PartID.
+// parseParts recursively parses a MIME multipart document and sets each Parts PartID.
 func parseParts(parent *Part, reader *bufio.Reader) error {
-	var prevSibling *Part
-
 	firstRecursion := parent.Parent == nil
-	// Set root PartID
-	if firstRecursion {
-		parent.PartID = "0"
-	}
-
-	var indexPartID int
-
-	// Loop over MIME parts
+	// Loop over MIME boundaries.
 	br := newBoundaryReader(reader, parent.Boundary)
-	for {
-		indexPartID++
-
+	for indexPartID := 1; true; indexPartID++ {
 		next, err := br.Next()
 		if err != nil && err != io.EOF {
 			return err
@@ -270,93 +283,57 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		if !next {
 			break
 		}
-		p := &Part{Parent: parent}
-
-		// Set this Part's PartID, indicating its position within the MIME Part Tree
+		p := &Part{}
+		// Set this Part's PartID, indicating its position within the MIME Part tree.
 		if firstRecursion {
 			p.PartID = strconv.Itoa(indexPartID)
 		} else {
-			p.PartID = p.Parent.PartID + "." + strconv.Itoa(indexPartID)
+			p.PartID = parent.PartID + "." + strconv.Itoa(indexPartID)
 		}
-
+		// Look for part header.
 		bbr := bufio.NewReader(br)
-		header, err := readHeader(bbr, p)
-		p.Header = header
+		err = p.setupHeaders(bbr)
 		if err == errEmptyHeaderBlock {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.
 			if _, err = br.Next(); err != nil {
 				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
-					// There are no more Parts, but the error belongs to a sibling or parent,
-					// because this Part doesn't actually exist.
-					owner := parent
-					if prevSibling != nil {
-						owner = prevSibling
-					}
-					owner.addWarning(
-						ErrorMissingBoundary,
-						"Boundary %q was not closed correctly",
+					// There are no more Parts. The error must belong to the parent, because this
+					// part doesn't exist.
+					parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
 						parent.Boundary)
 					break
 				}
-				return fmt.Errorf("Error at boundary %v: %v", parent.Boundary, err)
+				return fmt.Errorf("error at boundary %v: %v", parent.Boundary, err)
 			}
 		} else if err != nil {
 			return err
 		}
-
-		ctype := header.Get(hnContentType)
-		if ctype == "" {
-			p.addWarning(
-				ErrorMissingContentType,
-				"MIME parts should have a Content-Type header")
-		} else {
-			// Parse Content-Type header
-			mtype, mparams, err := parseMediaType(ctype)
-			if err != nil {
+		// Insert this Part into the MIME tree.
+		parent.AddChild(p)
+		if p.Boundary == "" {
+			// Content is text or data; build content reader pipeline.
+			if err := p.buildContentReaders(bbr); err != nil {
 				return err
 			}
-			p.ContentType = mtype
-
-			// Set disposition, filename, charset if available
-			p.setupContentHeaders(mparams)
-			p.Boundary = mparams[hpBoundary]
-		}
-
-		// Insert this Part into the MIME tree
-		if prevSibling != nil {
-			prevSibling.NextSibling = p
 		} else {
-			parent.FirstChild = p
-		}
-		prevSibling = p
-
-		if p.Boundary != "" {
-			// Content is another multipart
+			// Content is another multipart.
 			err = parseParts(p, bbr)
 			if err != nil {
 				return err
 			}
-		} else {
-			// Content is text or data: build content reader pipeline
-			if err := p.buildContentReaders(bbr); err != nil {
-				return err
-			}
 		}
 	}
-
-	// Store any content following the closing boundary marker into the epilogue
-	epilogue := new(bytes.Buffer)
-	if _, err := io.Copy(epilogue, reader); err != nil {
+	// Store any content following the closing boundary marker into the epilogue.
+	epilogue, err := ioutil.ReadAll(reader)
+	if err != nil {
 		return err
 	}
-	parent.Epilogue = epilogue.Bytes()
-
+	parent.Epilogue = epilogue
 	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
-	// i.e. it is the root of its MIME Part subtree
+	// i.e. it is the root of its MIME Part subtree.
 	if !firstRecursion {
 		parent.PartID += ".0"
 	}
-
 	return nil
 }
