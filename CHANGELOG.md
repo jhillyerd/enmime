@@ -4,6 +4,12 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Encoded filenames now have unicode accents stripped instead of escaped, making
+  them more readable.
+
 ## 0.1 - 2018-02-10
 
 ### Added

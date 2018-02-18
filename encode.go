@@ -8,8 +8,6 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/jhillyerd/enmime/internal/stringutil"
 )
@@ -97,7 +95,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		// Build content type header.
 		param := make(map[string]string)
 		setParamValue(param, hpCharset, p.Charset)
-		setParamValue(param, hpName, quotedString(p.FileName))
+		setParamValue(param, hpName, stringutil.ToASCII(p.FileName))
 		setParamValue(param, hpBoundary, p.Boundary)
 		mt := mime.FormatMediaType(p.ContentType, param)
 		if mt == "" {
@@ -109,7 +107,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	if p.Disposition != "" {
 		// Build disposition header.
 		param := make(map[string]string)
-		setParamValue(param, hpFilename, quotedString(p.FileName))
+		setParamValue(param, hpFilename, stringutil.ToASCII(p.FileName))
 		mt := mime.FormatMediaType(p.Disposition, param)
 		if mt == "" {
 			// There was an error, FormatMediaType couldn't encode the params.
@@ -198,14 +196,6 @@ func selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncodi
 		return te7Bit
 	}
 	return teQuoted
-}
-
-// quotedString escapes non-ASCII characters in s.
-func quotedString(s string) string {
-	if strings.IndexFunc(s, func(r rune) bool { return r&0x80 != 0 }) >= 0 {
-		return strings.Trim(strconv.QuoteToASCII(s), `"`)
-	}
-	return s
 }
 
 // setParamValue will ignore empty values

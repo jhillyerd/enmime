@@ -53,7 +53,7 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 	p.Charset = "binary"
 	p.ContentID = "<mycontentid>"
 	p.Disposition = "attachment"
-	p.FileName = "árvíztűrő tükörfúrógép.zip"
+	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
 	p.Content = []byte("ZIPZIPZIP")
 
 	b := &bytes.Buffer{}
