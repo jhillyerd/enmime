@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -95,7 +96,7 @@ func DiffStrings(t *testing.T, got []string, want []string) {
 func DiffLines(t *testing.T, got []byte, want []byte) {
 	t.Helper()
 	if !bytes.Equal(got, want) {
-		t.Error("diff -want +got:")
+		b := bytes.NewBufferString("diff -want +got:\n")
 		glines := strings.Split(string(got), "\n")
 		wlines := strings.Split(string(want), "\n")
 		sections := diff(wlines, glines)
@@ -103,18 +104,19 @@ func DiffLines(t *testing.T, got []byte, want []byte) {
 			if s.ctype == ' ' && len(s.s) > 5 {
 				// Omit excess unchanged lines
 				for i := 0; i < 2; i++ {
-					t.Logf("|%c%s", s.ctype, s.s[i])
+					fmt.Fprintf(b, "|%c%s\n", s.ctype, s.s[i])
 				}
-				t.Log("...")
+				b.WriteString("...\n")
 				for i := len(s.s) - 2; i < len(s.s); i++ {
-					t.Logf("|%c%s", s.ctype, s.s[i])
+					fmt.Fprintf(b, "|%c%s\n", s.ctype, s.s[i])
 				}
 				continue
 			}
 			for _, l := range s.s {
-				t.Logf("|%c%s", s.ctype, l)
+				fmt.Fprintf(b, "|%c%s\n", s.ctype, l)
 			}
 		}
+		t.Error(b.String())
 	}
 }
 
@@ -138,7 +140,7 @@ func DiffGolden(t *testing.T, got []byte, path ...string) {
 				t.Fatal(err)
 			}
 		} else {
-			t.Errorf("Test output did not match %s", pathstr)
+			t.Errorf("Test output did not match %s\nTo update golden file, run: go test -update", pathstr)
 			// Fail test with differences
 			DiffLines(t, got, golden)
 		}
