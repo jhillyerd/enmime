@@ -80,6 +80,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	wantp = &enmime.Part{
 		ContentType: "text/plain",
 		Charset:     "utf-8",
+		Disposition: "inline",
 		PartID:      "0",
 	}
 	test.ComparePart(t, p, wantp)
@@ -267,6 +268,23 @@ func TestPartEmptyHeader(t *testing.T) {
 
 	want = "An HTML section"
 	test.ContentContainsString(t, p.Content, want)
+}
+
+func TestPartHeaders(t *testing.T) {
+	r := test.OpenTestData("parts", "header-only.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "text/html"
+	if p.ContentType != want {
+		t.Errorf("ContentType %q, want %q", p.ContentType, want)
+	}
+	want = "file.html"
+	if p.FileName != want {
+		t.Errorf("FileName %q, want %q", p.FileName, want)
+	}
 }
 
 func TestMultiMixedParts(t *testing.T) {
