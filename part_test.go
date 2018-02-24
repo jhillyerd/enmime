@@ -285,6 +285,18 @@ func TestPartHeaders(t *testing.T) {
 	if p.FileName != want {
 		t.Errorf("FileName %q, want %q", p.FileName, want)
 	}
+	want = "utf-8"
+	if p.Charset != want {
+		t.Errorf("Charset %q, want %q", p.Charset, want)
+	}
+	want = "inline"
+	if p.Disposition != want {
+		t.Errorf("Disposition %q, want %q", p.Disposition, want)
+	}
+	want = "part123456@inbucket.org"
+	if p.ContentID != want {
+		t.Errorf("ContentID %q, want %q", p.ContentID, want)
+	}
 }
 
 func TestMultiMixedParts(t *testing.T) {

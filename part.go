@@ -123,6 +123,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	// Set disposition, filename, charset if available
 	p.setupContentHeaders(mparams)
 	p.Boundary = mparams[hpBoundary]
+	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
 	return nil
 }
 
