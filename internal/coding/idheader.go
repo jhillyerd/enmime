@@ -19,3 +19,9 @@ func FromIDHeader(v string) string {
 	}
 	return r
 }
+
+// ToIDHeader encodes a Content-ID or Message-ID header value (RFC 2392) from a utf-8 string.
+func ToIDHeader(v string) string {
+	v = url.QueryEscape(v)
+	return "<" + strings.Replace(v, "%40", "@", -1) + ">"
+}

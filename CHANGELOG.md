@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Encoded filenames now have unicode accents stripped instead of escaped, making
   them more readable.
+- Part.ContentID
+  - is now properly encoded into the headers when using the builder
+  - is now populated from headers when decoding messages
 
 ## 0.1 - 2018-02-10
 

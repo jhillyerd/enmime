@@ -9,6 +9,7 @@ import (
 	"net/textproto"
 	"sort"
 
+	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
 )
 
@@ -89,7 +90,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		p.Boundary = "enmime-" + stringutil.UUID()
 	}
 	if p.ContentID != "" {
-		p.Header.Set(hnContentID, p.ContentID)
+		p.Header.Set(hnContentID, coding.ToIDHeader(p.ContentID))
 	}
 	if p.ContentType != "" {
 		// Build content type header.
