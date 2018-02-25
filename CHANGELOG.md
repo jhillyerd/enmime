@@ -10,8 +10,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Encoded filenames now have unicode accents stripped instead of escaped, making
   them more readable.
 - Part.ContentID
-  - is now properly encoded into the headers when using the builder
-  - is now populated from headers when decoding messages
+  - is now properly encoded into the headers when using the builder.
+  - is now populated from headers when decoding messages.
+- Update go doc, add info about headers and errors.
 
 ## 0.1 - 2018-02-10
 
@@ -25,9 +26,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 1.  Create release branch: `git flow release start 1.x.0`
 2.  Update CHANGELOG.md:
-    - Ensure *Unreleased* section is up to date
+    - Ensure *Unreleased* section is up to date.
     - Rename *Unreleased* section to release name and date.
-    - Add new GitHub `/compare` link
+    - Add new GitHub `/compare` link.
 3.  Run tests
 4.  Commit changes and merge release: `git flow release finish`
 
