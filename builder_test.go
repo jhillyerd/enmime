@@ -1,6 +1,7 @@
 package enmime_test
 
 import (
+	"bytes"
 	"net/mail"
 	"path/filepath"
 	"reflect"
@@ -903,4 +904,24 @@ func TestHeader(t *testing.T) {
 	}
 	got := p.Header["X-Test"]
 	test.DiffStrings(t, got, want)
+}
+
+func TestBuilderQPHeaders(t *testing.T) {
+	msg := enmime.Builder().
+		To("Patrik Fältström", "paf@nada.kth.se").
+		To("Keld Jørn Simonsen", "keld@dkuug.dk").
+		From("Olle Järnefors", "ojarnef@admin.kth.se").
+		Subject("RFC 2047").
+		Date(time.Date(2017, 1, 1, 13, 14, 15, 16, time.UTC))
+	p, err := msg.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := &bytes.Buffer{}
+	p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "build-qp-addr-headers.golden")
 }
