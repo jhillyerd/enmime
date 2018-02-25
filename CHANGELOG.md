@@ -4,7 +4,7 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2018-02-24
 
 ### Changed
 - Encoded filenames now have unicode accents stripped instead of escaped, making
@@ -14,12 +14,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   - is now populated from headers when decoding messages.
 - Update go doc, add info about headers and errors.
 
-## 0.1 - 2018-02-10
+### Fixed
+- Part.Read() and Part.Utf8Reader, they are deprecated but should continue to
+  function until 1.0.0.
+
+
+## 0.1.0 - 2018-02-10
 
 ### Added
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.2.0]:      https://github.com/jhillyerd/enmime/compare/v0.1.0...v0.2.0
 
 
 ## Release Checklist
