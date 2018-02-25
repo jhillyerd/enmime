@@ -215,7 +215,7 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	}
 	// Messy until Utf8Reader is removed
 	content, err := ioutil.ReadAll(contentReader)
-	p.Utf8Reader = contentReader
+	p.Utf8Reader = bytes.NewReader(content)
 	p.Content = content
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {
