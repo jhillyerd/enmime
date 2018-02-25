@@ -6,8 +6,8 @@ before_script:
   - go get github.com/mattn/goveralls
 
 after_success:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - if [[ "$TRAVIS_GO_VERSION" == 1.9.* ]]; then $HOME/gopath/bin/goveralls -service=travis-ci; fi
 
 go:
   - 1.9.x
-  - tip
+  - "1.10"

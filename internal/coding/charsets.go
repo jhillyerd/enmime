@@ -1,4 +1,4 @@
-package enmime
+package coding
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ import (
 
 const utf8 = "utf-8"
 
-/* copy from golang.org/x/net/html/charset/table.go */
+// encodings is based on golang.org/x/net/html/charset/table.go
 var encodings = map[string]struct {
 	e    encoding.Encoding
 	name string
@@ -267,9 +267,9 @@ func init() {
 	}
 }
 
-// convertToUTF8String uses the provided charset to decode a slice of bytes into a normal
+// ConvertToUTF8String uses the provided charset to decode a slice of bytes into a normal
 // UTF-8 string.
-func convertToUTF8String(charset string, textBytes []byte) (string, error) {
+func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	if strings.ToLower(charset) == utf8 {
 		return string(textBytes), nil
 	}
@@ -286,11 +286,11 @@ func convertToUTF8String(charset string, textBytes []byte) (string, error) {
 	return string(output), nil
 }
 
-// newCharsetReader generates charset-conversion readers, converting from the provided charset into
-// UTF-8.  CharsetReader is a factory signature defined by Golang's mime.WordDecoder
+// NewCharsetReader generates charset-conversion readers, converting from the provided charset into
+// UTF-8.  CharsetReader is a factory signature defined by Go's mime.WordDecoder.
 //
 // This function is similar to: https://godoc.org/golang.org/x/net/html/charset#NewReaderLabel
-func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
+func NewCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	if strings.ToLower(charset) == utf8 {
 		return input, nil
 	}
@@ -301,12 +301,11 @@ func newCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	return transform.NewReader(input, csentry.e.NewDecoder()), nil
 }
 
-// Look for charset in the html meta tag (v4.01 and v5)
-func findCharsetInHTML(html string) string {
+// FindCharsetInHTML looks for charset in the HTML meta tag (v4.01 and v5).
+func FindCharsetInHTML(html string) string {
 	charsetMatches := metaTagCharsetRegexp.FindAllStringSubmatch(html, -1)
 	if len(charsetMatches) > 0 {
 		return charsetMatches[0][metaTagCharsetIndex]
 	}
-
 	return ""
 }

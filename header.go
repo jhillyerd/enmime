@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
 	"strings"
+
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 const (
@@ -45,6 +46,8 @@ const (
 	hpFile     = "file"
 	hpFilename = "filename"
 	hpName     = "name"
+
+	utf8 = "utf-8"
 )
 
 var errEmptyHeaderBlock = errors.New("empty header block")
@@ -65,13 +68,6 @@ var AddressHeaders = map[string]bool{
 	"resent-reply-to": true,
 	"resent-to":       true,
 	"resent-sender":   true,
-}
-
-func debug(format string, args ...interface{}) {
-	if false {
-		fmt.Printf(format, args...)
-		fmt.Println()
-	}
 }
 
 // Terminology from RFC 2047:
@@ -149,7 +145,7 @@ func decodeHeader(input string) string {
 	}
 
 	dec := new(mime.WordDecoder)
-	dec.CharsetReader = newCharsetReader
+	dec.CharsetReader = coding.NewCharsetReader
 	header, err := dec.DecodeHeader(input)
 	if err != nil {
 		return input
@@ -164,8 +160,7 @@ func decodeToUTF8Base64Header(input string) string {
 		return input
 	}
 
-	debug("input = %q", input)
-	tokens := strings.FieldsFunc(input, isWhiteSpaceRune)
+	tokens := strings.FieldsFunc(input, whiteSpaceRune)
 	output := make([]string, len(tokens))
 	for i, token := range tokens {
 		if len(token) > 4 && strings.Contains(token, "=?") {
@@ -185,25 +180,56 @@ func decodeToUTF8Base64Header(input string) string {
 		} else {
 			output[i] = token
 		}
-		debug("%v %q %q", i, token, output[i])
 	}
 
 	// Return space separated tokens
 	return strings.Join(output, " ")
 }
 
-// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc
-func isWhiteSpaceRune(r rune) bool {
-	switch r {
-	case ' ':
-		return true
-	case '\t':
-		return true
-	case '\r':
-		return true
-	case '\n':
-		return true
-	default:
-		return false
+// parseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
+func parseMediaType(ctype string) (mtype string, params map[string]string, err error) {
+	mtype, params, err = mime.ParseMediaType(ctype)
+	if err != nil {
+		// Small hack to remove harmless charset duplicate params.
+		mctype := fixMangledMediaType(ctype, ";")
+		mtype, params, err = mime.ParseMediaType(mctype)
+		if err != nil {
+			// Some badly formed media types forget to send ; between fields.
+			mctype := fixMangledMediaType(ctype, " ")
+			if strings.Contains(mctype, `name=""`) {
+				mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+			}
+			mtype, params, err = mime.ParseMediaType(mctype)
+			if err != nil {
+				return "", nil, err
+			}
+		}
 	}
+	return mtype, params, err
+}
+
+// fixMangledMediaType is used to insert ; separators into media type strings that lack them, and
+// remove repeated parameters.
+func fixMangledMediaType(mtype, sep string) string {
+	if mtype == "" {
+		return ""
+	}
+	parts := strings.Split(mtype, sep)
+	mtype = ""
+	for _, p := range parts {
+		if strings.Contains(p, "=") {
+			pair := strings.Split(p, "=")
+			if strings.Contains(mtype, pair[0]+"=") {
+				// Ignore repeated parameters.
+				continue
+			}
+		}
+		mtype += p + ";"
+	}
+	return mtype
+}
+
+// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc
+func whiteSpaceRune(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
 }

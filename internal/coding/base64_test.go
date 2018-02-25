@@ -1,9 +1,11 @@
-package enmime
+package coding_test
 
 import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 func TestBase64Cleaner(t *testing.T) {
@@ -17,13 +19,13 @@ func TestBase64Cleaner(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.want, func(t *testing.T) {
-			cleaner := newBase64Cleaner(strings.NewReader(tc.input))
+			cleaner := coding.NewBase64Cleaner(strings.NewReader(tc.input))
 			n, err := cleaner.Read(buf)
 			if err != nil && err != io.EOF {
 				t.Fatal(err)
 			}
 			for _, e := range cleaner.Errors {
-				t.Error(e.String())
+				t.Error(e)
 			}
 			got := string(buf[:n])
 			if got != tc.want {
@@ -47,16 +49,12 @@ func TestBase64CleanerErrors(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.want, func(t *testing.T) {
-			cleaner := newBase64Cleaner(strings.NewReader(tc.input))
+			cleaner := coding.NewBase64Cleaner(strings.NewReader(tc.input))
 			n, err := cleaner.Read(buf)
 			if err != nil && err != io.EOF {
 				t.Fatal(err)
 			}
-			if len(cleaner.Errors) == 1 {
-				if cleaner.Errors[0].Name != ErrorMalformedBase64 {
-					t.Errorf("got: %q, want: %q", cleaner.Errors[0].Name, ErrorMalformedBase64)
-				}
-			} else {
+			if len(cleaner.Errors) != 1 {
 				t.Errorf("got %d Errors, wanted 1", len(cleaner.Errors))
 			}
 			got := string(buf[:n])
