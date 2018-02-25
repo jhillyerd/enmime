@@ -100,7 +100,7 @@ func (p *Part) TextContent() bool {
 }
 
 // setupHeaders reads the header, then populates the MIME header values for this Part.
-func (p *Part) setupHeaders(r *bufio.Reader) error {
+func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	header, err := readHeader(r, p)
 	if err != nil {
 		return err
@@ -108,18 +108,22 @@ func (p *Part) setupHeaders(r *bufio.Reader) error {
 	p.Header = header
 	ctype := header.Get(hnContentType)
 	if ctype == "" {
-		p.addWarning(ErrorMissingContentType, "MIME parts should have a Content-Type header")
-	} else {
-		// Parse Content-Type header
-		mtype, mparams, err := parseMediaType(ctype)
-		if err != nil {
-			return err
+		if defaultContentType == "" {
+			p.addWarning(ErrorMissingContentType, "MIME parts should have a Content-Type header")
+			return nil
 		}
-		p.ContentType = mtype
-		// Set disposition, filename, charset if available
-		p.setupContentHeaders(mparams)
-		p.Boundary = mparams[hpBoundary]
+		ctype = defaultContentType
 	}
+	// Parse Content-Type header
+	mtype, mparams, err := parseMediaType(ctype)
+	if err != nil {
+		return err
+	}
+	p.ContentType = mtype
+	// Set disposition, filename, charset if available
+	p.setupContentHeaders(mparams)
+	p.Boundary = mparams[hpBoundary]
+	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
 	return nil
 }
 
@@ -229,44 +233,23 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 func ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
 	root := &Part{PartID: "0"}
-
-	// Read header
-	header, err := readHeader(br, root)
+	// Read header; top-level default CT is text/plain us-ascii according to RFC 822.
+	err := root.setupHeaders(br, `text/plain; charset="us-ascii"`)
 	if err != nil {
 		return nil, err
 	}
-	root.Header = header
-
-	// Content-Type, default is text/plain us-ascii according to RFC 822
-	mediatype := ctTextPlain
-	params := map[string]string{
-		"charset": "us-ascii",
-	}
-	contentType := header.Get(hnContentType)
-	if contentType != "" {
-		mediatype, params, err = parseMediaType(contentType)
-		if err != nil {
-			return nil, err
-		}
-	}
-	root.ContentType = mediatype
-	root.Charset = params[hpCharset]
-
-	if strings.HasPrefix(mediatype, ctMultipartPrefix) {
-		// Content is multipart, parse it
-		boundary := params[hpBoundary]
-		root.Boundary = boundary
+	if strings.HasPrefix(root.ContentType, ctMultipartPrefix) {
+		// Content is multipart, parse it.
 		err = parseParts(root, br)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		// Content is text or data, build content reader pipeline
+		// Content is text or data, build content reader pipeline.
 		if err := root.buildContentReaders(br); err != nil {
 			return nil, err
 		}
 	}
-
 	return root, nil
 }
 
@@ -292,7 +275,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		}
 		// Look for part header.
 		bbr := bufio.NewReader(br)
-		err = p.setupHeaders(bbr)
+		err = p.setupHeaders(bbr, "")
 		if err == errEmptyHeaderBlock {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.

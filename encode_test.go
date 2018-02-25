@@ -34,7 +34,7 @@ func TestEncodePartDefaultHeaders(t *testing.T) {
 	p := enmime.NewPart(nil, "application/zip")
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
-	p.ContentID = "<mycontentid>"
+	p.ContentID = "mycontentid"
 	p.Disposition = "attachment"
 	p.FileName = "stuff.zip"
 	p.Content = []byte("ZIPZIPZIP")
@@ -51,7 +51,7 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 	p := enmime.NewPart(nil, "application/zip")
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
-	p.ContentID = "<mycontentid>"
+	p.ContentID = "mycontentid"
 	p.Disposition = "attachment"
 	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
 	p.Content = []byte("ZIPZIPZIP")
