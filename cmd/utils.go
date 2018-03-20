@@ -97,6 +97,27 @@ func EnvelopeToMarkdown(w io.Writer, e *enmime.Envelope, name string) error {
 	md.H2("Attachment List")
 	for _, a := range e.Attachments {
 		md.Printf("- %v (%v)\n", a.FileName, a.ContentType)
+		if a.ContentID != "" {
+			md.Printf("  Content-ID: %s\n", a.ContentID)
+		}
+	}
+	md.Println()
+
+	md.H2("Inline List")
+	for _, a := range e.Inlines {
+		md.Printf("- %v (%v)\n", a.FileName, a.ContentType)
+		if a.ContentID != "" {
+			md.Printf("  Content-ID: %s\n", a.ContentID)
+		}
+	}
+	md.Println()
+
+	md.H2("Other Part List")
+	for _, a := range e.OtherParts {
+		md.Printf("- %v (%v)\n", a.FileName, a.ContentType)
+		if a.ContentID != "" {
+			md.Printf("  Content-ID: %s\n", a.ContentID)
+		}
 	}
 	md.Println()
 

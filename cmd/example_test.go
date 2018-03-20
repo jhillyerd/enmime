@@ -67,6 +67,10 @@ Content-Type: text/html
 	//
 	// ## Attachment List
 	//
+	// ## Inline List
+	//
+	// ## Other Part List
+	//
 	// ## MIME Part Tree
 	//     multipart/mixed
 	//     |-- text/plain

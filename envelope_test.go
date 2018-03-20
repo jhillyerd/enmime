@@ -330,7 +330,7 @@ func TestParseOtherParts(t *testing.T) {
 		t.Error("Should have no inlines, got:", len(e.Inlines))
 	}
 	if len(e.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(e.Attachments))
+		t.Error("Should have no attachments, got:", len(e.Attachments))
 	}
 	if len(e.OtherParts) != 1 {
 		t.Fatal("Should have one other part, got:", len(e.OtherParts))
@@ -375,10 +375,10 @@ func TestParseInline(t *testing.T) {
 	}
 
 	if len(e.Inlines) != 1 {
-		t.Error("Should one inline, got:", len(e.Inlines))
+		t.Fatal("Should have one inline, got:", len(e.Inlines))
 	}
 	if len(e.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(e.Attachments))
+		t.Error("Should have no attachments, got:", len(e.Attachments))
 	}
 
 	want = "favicon.png"
@@ -388,6 +388,62 @@ func TestParseInline(t *testing.T) {
 	}
 	if !bytes.HasPrefix(e.Inlines[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
 		t.Error("Inline should have correct content")
+	}
+}
+
+func TestParseOtherPartsRelated(t *testing.T) {
+	msg := test.OpenTestData("mail", "other-multi-related.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "Plain text."
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
+	}
+
+	want = "<i>HTML text.</i>"
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain %q", e.HTML, want)
+	}
+
+	if len(e.Attachments) > 0 {
+		t.Error("Should have no attachments, got:", len(e.Attachments))
+	}
+	if len(e.Inlines) > 0 {
+		t.Error("Should have no inlines, got:", len(e.Inlines))
+	}
+	if len(e.OtherParts) != 2 {
+		t.Fatal("Should have two other parts, got:", len(e.Inlines))
+	}
+
+	want = "image001.png"
+	got := e.OtherParts[0].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+	want = "image001.png@01D3BA12.F6C6AEB0"
+	got = e.OtherParts[0].ContentID
+	if got != want {
+		t.Error("ContentID got:", got, "want:", want)
+	}
+	if !bytes.HasPrefix(e.OtherParts[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
+		t.Error("Other part should have correct content")
+	}
+
+	want = "image002.png"
+	got = e.OtherParts[1].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+	want = "image002.png@01D3BA12.F6C6AEB0"
+	got = e.OtherParts[1].ContentID
+	if got != want {
+		t.Error("ContentID got:", got, "want:", want)
+	}
+	if !bytes.HasPrefix(e.OtherParts[1].Content, []byte{0x89, 'P', 'N', 'G'}) {
+		t.Error("Other part should have correct content")
 	}
 }
 

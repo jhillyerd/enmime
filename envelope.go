@@ -13,14 +13,16 @@ import (
 
 // Envelope is a simplified wrapper for MIME email messages.
 type Envelope struct {
-	Text        string                // The plain text portion of the message
-	HTML        string                // The HTML portion of the message
-	Root        *Part                 // The top-level Part
-	Attachments []*Part               // All parts having a Content-Disposition of attachment
-	Inlines     []*Part               // All parts having a Content-Disposition of inline
-	OtherParts  []*Part               // All parts not in Attachments and Inlines
-	Errors      []*Error              // Errors encountered while parsing
-	header      *textproto.MIMEHeader // Header from original message
+	Text        string  // The plain text portion of the message
+	HTML        string  // The HTML portion of the message
+	Root        *Part   // The top-level Part
+	Attachments []*Part // All parts having a Content-Disposition of attachment
+	Inlines     []*Part // All parts having a Content-Disposition of inline
+	// All non-text parts that were not placed in Attachments or Inlines, such as multipart/related
+	// content.
+	OtherParts []*Part
+	Errors     []*Error              // Errors encountered while parsing
+	header     *textproto.MIMEHeader // Header from original message
 }
 
 // GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
