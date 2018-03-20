@@ -4,10 +4,11 @@ sudo: false
 before_script:
   - go get github.com/golang/lint/golint
   - go get github.com/mattn/goveralls
+  - make deps
 
 after_success:
   - if [[ "$TRAVIS_GO_VERSION" == 1.9.* ]]; then $HOME/gopath/bin/goveralls -service=travis-ci; fi
 
 go:
-  - 1.9.x
+  - "1.9.x"
   - "1.10"

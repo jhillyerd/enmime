@@ -16,7 +16,7 @@ func TestJoinAddressEmpty(t *testing.T) {
 
 func TestJoinAddressSingle(t *testing.T) {
 	input := []mail.Address{
-		{"", "one@bar.com"},
+		{Name: "", Address: "one@bar.com"},
 	}
 	want := "<one@bar.com>"
 	got := stringutil.JoinAddress(input)
@@ -25,7 +25,7 @@ func TestJoinAddressSingle(t *testing.T) {
 	}
 
 	input = []mail.Address{
-		{"one name", "one@bar.com"},
+		{Name: "one name", Address: "one@bar.com"},
 	}
 	want = `"one name" <one@bar.com>`
 	got = stringutil.JoinAddress(input)
@@ -36,9 +36,9 @@ func TestJoinAddressSingle(t *testing.T) {
 
 func TestJoinAddressMany(t *testing.T) {
 	input := []mail.Address{
-		{"one", "one@bar.com"},
-		{"", "two@foo.com"},
-		{"three", "three@baz.com"},
+		{Name: "one", Address: "one@bar.com"},
+		{Name: "", Address: "two@foo.com"},
+		{Name: "three", Address: "three@baz.com"},
 	}
 	want := `"one" <one@bar.com>, <two@foo.com>, "three" <three@baz.com>`
 	got := stringutil.JoinAddress(input)
