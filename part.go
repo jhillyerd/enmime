@@ -229,6 +229,39 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	return err
 }
 
+// DuplicatePart returns a duplicate of the current Part
+func (p *Part) DuplicatePart() *Part {
+	if p == nil {
+		return nil
+	}
+	newPart := &Part{
+		p.PartID,
+		p.Header,
+		nil,
+		p.FirstChild.DuplicatePart(),
+		p.NextSibling.DuplicatePart(),
+		p.Boundary,
+		p.ContentID,
+		p.ContentType,
+		p.Disposition,
+		p.FileName,
+		p.Charset,
+		p.Errors,
+		p.Content,
+		p.Epilogue,
+		p.Utf8Reader,
+		p.rawReader,
+		p.decodedReader,
+	}
+	if newPart.FirstChild != nil {
+		newPart.FirstChild.Parent = newPart
+	}
+	if newPart.NextSibling != nil {
+		newPart.NextSibling.Parent = newPart
+	}
+	return newPart
+}
+
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
 func ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
@@ -296,9 +329,11 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		parent.AddChild(p)
 		if p.Boundary == "" {
 			// Content is text or data; build content reader pipeline.
-			if err := p.buildContentReaders(bbr); err != nil {
+			err := p.buildContentReaders(bbr)
+			if err != nil {
 				return err
 			}
+			p.Boundary = parent.Boundary
 		} else {
 			// Content is another multipart.
 			err = parseParts(p, bbr)
