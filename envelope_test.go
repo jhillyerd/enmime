@@ -860,3 +860,13 @@ func TestEnvelopeEpilogue(t *testing.T) {
 		t.Errorf("Epilogue == %q, want: %q", got, want)
 	}
 }
+
+func TestDuplicateEnvelope(t *testing.T) {
+	msg := test.OpenTestData("mail", "epilogue-sample.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	duplicateEnvelope := e.DuplicateEnvelope()
+	test.CompareEnvelope(t, duplicateEnvelope, e)
+}

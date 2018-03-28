@@ -129,3 +129,53 @@ func ContentEqualsBytes(t *testing.T, b []byte, want []byte) {
 		t.Errorf("content:\n%v, want:\n%v", b, want)
 	}
 }
+
+// CompareEnvelope test helper compares the attributes of two envelopes, returning true if they are equal.
+// t.Errorf() will be called for each field that is not equal.  The presence of child and siblings
+// will be checked, but not the attributes of them.  Unexported fields are
+// ignored.
+func CompareEnvelope(t *testing.T, got *enmime.Envelope, want *enmime.Envelope) (equal bool) {
+	t.Helper()
+	if got == nil && want != nil {
+		t.Error("Envelope == nil, want not nil")
+		return
+	}
+	if got != nil && want == nil {
+		t.Error("Envelope != nil, want nil")
+		return
+	}
+	equal = true
+	if got == nil && want == nil {
+		return
+	}
+	if !ComparePart(t, got.Root, want.Root) {
+		equal = false
+		t.Error("Envelope.Root mismatch between envelopes")
+	}
+	if got.Text != want.Text {
+		equal = false
+		t.Errorf("Envelope.Text == %q, want: %q", got.Text, want.Text)
+	}
+	if got.HTML != want.HTML {
+		equal = false
+		t.Errorf("Envelope.HTML == %q, want: %q", got.HTML, want.HTML)
+	}
+	if len(got.Attachments) != len(want.Attachments) {
+		equal = false
+		t.Errorf("Envelope.Attachments has %q elements, want: %q", len(got.Attachments), len(want.Attachments))
+	}
+	if len(got.Inlines) != len(want.Inlines) {
+		equal = false
+		t.Errorf("Envelope.Inlines has %q elements, want: %q", len(got.Inlines), len(want.Inlines))
+	}
+	if len(got.OtherParts) != len(want.OtherParts) {
+		equal = false
+		t.Errorf("Envelope.OtherParts has %q elements, want: %q", len(got.OtherParts), len(want.OtherParts))
+	}
+	if len(got.Errors) != len(want.Errors) {
+		equal = false
+		t.Errorf("Envelope.Errors has %q elements, want: %q", len(got.Errors), len(want.Errors))
+	}
+
+	return
+}
