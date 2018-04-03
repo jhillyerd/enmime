@@ -57,6 +57,25 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	return ret, nil
 }
 
+// Clone returns a clone of the current Envelope
+func (e *Envelope) Clone() *Envelope {
+	if e == nil {
+		return nil
+	}
+
+	newEnvelope := &Envelope{
+		e.Text,
+		e.HTML,
+		e.Root.Clone(),
+		e.Attachments,
+		e.Inlines,
+		e.OtherParts,
+		e.Errors,
+		e.header,
+	}
+	return newEnvelope
+}
+
 // ReadEnvelope is a wrapper around ReadParts and EnvelopeFromPart.  It parses the content of the
 // provided reader into an Envelope, downconverting HTML to plain text if needed, and sorting the
 // attachments, inlines and other parts into their respective slices. Errors are collected from all
