@@ -862,7 +862,7 @@ func TestEnvelopeEpilogue(t *testing.T) {
 }
 
 func TestCloneEnvelope(t *testing.T) {
-	msg := test.OpenTestData("mail", "epilogue-sample.raw")
+	msg := test.OpenTestData("mail", "other-multi-related.raw")
 	e, err := enmime.ReadEnvelope(msg)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)

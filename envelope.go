@@ -66,7 +66,7 @@ func (e *Envelope) Clone() *Envelope {
 	newEnvelope := &Envelope{
 		e.Text,
 		e.HTML,
-		e.Root.Clone(),
+		e.Root.Clone(nil),
 		e.Attachments,
 		e.Inlines,
 		e.OtherParts,

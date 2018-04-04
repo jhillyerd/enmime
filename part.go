@@ -230,36 +230,31 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 }
 
 // Clone returns a clone of the current Part
-func (p *Part) Clone() *Part {
+func (p *Part) Clone(parent *Part) *Part {
 	if p == nil {
 		return nil
 	}
 
 	newPart := &Part{
-		p.PartID,
-		p.Header,
-		nil,
-		p.FirstChild.Clone(),
-		p.NextSibling.Clone(),
-		p.Boundary,
-		p.ContentID,
-		p.ContentType,
-		p.Disposition,
-		p.FileName,
-		p.Charset,
-		p.Errors,
-		p.Content,
-		p.Epilogue,
-		p.Utf8Reader,
-		p.rawReader,
-		p.decodedReader,
+		PartID:        p.PartID,
+		Header:        p.Header,
+		Parent:        parent,
+		Boundary:      p.Boundary,
+		ContentID:     p.ContentID,
+		ContentType:   p.ContentType,
+		Disposition:   p.Disposition,
+		FileName:      p.FileName,
+		Charset:       p.Charset,
+		Errors:        p.Errors,
+		Content:       p.Content,
+		Epilogue:      p.Epilogue,
+		Utf8Reader:    p.Utf8Reader,
+		rawReader:     p.rawReader,
+		decodedReader: p.decodedReader,
 	}
-	if newPart.FirstChild != nil {
-		newPart.FirstChild.Parent = newPart
-	}
-	if newPart.NextSibling != nil {
-		newPart.NextSibling.Parent = newPart
-	}
+	newPart.FirstChild = p.FirstChild.Clone(newPart)
+	newPart.NextSibling = p.NextSibling.Clone(parent)
+
 	return newPart
 }
 

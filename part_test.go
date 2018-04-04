@@ -737,6 +737,6 @@ func TestClonePart(t *testing.T) {
 		t.Fatal("Root node should not be nil")
 	}
 
-	clone := p.Clone()
+	clone := p.Clone(nil)
 	test.ComparePart(t, clone, p)
 }
