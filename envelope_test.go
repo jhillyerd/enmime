@@ -654,6 +654,10 @@ func TestAttachmentOnly(t *testing.T) {
 		if len(e.Root.Header) < 1 {
 			t.Errorf("No root header defined, but must be set from binary only part.")
 		}
+		// Check, that the root part has content
+		if len(e.Root.Content) == 0 {
+			t.Errorf("Root part of envelope has no content.")
+		}
 	}
 }
 
