@@ -6,9 +6,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- CLI utils now output inlines and other parts in addition to attachments.
+- Clone() method to Envelope and Part (thanks to nerdlich.)
+
 ### Changed
 - Use value instead of pointer receivers and return types on MailBuilder
   methods.  Cleaner API, but may break some users.
+
+### Fixed
+- Content is now populated for binary-only mails root part (thank to ostcar.)
 
 
 ## [0.2.0] - 2018-02-24
