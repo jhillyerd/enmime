@@ -151,13 +151,13 @@ hello again!
 
 	// part3 contained a malformed header line, enmime has attached an Error to it
 	p3error := part3.Errors[0]
-	fmt.Println(p3error.String())
+	fmt.Println(p3error.Error())
 	fmt.Println()
 
 	// All Part errors are collected and placed into Envelope.Errors
 	fmt.Println("Envelope errors:")
 	for _, e := range env.Errors {
-		fmt.Println(e.String())
+		fmt.Println(e.Error())
 	}
 
 	// Output:

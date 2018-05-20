@@ -14,7 +14,7 @@ func TestErrorStringConversion(t *testing.T) {
 	}
 
 	want := "[W] WarnName: Warn Details"
-	got := e.String()
+	got := e.Error()
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -26,7 +26,7 @@ func TestErrorStringConversion(t *testing.T) {
 	}
 
 	want = "[E] ErrorName: Error Details"
-	got = e.String()
+	got = e.Error()
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}
@@ -116,7 +116,7 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 			if !satisfied {
 				var errorList string
 				for _, perr := range e.Errors {
-					errorList += perr.String()
+					errorList += perr.Error()
 					errorList += "\n"
 				}
 				t.Errorf(

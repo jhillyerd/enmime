@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Use value instead of pointer receivers and return types on MailBuilder
   methods.  Cleaner API, but may break some users.
+- `enmime.Error` now conforms to the Go error interface, its `String()` method
+  is now deprecated.
 
 ### Fixed
 - Content is now populated for binary-only mails root part (thank to ostcar.)
