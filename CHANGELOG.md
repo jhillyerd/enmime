@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   methods.  Cleaner API, but may break some users.
 - `enmime.Error` now conforms to the Go error interface, its `String()` method
   is now deprecated.
+- `NewPart()` constructor no longer takes a parent parameter.
 
 ### Fixed
 - Content is now populated for binary-only mails root part (thank to ostcar.)

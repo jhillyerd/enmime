@@ -17,27 +17,28 @@ import (
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
-	PartID      string               // PartID labels this parts position within the tree
-	Header      textproto.MIMEHeader // Header for this Part
-	Parent      *Part                // Parent of this part (can be nil)
-	FirstChild  *Part                // FirstChild is the top most child of this part
-	NextSibling *Part                // NextSibling of this part
-	Boundary    string               // Boundary marker used within this part
-	ContentID   string               // ContentID header for cid URL scheme
-	ContentType string               // ContentType header without parameters
-	Disposition string               // Content-Disposition header without parameters
-	FileName    string               // The file-name from disposition or type header
-	Charset     string               // The content charset encoding label
-	Errors      []Error              // Errors encountered while parsing this part
-	Content     []byte               // Content after decoding, UTF-8 conversion if applicable
-	Epilogue    []byte               // Epilogue contains data following the closing boundary marker
+	PartID      string               // PartID labels this parts position within the tree.
+	Header      textproto.MIMEHeader // Header for this Part.
+	Parent      *Part                // Parent of this part (can be nil.)
+	FirstChild  *Part                // FirstChild is the top most child of this part.
+	NextSibling *Part                // NextSibling of this part.
+	Boundary    string               // Boundary marker used within this part.
+	ContentID   string               // ContentID header for cid URL scheme.
+	ContentType string               // ContentType header without parameters.
+	Disposition string               // Content-Disposition header without parameters.
+	FileName    string               // The file-name from disposition or type header.
+	Charset     string               // The content charset encoding label.
+	Errors      []Error              // Errors encountered while parsing this part.
+	Content     []byte               // Content after decoding, UTF-8 conversion if applicable.
+	Epilogue    []byte               // Epilogue contains data following the closing boundary marker.
 }
 
-// NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
-func NewPart(parent *Part, contentType string) *Part {
-	header := make(textproto.MIMEHeader)
-	header.Set(hnContentType, contentType)
-	return &Part{Parent: parent, Header: header, ContentType: contentType}
+// NewPart creates a new Part object.
+func NewPart(contentType string) *Part {
+	return &Part{
+		Header:      make(textproto.MIMEHeader),
+		ContentType: contentType,
+	}
 }
 
 // AddChild adds a child part to either FirstChild or the end of the children NextSibling chain.
@@ -45,30 +46,30 @@ func NewPart(parent *Part, contentType string) *Part {
 // child and all its siblings. Safe to call on nil.
 func (p *Part) AddChild(child *Part) {
 	if p == child {
-		// Prevent paradox
+		// Prevent paradox.
 		return
 	}
 	if p != nil {
 		if p.FirstChild == nil {
-			// Make it the first child
+			// Make it the first child.
 			p.FirstChild = child
 		} else {
-			// Append to sibling chain
+			// Append to sibling chain.
 			current := p.FirstChild
 			for current.NextSibling != nil {
 				current = current.NextSibling
 			}
 			if current == child {
-				// Prevent infinite loop
+				// Prevent infinite loop.
 				return
 			}
 			current.NextSibling = child
 		}
 	}
-	// Update all new first-level children Parent pointers
+	// Update all new first-level children Parent pointers.
 	for c := child; c != nil; c = c.NextSibling {
 		if c == c.NextSibling {
-			// Prevent infinite loop
+			// Prevent infinite loop.
 			return
 		}
 		c.Parent = p
@@ -101,13 +102,13 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		}
 		ctype = defaultContentType
 	}
-	// Parse Content-Type header
+	// Parse Content-Type header.
 	mtype, mparams, err := parseMediaType(ctype)
 	if err != nil {
 		return err
 	}
 	p.ContentType = mtype
-	// Set disposition, filename, charset if available
+	// Set disposition, filename, charset if available.
 	p.setupContentHeaders(mparams)
 	p.Boundary = mparams[hpBoundary]
 	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
@@ -117,7 +118,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
-	// Determine content disposition, filename, character set
+	// Determine content disposition, filename, character set.
 	disposition, dparams, err := parseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
@@ -206,7 +207,7 @@ func (p *Part) decodeContent(r io.Reader) error {
 	return nil
 }
 
-// Clone returns a clone of the current Part
+// Clone returns a clone of the current Part.
 func (p *Part) Clone(parent *Part) *Part {
 	if p == nil {
 		return nil

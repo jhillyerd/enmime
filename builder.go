@@ -135,7 +135,7 @@ func (p MailBuilder) HTML(body []byte) MailBuilder {
 
 // AddAttachment returns a copy of MailBuilder that includes the specified attachment.
 func (p MailBuilder) AddAttachment(b []byte, contentType string, fileName string) MailBuilder {
-	part := NewPart(nil, contentType)
+	part := NewPart(contentType)
 	part.Content = b
 	part.FileName = fileName
 	part.Disposition = cdAttachment
@@ -174,7 +174,7 @@ func (p MailBuilder) AddInline(
 	fileName string,
 	contentID string,
 ) MailBuilder {
-	part := NewPart(nil, contentType)
+	part := NewPart(contentType)
 	part.Content = b
 	part.FileName = fileName
 	part.Disposition = cdInline
@@ -236,12 +236,12 @@ func (p MailBuilder) Build() (*Part, error) {
 	// We build this tree starting at the leaves, re-rooting as needed.
 	var root, part *Part
 	if p.text != nil || p.html == nil {
-		root = NewPart(nil, ctTextPlain)
+		root = NewPart(ctTextPlain)
 		root.Content = p.text
 		root.Charset = utf8
 	}
 	if p.html != nil {
-		part = NewPart(nil, ctTextHTML)
+		part = NewPart(ctTextHTML)
 		part.Content = p.html
 		part.Charset = utf8
 		if root == nil {
@@ -253,12 +253,12 @@ func (p MailBuilder) Build() (*Part, error) {
 	if p.text != nil && p.html != nil {
 		// Wrap Text & HTML bodies
 		part = root
-		root = NewPart(nil, ctMultipartAltern)
+		root = NewPart(ctMultipartAltern)
 		root.AddChild(part)
 	}
 	if len(p.inlines) > 0 {
 		part = root
-		root = NewPart(nil, ctMultipartRelated)
+		root = NewPart(ctMultipartRelated)
 		root.AddChild(part)
 		for _, ip := range p.inlines {
 			// Copy inline Part to isolate mutations
@@ -270,7 +270,7 @@ func (p MailBuilder) Build() (*Part, error) {
 	}
 	if len(p.attachments) > 0 {
 		part = root
-		root = NewPart(nil, ctMultipartMixed)
+		root = NewPart(ctMultipartMixed)
 		root.AddChild(part)
 		for _, ap := range p.attachments {
 			// Copy attachment Part to isolate mutations

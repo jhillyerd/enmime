@@ -20,7 +20,7 @@ func TestEncodePartEmpty(t *testing.T) {
 }
 
 func TestEncodePartHeaderOnly(t *testing.T) {
-	p := enmime.NewPart(nil, "text/plain")
+	p := enmime.NewPart("text/plain")
 
 	b := &bytes.Buffer{}
 	err := p.Encode(b)
@@ -31,7 +31,7 @@ func TestEncodePartHeaderOnly(t *testing.T) {
 }
 
 func TestEncodePartDefaultHeaders(t *testing.T) {
-	p := enmime.NewPart(nil, "application/zip")
+	p := enmime.NewPart("application/zip")
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
 	p.ContentID = "mycontentid"
@@ -48,7 +48,7 @@ func TestEncodePartDefaultHeaders(t *testing.T) {
 }
 
 func TestEncodePartQuotedHeaders(t *testing.T) {
-	p := enmime.NewPart(nil, "application/zip")
+	p := enmime.NewPart("application/zip")
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
 	p.ContentID = "mycontentid"
@@ -65,7 +65,7 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 }
 
 func TestEncodePartBinaryHeader(t *testing.T) {
-	p := enmime.NewPart(nil, "text/plain")
+	p := enmime.NewPart("text/plain")
 	p.Header.Set("Subject", "¡Hola, señor!")
 	p.Header.Set("X-Data", string([]byte{
 		0x3, 0x17, 0xe1, 0x7e, 0xe8, 0xeb, 0xa2, 0x96, 0x9d, 0x95, 0xa7, 0x67, 0x82, 0x9,
@@ -97,7 +97,7 @@ func TestEncodePartContentOnly(t *testing.T) {
 }
 
 func TestEncodePartPlain(t *testing.T) {
-	p := enmime.NewPart(nil, "text/plain")
+	p := enmime.NewPart("text/plain")
 	p.Content = []byte("This is a test of a plain text part.\r\n\r\nAnother line.\r\n")
 
 	b := &bytes.Buffer{}
@@ -109,16 +109,16 @@ func TestEncodePartPlain(t *testing.T) {
 }
 
 func TestEncodePartWithChildren(t *testing.T) {
-	p := enmime.NewPart(nil, "multipart/alternative")
+	p := enmime.NewPart("multipart/alternative")
 	p.Boundary = "enmime-1234567890-parent"
-	p.Content = []byte("Do you even MIME bro?")
+	p.Content = []byte("Bro, do you even MIME?")
 	root := p
 
-	p = enmime.NewPart(root, "text/html")
+	p = enmime.NewPart("text/html")
 	p.Content = []byte("<div>HTML part</div>")
 	root.FirstChild = p
 
-	p = enmime.NewPart(root, "text/plain")
+	p = enmime.NewPart("text/plain")
 	p.Content = []byte("Plain text part")
 	root.FirstChild.NextSibling = p
 
@@ -131,15 +131,15 @@ func TestEncodePartWithChildren(t *testing.T) {
 }
 
 func TestEncodePartNoContentWithChildren(t *testing.T) {
-	p := enmime.NewPart(nil, "multipart/alternative")
+	p := enmime.NewPart("multipart/alternative")
 	p.Boundary = "enmime-1234567890-parent"
 	root := p
 
-	p = enmime.NewPart(root, "text/html")
+	p = enmime.NewPart("text/html")
 	p.Content = []byte("<div>HTML part</div>")
 	root.FirstChild = p
 
-	p = enmime.NewPart(root, "text/plain")
+	p = enmime.NewPart("text/plain")
 	p.Content = []byte("Plain text part")
 	root.FirstChild.NextSibling = p
 
@@ -152,7 +152,7 @@ func TestEncodePartNoContentWithChildren(t *testing.T) {
 }
 
 func TestEncodePartContentQuotable(t *testing.T) {
-	p := enmime.NewPart(nil, "text/plain")
+	p := enmime.NewPart("text/plain")
 	p.Content = []byte("¡Hola, señor! Welcome to MIME")
 
 	b := &bytes.Buffer{}
@@ -168,7 +168,7 @@ func TestEncodePartContentBinary(t *testing.T) {
 	for i := range c {
 		c[i] = byte(i % 256)
 	}
-	p := enmime.NewPart(nil, "image/jpeg")
+	p := enmime.NewPart("image/jpeg")
 	p.Content = c
 
 	b := &bytes.Buffer{}
