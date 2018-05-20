@@ -17,6 +17,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - Content is now populated for binary-only mails root part (thank to ostcar.)
 
+### Removed
+- Part no longer implements `io.Reader`, content is stored as a byte slice in
+  `Part.Content` instead.
+
 
 ## [0.2.0] - 2018-02-24
 
