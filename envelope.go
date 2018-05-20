@@ -106,8 +106,10 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	} else {
 		if detectBinaryBody(root) {
 			// Attachment only, no text
-			if err := parseBinaryOnlyBody(root, e); err != nil {
-				return nil, err
+			if root.Disposition == cdInline {
+				e.Inlines = append(e.Inlines, root)
+			} else {
+				e.Attachments = append(e.Attachments, root)
 			}
 		} else {
 			// Only text, no attachments
@@ -186,35 +188,6 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 		}
 	} else {
 		e.Text = string(root.Content)
-	}
-
-	return nil
-}
-
-// parseBinaryOnlyBody parses a message where the only content is a binary attachment with no
-// other parts. The result is placed in e.
-func parseBinaryOnlyBody(root *Part, e *Envelope) error {
-	// Determine mediatype
-	ctype := root.Header.Get(hnContentType)
-	mediatype, mparams, err := parseMediaType(ctype)
-	if err != nil {
-		mediatype = cdAttachment
-	}
-
-	// Determine and set headers for: content disposition, filename and character set
-	root.setupContentHeaders(mparams)
-
-	// Add our part to the appropriate section of the Envelope
-	e.Root = NewPart(nil, mediatype)
-
-	// Add header and content from binary only part
-	e.Root.Header = root.Header
-	e.Root.Content = root.Content
-
-	if root.Disposition == cdInline {
-		e.Inlines = append(e.Inlines, root)
-	} else {
-		e.Attachments = append(e.Attachments, root)
 	}
 
 	return nil
