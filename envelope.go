@@ -25,6 +25,18 @@ type Envelope struct {
 	header     *textproto.MIMEHeader // Header from original message
 }
 
+// GetHeaderKeys returns a list of header keys seen in this message. Get
+// individual headers with `GetHeader(name)`
+func (e *Envelope) GetHeaderKeys() (headers []string) {
+	if e.header == nil {
+		return
+	}
+	for key := range *e.header {
+		headers = append(headers, key)
+	}
+	return headers
+}
+
 // GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
 // UTF-8 string
 func (e *Envelope) GetHeader(name string) string {

@@ -2,6 +2,7 @@ package enmime_test
 
 import (
 	"bytes"
+	"sort"
 	"strings"
 	"testing"
 
@@ -549,6 +550,40 @@ func TestEnvelopeGetHeader(t *testing.T) {
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
 	}
+}
+
+func TestEnvelopeGetHeaderKeys(t *testing.T) {
+	// Test empty header
+	e := &enmime.Envelope{}
+	got := e.GetHeaderKeys()
+	if got != nil {
+		t.Errorf("Headers was: %q, want: nil", got)
+	}
+
+	// Even non-MIME messages should support encoded-words in headers
+	// Also, encoded addresses should be suppored
+	r := test.OpenTestData("mail", "qp-ascii-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse non-MIME:", err)
+	}
+
+	want := []string{"Date", "From", "Subject", "To", "X-Mailer"}
+	got = e.GetHeaderKeys()
+	sort.Sort(sort.StringSlice(got))
+	test.DiffStrings(t, got, want)
+
+	// Test UTF-8 subject line
+	r = test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err = enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want = []string{"Content-Type", "Date", "From", "Message-Id", "Mime-Version", "Sender", "Subject", "To", "User-Agent"}
+	got = e.GetHeaderKeys()
+	sort.Sort(sort.StringSlice(got))
+	test.DiffStrings(t, got, want)
 }
 
 func TestEnvelopeAddressList(t *testing.T) {
