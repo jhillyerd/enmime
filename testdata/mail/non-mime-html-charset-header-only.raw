@@ -1,0 +1,17 @@
+From: alice@intern.com
+To: bob@extern.com
+Message-ID: <1913211271.2.1528358425638@zeus>
+Subject: Test
+MIME-Version: 1.0
+Content-Type: text/html;charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <head>
+    <title>Page Title</title>
+  </head>
+  <body>
+    Test M=FCller
+  </body>
+</html>
