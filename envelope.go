@@ -197,6 +197,17 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 					root.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
+			// Converted from charset in HTML
+			return nil
+		}
+
+		// Use charset found in header
+		if convHTML, err := coding.ConvertToUTF8String(charset, root.Content); err == nil {
+			// Successful conversion
+			e.HTML = convHTML
+		} else {
+			// Conversion failed
+			root.addWarning(ErrorCharsetConversion, err.Error())
 		}
 	} else {
 		e.Text = string(root.Content)

@@ -515,6 +515,22 @@ func TestParseNestedHeaders(t *testing.T) {
 	}
 }
 
+func TestParseHTMLOnlyCharsetInHeaderOnly(t *testing.T) {
+	msg := test.OpenTestData("mail", "non-mime-html-charset-header-only.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse non-MIME:", err)
+	}
+
+	if !strings.ContainsRune(e.HTML, 0xfc) {
+		t.Error("HTML body should contained German ü")
+	}
+
+	if !strings.Contains(e.HTML, "Müller") {
+		t.Error("HTML body should contained 'Müller'")
+	}
+}
+
 func TestEnvelopeGetHeader(t *testing.T) {
 	// Test empty header
 	e := &enmime.Envelope{}
