@@ -492,6 +492,40 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 	}
 }
 
+func TestParseInlineMultipart(t *testing.T) {
+	msg := test.OpenTestData("mail", "inlinemultipart.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if len(e.Errors) != 0 {
+		t.Errorf("len(e.Errors) got: %v, want: 0", len(e.Errors))
+	}
+
+	want := "Simple text."
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Downconverted Text: %q should contain: %q", e.Text, want)
+	}
+
+	if len(e.Inlines) != 1 {
+		t.Error("Should have no inline, got:", len(e.Inlines))
+	}
+	if len(e.Attachments) != 1 {
+		t.Fatal("Should have one attachments, got:", len(e.Attachments))
+	}
+
+	want = "test.txt"
+	got := e.Inlines[0].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+
+	if !bytes.HasPrefix(e.Inlines[0].Content, []byte("Text")) {
+		t.Error("Inline should have correct content")
+	}
+}
+
 func TestParseNestedHeaders(t *testing.T) {
 	msg := test.OpenTestData("mail", "html-mime-inline.raw")
 	e, err := enmime.ReadEnvelope(msg)
