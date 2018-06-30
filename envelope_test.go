@@ -509,7 +509,7 @@ func TestParseInlineMultipart(t *testing.T) {
 	}
 
 	if len(e.Inlines) != 1 {
-		t.Error("Should have no inline, got:", len(e.Inlines))
+		t.Error("Should have one inline, got:", len(e.Inlines))
 	}
 	if len(e.Attachments) != 1 {
 		t.Fatal("Should have one attachments, got:", len(e.Attachments))
