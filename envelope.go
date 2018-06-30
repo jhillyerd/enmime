@@ -266,7 +266,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate inlines
 	e.Inlines = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition == cdInline
+		return p.Disposition == cdInline && !strings.HasPrefix(p.ContentType, ctMultipartPrefix)
 	})
 
 	// Locate others parts not considered in attachments or inlines
