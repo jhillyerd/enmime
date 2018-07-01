@@ -3,6 +3,7 @@ package enmime
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/mail"
 	"net/textproto"
 	"strings"
@@ -44,6 +45,60 @@ func (e *Envelope) GetHeader(name string) string {
 		return ""
 	}
 	return decodeHeader(e.header.Get(name))
+}
+
+// GetHeaderValues processes the specified header for RFC 2047 encoded words and returns all existing
+// values as a list of UTF-8 strings
+func (e *Envelope) GetHeaderValues(name string) []string {
+	if e.header == nil {
+		return []string{}
+	}
+
+	h := *e.header
+	rawValues := h[textproto.CanonicalMIMEHeaderKey(name)]
+	var values []string
+	for _, v := range rawValues {
+		values = append(values, decodeHeader(v))
+	}
+	return values
+}
+
+// SetHeader sets given header name to the given value.
+// If the header exists already, all existing values are replaced.
+func (e *Envelope) SetHeader(name string, value []string) error {
+	if name == "" {
+		return fmt.Errorf("Provide non-empty header name")
+	}
+
+	for i, v := range value {
+		if i == 0 {
+			e.header.Set(name, mime.BEncoding.Encode("utf-8", v))
+			continue
+		}
+		e.header.Add(name, mime.BEncoding.Encode("utf-8", v))
+	}
+	return nil
+}
+
+// AddHeader appends given header value to header name without changing existing values.
+// If the header does not exist already, it will be created.
+func (e *Envelope) AddHeader(name string, value string) error {
+	if name == "" {
+		return fmt.Errorf("Provide non-empty header name")
+	}
+
+	e.header.Add(name, mime.BEncoding.Encode("utf-8", value))
+	return nil
+}
+
+// DeleteHeader deletes given header.
+func (e *Envelope) DeleteHeader(name string) error {
+	if name == "" {
+		return fmt.Errorf("Provide non-empty header name")
+	}
+
+	e.header.Del(name)
+	return nil
 }
 
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8

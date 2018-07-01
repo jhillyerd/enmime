@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
 )
@@ -634,6 +635,102 @@ func TestEnvelopeGetHeaderKeys(t *testing.T) {
 	got = e.GetHeaderKeys()
 	sort.Sort(sort.StringSlice(got))
 	test.DiffStrings(t, got, want)
+}
+
+func TestEnvelopeGetHeaderValues(t *testing.T) {
+	r := test.OpenTestData("mail", "ctype-bug.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// test Received headers
+	want := []string{
+		"by 10.76.55.35 with SMTP id o3csp106612oap; Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
+		"from mail135-10.atl141.mandrillapp.com (mail135-10.atl141.mandrillapp.com. [198.2.135.10]) by mx.google.com with ESMTPS id k184si6630505ywf.180.2015.07.10.13.12.34 for <deepak@redsift.io> (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128); Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
+		"from pmta03.mandrill.prod.atl01.rsglab.com (127.0.0.1) by mail135-10.atl141.mandrillapp.com id hk0jj41sau80 for <deepak@redsift.io>; Fri, 10 Jul 2015 20:12:33 +0000 (envelope-from <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>)",
+		"from [67.214.212.122] by mandrillapp.com id 163e4a0faf244a2da6b0121cc7af1fe9; Fri, 10 Jul 2015 20:12:33 +0000",
+	}
+	got := e.GetHeaderValues("received")
+	diff := deep.Equal(got, want)
+	if diff != nil {
+		t.Errorf("To got: %+v, want: %+v", got, want)
+	}
+}
+
+func TestEnvelopeSetHeader(t *testing.T) {
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// replace existing header
+	want := "André Pirard <PIRARD@vm1.ulg.ac.be>"
+	e.SetHeader("To", []string{want})
+	got := e.GetHeader("To")
+	if got != want {
+		t.Errorf("To got: %q, want: %q", got, want)
+	}
+
+	// replace existing header with multiple values
+	wantSlice := []string{"Mirosław Marczak <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
+	e.SetHeader("To", wantSlice)
+	gotSlice := e.GetHeaderValues("to")
+	diff := deep.Equal(gotSlice, wantSlice)
+	if diff != nil {
+		t.Errorf("To got: %+v, want: %+v", gotSlice, wantSlice)
+	}
+
+	// replace non-existing header
+	want = "foobar"
+	e.SetHeader("X-Foo-Bar", []string{want})
+	got = e.GetHeader("X-Foo-Bar")
+	if got != want {
+		t.Errorf("To got: %q, want: %q", got, want)
+	}
+}
+
+func TestEnvelopeAddHeader(t *testing.T) {
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// add to existing header
+	to := "James Hillyerd <jamehi03@jamehi03lx.noa.com>"
+	wantSlice := []string{"Mirosław Marczak <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
+	e.AddHeader("To", to)
+	gotSlice := e.GetHeaderValues("To")
+	diff := deep.Equal(gotSlice, wantSlice)
+	if diff != nil {
+		t.Errorf("To got: %+v, want: %+v", gotSlice, wantSlice)
+	}
+
+	// add to non-existing header
+	want := "foobar"
+	e.AddHeader("X-Foo-Bar", want)
+	got := e.GetHeader("X-Foo-Bar")
+	if got != want {
+		t.Errorf("To got: %q, want: %q", got, want)
+	}
+}
+
+func TestEnvelopeDeleteHeader(t *testing.T) {
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// delete user-agent header
+	e.DeleteHeader("User-Agent")
+	got := e.GetHeader("User-Agent")
+	want := ""
+	if got != want {
+		t.Errorf("To got: %q, want: %q", got, want)
+	}
 }
 
 func TestEnvelopeAddressList(t *testing.T) {
