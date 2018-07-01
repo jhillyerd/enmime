@@ -654,7 +654,7 @@ func TestEnvelopeGetHeaderValues(t *testing.T) {
 	got := e.GetHeaderValues("received")
 	diff := deep.Equal(got, want)
 	if diff != nil {
-		t.Errorf("To got: %+v, want: %+v", got, want)
+		t.Errorf("Got: %+v, want: %+v", got, want)
 	}
 }
 
@@ -670,7 +670,7 @@ func TestEnvelopeSetHeader(t *testing.T) {
 	e.SetHeader("To", []string{want})
 	got := e.GetHeader("To")
 	if got != want {
-		t.Errorf("To got: %q, want: %q", got, want)
+		t.Errorf("Got: %q, want: %q", got, want)
 	}
 
 	// replace existing header with multiple values
@@ -679,7 +679,7 @@ func TestEnvelopeSetHeader(t *testing.T) {
 	gotSlice := e.GetHeaderValues("to")
 	diff := deep.Equal(gotSlice, wantSlice)
 	if diff != nil {
-		t.Errorf("To got: %+v, want: %+v", gotSlice, wantSlice)
+		t.Errorf("Got: %+v, want: %+v", gotSlice, wantSlice)
 	}
 
 	// replace non-existing header
@@ -687,7 +687,7 @@ func TestEnvelopeSetHeader(t *testing.T) {
 	e.SetHeader("X-Foo-Bar", []string{want})
 	got = e.GetHeader("X-Foo-Bar")
 	if got != want {
-		t.Errorf("To got: %q, want: %q", got, want)
+		t.Errorf("Got: %q, want: %q", got, want)
 	}
 }
 
@@ -705,7 +705,7 @@ func TestEnvelopeAddHeader(t *testing.T) {
 	gotSlice := e.GetHeaderValues("To")
 	diff := deep.Equal(gotSlice, wantSlice)
 	if diff != nil {
-		t.Errorf("To got: %+v, want: %+v", gotSlice, wantSlice)
+		t.Errorf("Got: %+v, want: %+v", gotSlice, wantSlice)
 	}
 
 	// add to non-existing header
@@ -713,7 +713,7 @@ func TestEnvelopeAddHeader(t *testing.T) {
 	e.AddHeader("X-Foo-Bar", want)
 	got := e.GetHeader("X-Foo-Bar")
 	if got != want {
-		t.Errorf("To got: %q, want: %q", got, want)
+		t.Errorf("Got: %q, want: %q", got, want)
 	}
 }
 
@@ -729,7 +729,7 @@ func TestEnvelopeDeleteHeader(t *testing.T) {
 	got := e.GetHeader("User-Agent")
 	want := ""
 	if got != want {
-		t.Errorf("To got: %q, want: %q", got, want)
+		t.Errorf("Got: %q, want: %q", got, want)
 	}
 }
 
