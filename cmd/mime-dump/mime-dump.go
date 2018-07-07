@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/cmd"
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// basename is used as the markdown title
-	basename := path.Base(os.Args[1])
+	basename := filepath.Base(os.Args[1])
 	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "During enmime.ReadEnvelope:", err)
