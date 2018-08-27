@@ -231,7 +231,10 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
 func ReadParts(r io.Reader) (*Part, error) {
-	br := bufio.NewReader(r)
+	// Pull the bytes from the bytes.Reader
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+	br := bufio.NewReader(tee)
 	root := &Part{PartID: "0"}
 	// Read header; top-level default CT is text/plain us-ascii according to RFC 822.
 	err := root.setupHeaders(br, `text/plain; charset="us-ascii"`)
@@ -249,6 +252,9 @@ func ReadParts(r io.Reader) (*Part, error) {
 		if err := root.buildContentReaders(br); err != nil {
 			return nil, err
 		}
+	}
+	if root.Content == nil || string(root.Content) == "" {
+		root.Content = buf.Bytes()
 	}
 	return root, nil
 }

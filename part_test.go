@@ -1,6 +1,8 @@
 package enmime_test
 
 import (
+	"bytes"
+	"io"
 	"testing"
 
 	"github.com/jhillyerd/enmime"
@@ -99,7 +101,11 @@ func TestMultiAlternParts(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "multialtern.raw")
-	p, err := enmime.ReadParts(r)
+
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -116,7 +122,7 @@ func TestMultiAlternParts(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -173,7 +179,10 @@ func TestPartMissingContentType(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "missing-ctype.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -190,7 +199,7 @@ func TestPartMissingContentType(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -223,7 +232,10 @@ func TestPartEmptyHeader(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "empty-header.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -240,7 +252,7 @@ func TestPartEmptyHeader(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -303,7 +315,10 @@ func TestMultiMixedParts(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "multimixed.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -320,7 +335,7 @@ func TestMultiMixedParts(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -354,7 +369,10 @@ func TestMultiOtherParts(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "multiother.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -371,7 +389,7 @@ func TestMultiOtherParts(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -405,7 +423,10 @@ func TestNestedAlternParts(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "nestedmulti.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -416,13 +437,13 @@ func TestNestedAlternParts(t *testing.T) {
 	}
 
 	wantp = &enmime.Part{
-		ContentType: "multipart/alternative",
 		FirstChild:  test.PartExists,
+		ContentType: "multipart/alternative",
 		PartID:      "0",
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -498,7 +519,10 @@ func TestPartSimilarBoundary(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "similar-boundary.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -509,13 +533,13 @@ func TestPartSimilarBoundary(t *testing.T) {
 	}
 
 	wantp = &enmime.Part{
-		ContentType: "multipart/mixed",
 		FirstChild:  test.PartExists,
+		ContentType: "multipart/mixed",
 		PartID:      "0",
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -576,7 +600,10 @@ func TestBinaryDecode(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "bin-attach.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -593,7 +620,7 @@ func TestBinaryDecode(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
@@ -631,7 +658,10 @@ func TestMultiBase64Parts(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "multibase64.raw")
-	p, err := enmime.ReadParts(r)
+	buf := new(bytes.Buffer)
+	tee := io.TeeReader(r, buf)
+
+	p, err := enmime.ReadParts(tee)
 
 	// Examine root
 	if err != nil {
@@ -648,7 +678,7 @@ func TestMultiBase64Parts(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 
-	test.ContentEqualsString(t, p.Content, "")
+	test.ContentEqualsString(t, p.Content, string(buf.Bytes()))
 
 	// Examine first child
 	p = p.FirstChild
