@@ -32,7 +32,6 @@ type Part struct {
 	Errors      []Error              // Errors encountered while parsing this part
 	Content     []byte               // Content after decoding, UTF-8 conversion if applicable
 	Epilogue    []byte               // Epilogue contains data following the closing boundary marker
-	Utf8Reader  io.Reader            // DEPRECATED: The decoded content converted to UTF-8
 
 	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
 	decodedReader io.Reader // The content decoded from quoted-printable or base64
@@ -78,14 +77,6 @@ func (p *Part) AddChild(child *Part) {
 		}
 		c.Parent = p
 	}
-}
-
-// Read returns the decoded & UTF-8 converted content; implements io.Reader.
-func (p *Part) Read(b []byte) (n int, err error) {
-	if p.Utf8Reader == nil {
-		return 0, io.EOF
-	}
-	return p.Utf8Reader.Read(b)
 }
 
 // TextContent indicates whether the content is text based on its content type.  This value
@@ -215,7 +206,6 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 	}
 	// Messy until Utf8Reader is removed
 	content, err := ioutil.ReadAll(contentReader)
-	p.Utf8Reader = bytes.NewReader(content)
 	p.Content = content
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {

@@ -20,11 +20,9 @@ A brief guide to migrating from the old go.enmime API is available here:
 https://github.com/jhillyerd/enmime/wiki/Enmime-Migration-Guide
 
 
-## API Change Warning
+## API Change
 
-Part readers: `Part.Read()` and `Part.Utf8Reader` are now deprecated.  Please
-use `Part.Content` instead.  The deprecated readers will be removed in April
-2018.
+Part readers: `Part.Read()` and `Part.Utf8Reader` have been removed. Please use Part.Content instead.
 
 
 ## Development Status
