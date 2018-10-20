@@ -1,9 +1,13 @@
 language: go
 sudo: false
 
+env:
+  global:
+    - GO111MODULE=on
+
 before_script:
-  - go get github.com/golang/lint/golint
   - go get github.com/mattn/goveralls
+  - go get golang.org/x/lint/golint
   - make deps
 
 after_success:
@@ -12,3 +16,4 @@ after_success:
 go:
   - "1.9.x"
   - "1.10.x"
+  - "1.11.x"
