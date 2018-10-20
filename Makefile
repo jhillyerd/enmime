@@ -11,7 +11,7 @@ clean:
 	go clean $(PKGS)
 
 deps:
-	go get -t ./...
+	go get ./...
 
 build:
 	go build
