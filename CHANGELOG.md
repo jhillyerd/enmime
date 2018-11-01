@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - CLI utils now output inlines and other parts in addition to attachments.
 - Clone() method to Envelope and Part (thanks to nerdlich.)
+- GetHeaderKeys() method to Envelope (thanks to allenluce.)
+- GetHeaderValues() plus a suite of setters for Envelope (thanks to nerdlich.)
 
 ### Changed
 - Use value instead of pointer receivers and return types on MailBuilder
