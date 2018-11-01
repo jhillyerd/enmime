@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/cmd"
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	// basename is used as the markdown title
-	basename := path.Base(*mimefile)
+	basename := filepath.Base(*mimefile)
 	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "During enmime.ReadEnvelope:", err)
@@ -56,7 +56,7 @@ func main() {
 	// Write out attachments
 	fmt.Fprintf(os.Stderr, "\nExtracting attachments into %s...", *outdir)
 	for _, a := range e.Attachments {
-		newFileName := path.Join(*outdir, a.FileName)
+		newFileName := filepath.Join(*outdir, a.FileName)
 		err = ioutil.WriteFile(newFileName, a.Content, 0644)
 		if err != nil {
 			fmt.Printf("Error writing file %q: %v\n", newFileName, err)

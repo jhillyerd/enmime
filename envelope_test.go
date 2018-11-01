@@ -2,9 +2,11 @@ package enmime_test
 
 import (
 	"bytes"
+	"sort"
 	"strings"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
 )
@@ -330,7 +332,7 @@ func TestParseOtherParts(t *testing.T) {
 		t.Error("Should have no inlines, got:", len(e.Inlines))
 	}
 	if len(e.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(e.Attachments))
+		t.Error("Should have no attachments, got:", len(e.Attachments))
 	}
 	if len(e.OtherParts) != 1 {
 		t.Fatal("Should have one other part, got:", len(e.OtherParts))
@@ -375,10 +377,10 @@ func TestParseInline(t *testing.T) {
 	}
 
 	if len(e.Inlines) != 1 {
-		t.Error("Should one inline, got:", len(e.Inlines))
+		t.Fatal("Should have one inline, got:", len(e.Inlines))
 	}
 	if len(e.Attachments) > 0 {
-		t.Fatal("Should have no attachments, got:", len(e.Attachments))
+		t.Error("Should have no attachments, got:", len(e.Attachments))
 	}
 
 	want = "favicon.png"
@@ -388,6 +390,62 @@ func TestParseInline(t *testing.T) {
 	}
 	if !bytes.HasPrefix(e.Inlines[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
 		t.Error("Inline should have correct content")
+	}
+}
+
+func TestParseOtherPartsRelated(t *testing.T) {
+	msg := test.OpenTestData("mail", "other-multi-related.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "Plain text."
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
+	}
+
+	want = "<i>HTML text.</i>"
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain %q", e.HTML, want)
+	}
+
+	if len(e.Attachments) > 0 {
+		t.Error("Should have no attachments, got:", len(e.Attachments))
+	}
+	if len(e.Inlines) > 0 {
+		t.Error("Should have no inlines, got:", len(e.Inlines))
+	}
+	if len(e.OtherParts) != 2 {
+		t.Fatal("Should have two other parts, got:", len(e.Inlines))
+	}
+
+	want = "image001.png"
+	got := e.OtherParts[0].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+	want = "image001.png@01D3BA12.F6C6AEB0"
+	got = e.OtherParts[0].ContentID
+	if got != want {
+		t.Error("ContentID got:", got, "want:", want)
+	}
+	if !bytes.HasPrefix(e.OtherParts[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
+		t.Error("Other part should have correct content")
+	}
+
+	want = "image002.png"
+	got = e.OtherParts[1].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+	want = "image002.png@01D3BA12.F6C6AEB0"
+	got = e.OtherParts[1].ContentID
+	if got != want {
+		t.Error("ContentID got:", got, "want:", want)
+	}
+	if !bytes.HasPrefix(e.OtherParts[1].Content, []byte{0x89, 'P', 'N', 'G'}) {
+		t.Error("Other part should have correct content")
 	}
 }
 
@@ -435,6 +493,40 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 	}
 }
 
+func TestParseInlineMultipart(t *testing.T) {
+	msg := test.OpenTestData("mail", "inlinemultipart.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if len(e.Errors) != 0 {
+		t.Errorf("len(e.Errors) got: %v, want: 0", len(e.Errors))
+	}
+
+	want := "Simple text."
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Downconverted Text: %q should contain: %q", e.Text, want)
+	}
+
+	if len(e.Inlines) != 1 {
+		t.Error("Should have one inline, got:", len(e.Inlines))
+	}
+	if len(e.Attachments) != 1 {
+		t.Fatal("Should have one attachments, got:", len(e.Attachments))
+	}
+
+	want = "test.txt"
+	got := e.Inlines[0].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+
+	if !bytes.HasPrefix(e.Inlines[0].Content, []byte("Text")) {
+		t.Error("Inline should have correct content")
+	}
+}
+
 func TestParseNestedHeaders(t *testing.T) {
 	msg := test.OpenTestData("mail", "html-mime-inline.raw")
 	e, err := enmime.ReadEnvelope(msg)
@@ -455,6 +547,22 @@ func TestParseNestedHeaders(t *testing.T) {
 	got = e.Inlines[0].Header.Get("Content-Id")
 	if got != want {
 		t.Errorf("Content-Id header was: %q, want: %q", got, want)
+	}
+}
+
+func TestParseHTMLOnlyCharsetInHeaderOnly(t *testing.T) {
+	msg := test.OpenTestData("mail", "non-mime-html-charset-header-only.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse non-MIME:", err)
+	}
+
+	if !strings.ContainsRune(e.HTML, 0xfc) {
+		t.Error("HTML body should contained German ü")
+	}
+
+	if !strings.Contains(e.HTML, "Müller") {
+		t.Error("HTML body should contained 'Müller'")
 	}
 }
 
@@ -492,6 +600,136 @@ func TestEnvelopeGetHeader(t *testing.T) {
 	got = e.GetHeader("Subject")
 	if got != want {
 		t.Errorf("Subject was: %q, want: %q", got, want)
+	}
+}
+
+func TestEnvelopeGetHeaderKeys(t *testing.T) {
+	// Test empty header
+	e := &enmime.Envelope{}
+	got := e.GetHeaderKeys()
+	if got != nil {
+		t.Errorf("Headers was: %q, want: nil", got)
+	}
+
+	// Even non-MIME messages should support encoded-words in headers
+	// Also, encoded addresses should be suppored
+	r := test.OpenTestData("mail", "qp-ascii-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse non-MIME:", err)
+	}
+
+	want := []string{"Date", "From", "Subject", "To", "X-Mailer"}
+	got = e.GetHeaderKeys()
+	sort.Sort(sort.StringSlice(got))
+	test.DiffStrings(t, got, want)
+
+	// Test UTF-8 subject line
+	r = test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err = enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want = []string{"Content-Type", "Date", "From", "Message-Id", "Mime-Version", "Sender", "Subject", "To", "User-Agent"}
+	got = e.GetHeaderKeys()
+	sort.Sort(sort.StringSlice(got))
+	test.DiffStrings(t, got, want)
+}
+
+func TestEnvelopeGetHeaderValues(t *testing.T) {
+	r := test.OpenTestData("mail", "ctype-bug.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// test Received headers
+	want := []string{
+		"by 10.76.55.35 with SMTP id o3csp106612oap; Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
+		"from mail135-10.atl141.mandrillapp.com (mail135-10.atl141.mandrillapp.com. [198.2.135.10]) by mx.google.com with ESMTPS id k184si6630505ywf.180.2015.07.10.13.12.34 for <deepak@redsift.io> (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128); Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
+		"from pmta03.mandrill.prod.atl01.rsglab.com (127.0.0.1) by mail135-10.atl141.mandrillapp.com id hk0jj41sau80 for <deepak@redsift.io>; Fri, 10 Jul 2015 20:12:33 +0000 (envelope-from <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>)",
+		"from [67.214.212.122] by mandrillapp.com id 163e4a0faf244a2da6b0121cc7af1fe9; Fri, 10 Jul 2015 20:12:33 +0000",
+	}
+	got := e.GetHeaderValues("received")
+	diff := deep.Equal(got, want)
+	if diff != nil {
+		t.Errorf("Got: %+v, want: %+v", got, want)
+	}
+}
+
+func TestEnvelopeSetHeader(t *testing.T) {
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// replace existing header
+	want := "André Pirard <PIRARD@vm1.ulg.ac.be>"
+	e.SetHeader("To", []string{want})
+	got := e.GetHeader("To")
+	if got != want {
+		t.Errorf("Got: %q, want: %q", got, want)
+	}
+
+	// replace existing header with multiple values
+	wantSlice := []string{"Mirosław Marczak <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
+	e.SetHeader("To", wantSlice)
+	gotSlice := e.GetHeaderValues("to")
+	diff := deep.Equal(gotSlice, wantSlice)
+	if diff != nil {
+		t.Errorf("Got: %+v, want: %+v", gotSlice, wantSlice)
+	}
+
+	// replace non-existing header
+	want = "foobar"
+	e.SetHeader("X-Foo-Bar", []string{want})
+	got = e.GetHeader("X-Foo-Bar")
+	if got != want {
+		t.Errorf("Got: %q, want: %q", got, want)
+	}
+}
+
+func TestEnvelopeAddHeader(t *testing.T) {
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// add to existing header
+	to := "James Hillyerd <jamehi03@jamehi03lx.noa.com>"
+	wantSlice := []string{"Mirosław Marczak <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
+	e.AddHeader("To", to)
+	gotSlice := e.GetHeaderValues("To")
+	diff := deep.Equal(gotSlice, wantSlice)
+	if diff != nil {
+		t.Errorf("Got: %+v, want: %+v", gotSlice, wantSlice)
+	}
+
+	// add to non-existing header
+	want := "foobar"
+	e.AddHeader("X-Foo-Bar", want)
+	got := e.GetHeader("X-Foo-Bar")
+	if got != want {
+		t.Errorf("Got: %q, want: %q", got, want)
+	}
+}
+
+func TestEnvelopeDeleteHeader(t *testing.T) {
+	r := test.OpenTestData("mail", "qp-utf8-header.raw")
+	e, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// delete user-agent header
+	e.DeleteHeader("User-Agent")
+	got := e.GetHeader("User-Agent")
+	want := ""
+	if got != want {
+		t.Errorf("Got: %q, want: %q", got, want)
 	}
 }
 
@@ -598,6 +836,10 @@ func TestAttachmentOnly(t *testing.T) {
 		if len(e.Root.Header) < 1 {
 			t.Errorf("No root header defined, but must be set from binary only part.")
 		}
+		// Check, that the root part has content
+		if len(e.Root.Content) == 0 {
+			t.Errorf("Root part of envelope has no content.")
+		}
 	}
 }
 
@@ -642,8 +884,8 @@ func TestBlankMediaName(t *testing.T) {
 
 func TestEnvelopeHeaders(t *testing.T) {
 	headers := map[string]string{
-		"Received-Spf": "pass (google.com: domain of bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com designates 198.2.135.10 as permitted sender) client-ip=198.2.135.10;",
-		"To":           "<deepak@redsift.io>",
+		"Received-Spf":           "pass (google.com: domain of bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com designates 198.2.135.10 as permitted sender) client-ip=198.2.135.10;",
+		"To":                     "<deepak@redsift.io>",
 		"Domainkey-Signature":    "a=rsa-sha1; c=nofws; q=dns; s=mandrill; d=papertrailapp.com; b=Cv9EE+3+CO+puDhpfQOsuwuP6YqJQBA/Z6OofPTXqWf/Asr/edsi7aoXIE+forQ/q8DjhhMMuMiD bQ1tlRXMFckw08GjqU7RN+ouwJEMXOpzxUgp6OwrITvddwhddEg6H3uYRva5pNJqonDDykshHyjA EVeAdcY4tjYQrcRxw/0=;",
 		"Dkim-Signature":         "v=1; a=rsa-sha1; c=relaxed/relaxed; s=mandrill; d=papertrailapp.com; h=From:Subject:To:Message-Id:Date:MIME-Version:Content-Type; i=support@papertrailapp.com; bh=2tw/BU7QN7gmFr2K2wnVpETYxbU=; b=T+PzWzjbOoKO3jNANsmqsnbM+gnbgT9EQBP8DOSno75iHQ9AuU6xcDCPctvJt50Exr6aTs9qJmEG baCa39danDRIx5zXsdaSy34+SKfDODdgmwEEfKFeULQGPwF1g73tXeX4k0kwt+bm6f0baWbaLwR1 RdhUd42jEMossTKuD9w= v=1; a=rsa-sha256; c=relaxed/relaxed; d=mandrillapp.com; i=@mandrillapp.com; q=dns/txt; s=mandrill; t=1436559153; h=From : Subject : To : Message-Id : Date : MIME-Version : Content-Type : From : Subject : Date : X-Mandrill-User : List-Unsubscribe; bh=eW2QM8XcfLCwIBTvTJaT619pYOD3YrxBvxC9cZ2gxe0=; b=quxFFNbO04KKNNB8yMd9Zch6wogobVbNFlpGIOQI/jA9FuhdZvMxQwwZ2jeno7c17v2eXY Vp3c1vwvVERCboNaPwwxrKkrhqMxM8rb15n8xM3v0IplkQ3vs9G5agiTT1qqxErsrS6xAqmj UNUPKEXuSjr24HqmQzxPry0aIgHdI=",
 		"Message-Id":             "<55a02731af510_7b0b33f2c7821d@pt02w01.papertrailapp.com.tmail>",
@@ -651,14 +893,14 @@ func TestEnvelopeHeaders(t *testing.T) {
 		"Mime-Version":           "1.0",
 		"Return-Path":            "<bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com> <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>",
 		"Authentication-Results": "mx.google.com; spf=pass (google.com: domain of bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com designates 198.2.135.10 as permitted sender) smtp.mail=bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com; dkim=pass header.i=@papertrailapp.com; dkim=pass header.i=@mandrillapp.com",
-		"From":            "Papertrail <support@papertrailapp.com>",
-		"Subject":         "Welcome to Papertrail",
-		"Content-Type":    `multipart/alternative; boundary="_av-rPFkvS5QROAYLq2cQTUr1w"`,
-		"X-Mandrill-User": "md_30112948",
-		"Delivered-To":    "deepak@redsift.io",
-		"Received":        "by 10.76.55.35 with SMTP id o3csp106612oap; Fri, 10 Jul 2015 13:12:34 -0700 (PDT) from mail135-10.atl141.mandrillapp.com (mail135-10.atl141.mandrillapp.com. [198.2.135.10]) by mx.google.com with ESMTPS id k184si6630505ywf.180.2015.07.10.13.12.34 for <deepak@redsift.io> (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128); Fri, 10 Jul 2015 13:12:34 -0700 (PDT) from pmta03.mandrill.prod.atl01.rsglab.com (127.0.0.1) by mail135-10.atl141.mandrillapp.com id hk0jj41sau80 for <deepak@redsift.io>; Fri, 10 Jul 2015 20:12:33 +0000 (envelope-from <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>) from [67.214.212.122] by mandrillapp.com id 163e4a0faf244a2da6b0121cc7af1fe9; Fri, 10 Jul 2015 20:12:33 +0000",
-		"X-Received":      "by 10.170.119.147 with SMTP id l141mr25507408ykb.89.1436559154116; Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
-		"Date":            "Fri, 10 Jul 2015 20:12:33 +0000",
+		"From":                   "Papertrail <support@papertrailapp.com>",
+		"Subject":                "Welcome to Papertrail",
+		"Content-Type":           `multipart/alternative; boundary="_av-rPFkvS5QROAYLq2cQTUr1w"`,
+		"X-Mandrill-User":        "md_30112948",
+		"Delivered-To":           "deepak@redsift.io",
+		"Received":               "by 10.76.55.35 with SMTP id o3csp106612oap; Fri, 10 Jul 2015 13:12:34 -0700 (PDT) from mail135-10.atl141.mandrillapp.com (mail135-10.atl141.mandrillapp.com. [198.2.135.10]) by mx.google.com with ESMTPS id k184si6630505ywf.180.2015.07.10.13.12.34 for <deepak@redsift.io> (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128); Fri, 10 Jul 2015 13:12:34 -0700 (PDT) from pmta03.mandrill.prod.atl01.rsglab.com (127.0.0.1) by mail135-10.atl141.mandrillapp.com id hk0jj41sau80 for <deepak@redsift.io>; Fri, 10 Jul 2015 20:12:33 +0000 (envelope-from <bounce-md_30112948.55a02731.v1-163e4a0faf244a2da6b0121cc7af1fe9@mandrill.papertrailapp.com>) from [67.214.212.122] by mandrillapp.com id 163e4a0faf244a2da6b0121cc7af1fe9; Fri, 10 Jul 2015 20:12:33 +0000",
+		"X-Received":             "by 10.170.119.147 with SMTP id l141mr25507408ykb.89.1436559154116; Fri, 10 Jul 2015 13:12:34 -0700 (PDT)",
+		"Date":                   "Fri, 10 Jul 2015 20:12:33 +0000",
 	}
 
 	msg := test.OpenTestData("mail", "ctype-bug.raw")
@@ -703,7 +945,7 @@ func TestInlineTextBody(t *testing.T) {
 		"Content-Type":              `text/html; charset="UTF-8"`,
 		"Content-Disposition":       "inline",
 		"Content-Transfer-Encoding": "quoted-printable",
-		"Date": "Wed, 8 Feb 2017 03:23:13 -0500",
+		"Date":                      "Wed, 8 Feb 2017 03:23:13 -0500",
 	}
 
 	msg := test.OpenTestData("mail", "attachment-only-inline-quoted-printable.raw")
@@ -803,4 +1045,14 @@ func TestEnvelopeEpilogue(t *testing.T) {
 	if got != want {
 		t.Errorf("Epilogue == %q, want: %q", got, want)
 	}
+}
+
+func TestCloneEnvelope(t *testing.T) {
+	msg := test.OpenTestData("mail", "other-multi-related.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	clone := e.Clone()
+	test.CompareEnvelope(t, clone, e)
 }

@@ -42,6 +42,8 @@ func mapLatinSpecial(r rune) rune {
 	return r
 }
 
+// ToASCII converts unicode to ASCII by stripping accents and converting some special characters
+// into their ASCII approximations.  Anything else will be replaced with an underscore.
 func ToASCII(s string) string {
 	// unicode.Mn: nonspacing marks
 	tr := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), runes.Map(mapLatinSpecial),

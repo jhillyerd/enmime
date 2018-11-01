@@ -3,6 +3,7 @@ package enmime
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/mail"
 	"net/textproto"
 	"strings"
@@ -13,14 +14,28 @@ import (
 
 // Envelope is a simplified wrapper for MIME email messages.
 type Envelope struct {
-	Text        string                // The plain text portion of the message
-	HTML        string                // The HTML portion of the message
-	Root        *Part                 // The top-level Part
-	Attachments []*Part               // All parts having a Content-Disposition of attachment
-	Inlines     []*Part               // All parts having a Content-Disposition of inline
-	OtherParts  []*Part               // All parts not in Attachments and Inlines
-	Errors      []*Error              // Errors encountered while parsing
-	header      *textproto.MIMEHeader // Header from original message
+	Text        string  // The plain text portion of the message
+	HTML        string  // The HTML portion of the message
+	Root        *Part   // The top-level Part
+	Attachments []*Part // All parts having a Content-Disposition of attachment
+	Inlines     []*Part // All parts having a Content-Disposition of inline
+	// All non-text parts that were not placed in Attachments or Inlines, such as multipart/related
+	// content.
+	OtherParts []*Part
+	Errors     []*Error              // Errors encountered while parsing
+	header     *textproto.MIMEHeader // Header from original message
+}
+
+// GetHeaderKeys returns a list of header keys seen in this message. Get
+// individual headers with `GetHeader(name)`
+func (e *Envelope) GetHeaderKeys() (headers []string) {
+	if e.header == nil {
+		return
+	}
+	for key := range *e.header {
+		headers = append(headers, key)
+	}
+	return headers
 }
 
 // GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
@@ -30,6 +45,59 @@ func (e *Envelope) GetHeader(name string) string {
 		return ""
 	}
 	return decodeHeader(e.header.Get(name))
+}
+
+// GetHeaderValues processes the specified header for RFC 2047 encoded words and returns all existing
+// values as a list of UTF-8 strings
+func (e *Envelope) GetHeaderValues(name string) []string {
+	if e.header == nil {
+		return []string{}
+	}
+
+	rawValues := (*e.header)[textproto.CanonicalMIMEHeaderKey(name)]
+	var values []string
+	for _, v := range rawValues {
+		values = append(values, decodeHeader(v))
+	}
+	return values
+}
+
+// SetHeader sets given header name to the given value.
+// If the header exists already, all existing values are replaced.
+func (e *Envelope) SetHeader(name string, value []string) error {
+	if name == "" {
+		return fmt.Errorf("Provide non-empty header name")
+	}
+
+	for i, v := range value {
+		if i == 0 {
+			e.header.Set(name, mime.BEncoding.Encode("utf-8", v))
+			continue
+		}
+		e.header.Add(name, mime.BEncoding.Encode("utf-8", v))
+	}
+	return nil
+}
+
+// AddHeader appends given header value to header name without changing existing values.
+// If the header does not exist already, it will be created.
+func (e *Envelope) AddHeader(name string, value string) error {
+	if name == "" {
+		return fmt.Errorf("Provide non-empty header name")
+	}
+
+	e.header.Add(name, mime.BEncoding.Encode("utf-8", value))
+	return nil
+}
+
+// DeleteHeader deletes given header.
+func (e *Envelope) DeleteHeader(name string) error {
+	if name == "" {
+		return fmt.Errorf("Provide non-empty header name")
+	}
+
+	e.header.Del(name)
+	return nil
 }
 
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
@@ -53,6 +121,25 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 		return nil, err
 	}
 	return ret, nil
+}
+
+// Clone returns a clone of the current Envelope
+func (e *Envelope) Clone() *Envelope {
+	if e == nil {
+		return nil
+	}
+
+	newEnvelope := &Envelope{
+		e.Text,
+		e.HTML,
+		e.Root.Clone(nil),
+		e.Attachments,
+		e.Inlines,
+		e.OtherParts,
+		e.Errors,
+		e.header,
+	}
+	return newEnvelope
 }
 
 // ReadEnvelope is a wrapper around ReadParts and EnvelopeFromPart.  It parses the content of the
@@ -85,8 +172,10 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	} else {
 		if detectBinaryBody(root) {
 			// Attachment only, no text
-			if err := parseBinaryOnlyBody(root, e); err != nil {
-				return nil, err
+			if root.Disposition == cdInline {
+				e.Inlines = append(e.Inlines, root)
+			} else {
+				e.Attachments = append(e.Attachments, root)
 			}
 		} else {
 			// Only text, no attachments
@@ -114,14 +203,14 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 		}
 	}
 
-	// Copy part errors into Envelope
+	// Copy part errors into Envelope.
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
-			// Using DepthMatchAll to traverse all parts, don't care about result
+			// Using DepthMatchAll to traverse all parts, don't care about result.
 			for i := range part.Errors {
-				// Index is required here to get the correct address, &value from range
-				// points to a locally scoped variable
-				e.Errors = append(e.Errors, &part.Errors[i])
+				// Range index is needed to get the correct address, because range value points to
+				// a locally scoped variable.
+				e.Errors = append(e.Errors, part.Errors[i])
 			}
 			return false
 		})
@@ -162,37 +251,20 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 					root.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
+			// Converted from charset in HTML
+			return nil
+		}
+
+		// Use charset found in header
+		if convHTML, err := coding.ConvertToUTF8String(charset, root.Content); err == nil {
+			// Successful conversion
+			e.HTML = convHTML
+		} else {
+			// Conversion failed
+			root.addWarning(ErrorCharsetConversion, err.Error())
 		}
 	} else {
 		e.Text = string(root.Content)
-	}
-
-	return nil
-}
-
-// parseBinaryOnlyBody parses a message where the only content is a binary attachment with no
-// other parts. The result is placed in e.
-func parseBinaryOnlyBody(root *Part, e *Envelope) error {
-	// Determine mediatype
-	ctype := root.Header.Get(hnContentType)
-	mediatype, mparams, err := parseMediaType(ctype)
-	if err != nil {
-		mediatype = cdAttachment
-	}
-
-	// Determine and set headers for: content disposition, filename and character set
-	root.setupContentHeaders(mparams)
-
-	// Add our part to the appropriate section of the Envelope
-	e.Root = NewPart(nil, mediatype)
-
-	// Add header from binary only part
-	e.Root.Header = root.Header
-
-	if root.Disposition == cdInline {
-		e.Inlines = append(e.Inlines, root)
-	} else {
-		e.Attachments = append(e.Attachments, root)
 	}
 
 	return nil
@@ -248,7 +320,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate inlines
 	e.Inlines = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition == cdInline
+		return p.Disposition == cdInline && !strings.HasPrefix(p.ContentType, ctMultipartPrefix)
 	})
 
 	// Locate others parts not considered in attachments or inlines

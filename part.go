@@ -2,7 +2,6 @@ package enmime
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -18,31 +17,28 @@ import (
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
-	PartID      string               // PartID labels this parts position within the tree
-	Header      textproto.MIMEHeader // Header for this Part
-	Parent      *Part                // Parent of this part (can be nil)
-	FirstChild  *Part                // FirstChild is the top most child of this part
-	NextSibling *Part                // NextSibling of this part
-	Boundary    string               // Boundary marker used within this part
-	ContentID   string               // ContentID header for cid URL scheme
-	ContentType string               // ContentType header without parameters
-	Disposition string               // Content-Disposition header without parameters
-	FileName    string               // The file-name from disposition or type header
-	Charset     string               // The content charset encoding label
-	Errors      []Error              // Errors encountered while parsing this part
-	Content     []byte               // Content after decoding, UTF-8 conversion if applicable
-	Epilogue    []byte               // Epilogue contains data following the closing boundary marker
-	Utf8Reader  io.Reader            // DEPRECATED: The decoded content converted to UTF-8
-
-	rawReader     io.Reader // The raw Part content, no decoding or charset conversion
-	decodedReader io.Reader // The content decoded from quoted-printable or base64
+	PartID      string               // PartID labels this parts position within the tree.
+	Header      textproto.MIMEHeader // Header for this Part.
+	Parent      *Part                // Parent of this part (can be nil.)
+	FirstChild  *Part                // FirstChild is the top most child of this part.
+	NextSibling *Part                // NextSibling of this part.
+	Boundary    string               // Boundary marker used within this part.
+	ContentID   string               // ContentID header for cid URL scheme.
+	ContentType string               // ContentType header without parameters.
+	Disposition string               // Content-Disposition header without parameters.
+	FileName    string               // The file-name from disposition or type header.
+	Charset     string               // The content charset encoding label.
+	Errors      []*Error             // Errors encountered while parsing this part.
+	Content     []byte               // Content after decoding, UTF-8 conversion if applicable.
+	Epilogue    []byte               // Epilogue contains data following the closing boundary marker.
 }
 
-// NewPart creates a new Part object.  It does not update the parents FirstChild attribute.
-func NewPart(parent *Part, contentType string) *Part {
-	header := make(textproto.MIMEHeader)
-	header.Set(hnContentType, contentType)
-	return &Part{Parent: parent, Header: header, ContentType: contentType}
+// NewPart creates a new Part object.
+func NewPart(contentType string) *Part {
+	return &Part{
+		Header:      make(textproto.MIMEHeader),
+		ContentType: contentType,
+	}
 }
 
 // AddChild adds a child part to either FirstChild or the end of the children NextSibling chain.
@@ -50,42 +46,34 @@ func NewPart(parent *Part, contentType string) *Part {
 // child and all its siblings. Safe to call on nil.
 func (p *Part) AddChild(child *Part) {
 	if p == child {
-		// Prevent paradox
+		// Prevent paradox.
 		return
 	}
 	if p != nil {
 		if p.FirstChild == nil {
-			// Make it the first child
+			// Make it the first child.
 			p.FirstChild = child
 		} else {
-			// Append to sibling chain
+			// Append to sibling chain.
 			current := p.FirstChild
 			for current.NextSibling != nil {
 				current = current.NextSibling
 			}
 			if current == child {
-				// Prevent infinite loop
+				// Prevent infinite loop.
 				return
 			}
 			current.NextSibling = child
 		}
 	}
-	// Update all new first-level children Parent pointers
+	// Update all new first-level children Parent pointers.
 	for c := child; c != nil; c = c.NextSibling {
 		if c == c.NextSibling {
-			// Prevent infinite loop
+			// Prevent infinite loop.
 			return
 		}
 		c.Parent = p
 	}
-}
-
-// Read returns the decoded & UTF-8 converted content; implements io.Reader.
-func (p *Part) Read(b []byte) (n int, err error) {
-	if p.Utf8Reader == nil {
-		return 0, io.EOF
-	}
-	return p.Utf8Reader.Read(b)
 }
 
 // TextContent indicates whether the content is text based on its content type.  This value
@@ -114,13 +102,13 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		}
 		ctype = defaultContentType
 	}
-	// Parse Content-Type header
+	// Parse Content-Type header.
 	mtype, mparams, err := parseMediaType(ctype)
 	if err != nil {
 		return err
 	}
 	p.ContentType = mtype
-	// Set disposition, filename, charset if available
+	// Set disposition, filename, charset if available.
 	p.setupContentHeaders(mparams)
 	p.Boundary = mparams[hpBoundary]
 	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
@@ -130,7 +118,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
-	// Determine content disposition, filename, character set
+	// Determine content disposition, filename, character set.
 	disposition, dparams, err := parseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
@@ -148,28 +136,17 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	}
 }
 
-// buildContentReaders sets up the decodedReader and utf8Reader based on the Part headers.  If no
-// translation is required at a particular stage, the reader will be the same as its predecessor.
-// If the content encoding type is not recognized, no effort will be made to do character set
-// conversion.
-func (p *Part) buildContentReaders(r io.Reader) error {
-	// Read raw content into buffer
-	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(r); err != nil {
-		return err
-	}
-
-	var contentReader io.Reader = buf
-	valid := true
-
-	// Raw content reader
-	p.rawReader = contentReader
-
-	// Allow later access to Base64 errors
+// decodeContent performs transport decoding (base64, quoted-printable) and charset decoding,
+// placing the result into Part.Content.  IO errors will be returned immediately; other errors
+// and warnings will be added to Part.Errors.
+func (p *Part) decodeContent(r io.Reader) error {
+	// contentReader will point to the end of the content decoding pipeline.
+	contentReader := r
+	// b64cleaner aggregates errors, must maintain a reference to it to get them later.
 	var b64cleaner *coding.Base64Cleaner
-
-	// Build content decoding reader
+	// Build content decoding reader.
 	encoding := p.Header.Get(hnContentEncoding)
+	validEncoding := true
 	switch strings.ToLower(encoding) {
 	case cteQuotedPrintable:
 		contentReader = coding.NewQPCleaner(contentReader)
@@ -178,55 +155,82 @@ func (p *Part) buildContentReaders(r io.Reader) error {
 		b64cleaner = coding.NewBase64Cleaner(contentReader)
 		contentReader = base64.NewDecoder(base64.RawStdEncoding, b64cleaner)
 	case cte8Bit, cte7Bit, cteBinary, "":
-		// No decoding required
+		// No decoding required.
 	default:
-		// Unknown encoding
-		valid = false
+		// Unknown encoding.
+		validEncoding = false
 		p.addWarning(
 			ErrorContentEncoding,
 			"Unrecognized Content-Transfer-Encoding type %q",
 			encoding)
 	}
-	p.decodedReader = contentReader
-
-	if valid && !detectAttachmentHeader(p.Header) {
-		// decodedReader is good; build character set conversion reader
+	// Build charset decoding reader.
+	if validEncoding && !detectAttachmentHeader(p.Header) {
 		if p.Charset != "" {
 			if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
 				contentReader = reader
 			} else {
 				// Try to parse charset again here to see if we can salvage some badly formed ones
-				// like charset="charset=utf-8"
+				// like charset="charset=utf-8".
 				charsetp := strings.Split(p.Charset, "=")
 				if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
 					p.Charset = charsetp[1]
 					if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
 						contentReader = reader
 					} else {
-						// Failed to get a conversion reader
+						// Failed to get a conversion reader.
 						p.addWarning(ErrorCharsetConversion, err.Error())
 					}
 				} else {
-					// Failed to get a conversion reader
+					// Failed to get a conversion reader.
 					p.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
 		}
 	}
-	// Messy until Utf8Reader is removed
+	// Decode and store content.
 	content, err := ioutil.ReadAll(contentReader)
-	p.Utf8Reader = bytes.NewReader(content)
+	if err != nil {
+		return err
+	}
 	p.Content = content
+	// Collect base64 errors.
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {
-			p.Errors = append(p.Errors, Error{
+			p.Errors = append(p.Errors, &Error{
 				Name:   ErrorMalformedBase64,
 				Detail: err.Error(),
 				Severe: false,
 			})
 		}
 	}
-	return err
+	return nil
+}
+
+// Clone returns a clone of the current Part.
+func (p *Part) Clone(parent *Part) *Part {
+	if p == nil {
+		return nil
+	}
+
+	newPart := &Part{
+		PartID:      p.PartID,
+		Header:      p.Header,
+		Parent:      parent,
+		Boundary:    p.Boundary,
+		ContentID:   p.ContentID,
+		ContentType: p.ContentType,
+		Disposition: p.Disposition,
+		FileName:    p.FileName,
+		Charset:     p.Charset,
+		Errors:      p.Errors,
+		Content:     p.Content,
+		Epilogue:    p.Epilogue,
+	}
+	newPart.FirstChild = p.FirstChild.Clone(newPart)
+	newPart.NextSibling = p.NextSibling.Clone(parent)
+
+	return newPart
 }
 
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
@@ -245,8 +249,8 @@ func ReadParts(r io.Reader) (*Part, error) {
 			return nil, err
 		}
 	} else {
-		// Content is text or data, build content reader pipeline.
-		if err := root.buildContentReaders(br); err != nil {
+		// Content is text or data, decode it.
+		if err := root.decodeContent(br); err != nil {
 			return nil, err
 		}
 	}
@@ -295,8 +299,8 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Insert this Part into the MIME tree.
 		parent.AddChild(p)
 		if p.Boundary == "" {
-			// Content is text or data; build content reader pipeline.
-			if err := p.buildContentReaders(bbr); err != nil {
+			// Content is text or data, decode it.
+			if err := p.decodeContent(bbr); err != nil {
 				return err
 			}
 		} else {

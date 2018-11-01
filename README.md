@@ -1,6 +1,4 @@
-enmime
-================================================================================
-
+# enmime
 [![GoDoc](https://godoc.org/github.com/jhillyerd/enmime?status.png)][GoDoc]
 [![Build Status](https://travis-ci.org/jhillyerd/enmime.png?branch=master)][Build Status]
 [![Go Report Card](https://goreportcard.com/badge/github.com/jhillyerd/enmime)][Go Report Card]
@@ -13,18 +11,17 @@ parsing MIME encoded emails.  It is being developed in tandem with the
 enmime includes a fluent interface builder for generating MIME encoded messages,
 see the wiki for example [Builder Usage].
 
-API documentation can be found here:
+API documentation and examples can be found here:
 http://godoc.org/github.com/jhillyerd/enmime
 
-A brief guide to migrating from the old go.enmime API is available here:
+
+## API Changes
+
+Part readers: `Part.Read()` and `Part.Utf8Reader` have been removed. Please use
+`Part.Content` instead.
+
+A brief guide to migrating from the old 2016 go.enmime API is available here:
 https://github.com/jhillyerd/enmime/wiki/Enmime-Migration-Guide
-
-
-## API Change Warning
-
-Part readers: `Part.Read()` and `Part.Utf8Reader` are now deprecated.  Please
-use `Part.Content` instead.  The deprecated readers will be removed in April
-2018.
 
 
 ## Development Status

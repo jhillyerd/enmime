@@ -724,3 +724,19 @@ func TestBadBoundaryTerm(t *testing.T) {
 	want = "An HTML section"
 	test.ContentContainsString(t, p.Content, want)
 }
+
+func TestClonePart(t *testing.T) {
+	r := test.OpenTestData("parts", "multiother.raw")
+	p, err := enmime.ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatal("Unexpected parse error:", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	clone := p.Clone(nil)
+	test.ComparePart(t, clone, p)
+}

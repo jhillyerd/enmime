@@ -5,6 +5,7 @@ import (
 	"net/mail"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -15,14 +16,8 @@ import (
 var addrSlice = []mail.Address{{Name: "name", Address: "addr"}}
 
 func TestBuilderEquals(t *testing.T) {
-	var a, b *enmime.MailBuilder
-
-	if !a.Equals(b) {
-		t.Error("nil PartBuilders should be equal")
-	}
-
-	a = enmime.Builder()
-	b = enmime.Builder()
+	a := enmime.Builder()
+	b := enmime.Builder()
 	if !a.Equals(b) {
 		t.Error("New PartBuilders should be equal")
 	}
@@ -136,9 +131,12 @@ func TestBuilderTo(t *testing.T) {
 	}
 
 	a = enmime.Builder().To("name", "foo")
-	b = a.To("name", "bar")
-	if a.Equals(b) {
-		t.Error("To() should not mutate receiver, failed")
+	for i := 0; i < 1000; i++ {
+		b = a.To("name", "bar"+strconv.Itoa(i))
+		if a.Equals(b) {
+			t.Error("To() should not mutate receiver, failed")
+		}
+		a = b
 	}
 
 	a = enmime.Builder().From("name", "foo").Subject("foo")

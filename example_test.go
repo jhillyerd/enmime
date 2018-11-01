@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/smtp"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/jhillyerd/enmime"
@@ -151,13 +152,13 @@ hello again!
 
 	// part3 contained a malformed header line, enmime has attached an Error to it
 	p3error := part3.Errors[0]
-	fmt.Println(p3error.String())
+	fmt.Println(p3error.Error())
 	fmt.Println()
 
 	// All Part errors are collected and placed into Envelope.Errors
 	fmt.Println("Envelope errors:")
 	for _, e := range env.Errors {
-		fmt.Println(e.String())
+		fmt.Println(e.Error())
 	}
 
 	// Output:
@@ -177,4 +178,40 @@ hello again!
 	//
 	// Envelope errors:
 	// [W] Malformed Header: Continued line "filename=hi.txt" was not indented
+}
+
+func ExampleEnvelope_GetHeaderKeys() {
+	// Open a sample message file.
+	r, err := os.Open("testdata/mail/qp-utf8-header.raw")
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// Parse message with enmime.
+	env, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// A list of headers is retrieved via Envelope.GetHeaderKeys().
+	headers := env.GetHeaderKeys()
+	sort.Sort(sort.StringSlice(headers))
+
+	// Print each header, key and value.
+	for _, header := range headers {
+		fmt.Printf("%s: %v\n", header, env.GetHeader(header))
+	}
+
+	// Output:
+	// Content-Type: multipart/alternative; boundary="------------020203040006070307010003"
+	// Date: Fri, 19 Oct 2012 12:22:49 -0700
+	// From: James Hillyerd <jamehi03@jamehi03lx.noa.com>, André Pirard <PIRARD@vm1.ulg.ac.be>
+	// Message-Id: <5081A889.3020108@jamehi03lx.noa.com>
+	// Mime-Version: 1.0
+	// Sender: André Pirard <PIRARD@vm1.ulg.ac.be>
+	// Subject: MIME UTF8 Test ¢ More Text
+	// To: Mirosław Marczak <marczak@inbucket.com>
+	// User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 }
