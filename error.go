@@ -46,7 +46,7 @@ func (e *Error) String() string {
 func (p *Part) addError(name string, detailFmt string, args ...interface{}) {
 	p.Errors = append(
 		p.Errors,
-		Error{
+		&Error{
 			name,
 			fmt.Sprintf(detailFmt, args...),
 			true,
@@ -57,7 +57,7 @@ func (p *Part) addError(name string, detailFmt string, args ...interface{}) {
 func (p *Part) addWarning(name string, detailFmt string, args ...interface{}) {
 	p.Errors = append(
 		p.Errors,
-		Error{
+		&Error{
 			name,
 			fmt.Sprintf(detailFmt, args...),
 			false,

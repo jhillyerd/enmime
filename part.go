@@ -28,7 +28,7 @@ type Part struct {
 	Disposition string               // Content-Disposition header without parameters.
 	FileName    string               // The file-name from disposition or type header.
 	Charset     string               // The content charset encoding label.
-	Errors      []Error              // Errors encountered while parsing this part.
+	Errors      []*Error             // Errors encountered while parsing this part.
 	Content     []byte               // Content after decoding, UTF-8 conversion if applicable.
 	Epilogue    []byte               // Epilogue contains data following the closing boundary marker.
 }
@@ -197,7 +197,7 @@ func (p *Part) decodeContent(r io.Reader) error {
 	// Collect base64 errors.
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {
-			p.Errors = append(p.Errors, Error{
+			p.Errors = append(p.Errors, &Error{
 				Name:   ErrorMalformedBase64,
 				Detail: err.Error(),
 				Severe: false,
