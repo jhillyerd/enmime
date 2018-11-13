@@ -255,14 +255,16 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 			return nil
 		}
 
+		// Decoding has already been handled in part.go:decodeContent
+		//
 		// Use charset found in header
-		if convHTML, err := coding.ConvertToUTF8String(charset, root.Content); err == nil {
-			// Successful conversion
-			e.HTML = convHTML
-		} else {
-			// Conversion failed
-			root.addWarning(ErrorCharsetConversion, err.Error())
-		}
+		//if convHTML, err := coding.ConvertToUTF8String(charset, root.Content); err == nil {
+		//	// Successful conversion
+		//	e.HTML = convHTML
+		//} else {
+		//	// Conversion failed
+		//	root.addWarning(ErrorCharsetConversion, err.Error())
+		//}
 	} else {
 		e.Text = string(root.Content)
 	}
