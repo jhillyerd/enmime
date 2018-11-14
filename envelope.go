@@ -203,14 +203,14 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 		}
 	}
 
-	// Copy part errors into Envelope
+	// Copy part errors into Envelope.
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
-			// Using DepthMatchAll to traverse all parts, don't care about result
+			// Using DepthMatchAll to traverse all parts, don't care about result.
 			for i := range part.Errors {
-				// Index is required here to get the correct address, &value from range
-				// points to a locally scoped variable
-				e.Errors = append(e.Errors, &part.Errors[i])
+				// Range index is needed to get the correct address, because range value points to
+				// a locally scoped variable.
+				e.Errors = append(e.Errors, part.Errors[i])
 			}
 			return false
 		})

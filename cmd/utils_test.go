@@ -133,7 +133,7 @@ func TestFormatPartMulti(t *testing.T) {
 	lev1.NextSibling.NextSibling.FirstChild = lev2
 
 	// Setup an error
-	lev1.Errors = []enmime.Error{
+	lev1.Errors = []*enmime.Error{
 		{Name: "Test Error", Detail: "None", Severe: false},
 	}
 
