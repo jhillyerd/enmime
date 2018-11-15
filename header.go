@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -190,6 +191,8 @@ func decodeToUTF8Base64Header(input string) string {
 func parseMediaType(ctype string) (mtype string, params map[string]string, err error) {
 	mtype, params, err = mime.ParseMediaType(ctype)
 	if err != nil {
+		// If the media parameter has special characters, ensure that it is quoted
+		ctype = fixUnquotedSpecials(ctype)
 		// Small hack to remove harmless charset duplicate params.
 		mctype := fixMangledMediaType(ctype, ";")
 		mtype, params, err = mime.ParseMediaType(mctype)
@@ -227,6 +230,17 @@ func fixMangledMediaType(mtype, sep string) string {
 		mtype += p + ";"
 	}
 	return mtype
+}
+
+// fixUnquotedSpecials as defined in https://www.w3.org/Protocols/rfc1341/4_Content-Type.html
+func fixUnquotedSpecials(s string) string {
+	if strings.Contains(s, "name=") {
+		nameSplit := strings.SplitAfter(s, "name=")
+		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") {
+			return fmt.Sprintf("%s\"%s\"", nameSplit[0], nameSplit[1])
+		}
+	}
+	return s
 }
 
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc

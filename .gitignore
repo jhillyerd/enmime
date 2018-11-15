@@ -21,6 +21,9 @@ _testmain.go
 
 *.exe
 
+# goland ide
+.idea
+
 # vim swp files
 *.swp
 
