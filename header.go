@@ -191,8 +191,6 @@ func decodeToUTF8Base64Header(input string) string {
 func parseMediaType(ctype string) (mtype string, params map[string]string, err error) {
 	mtype, params, err = mime.ParseMediaType(ctype)
 	if err != nil {
-		// If the media parameter has special characters, ensure that it is quoted
-		ctype = fixUnquotedSpecials(ctype)
 		// Small hack to remove harmless charset duplicate params.
 		mctype := fixMangledMediaType(ctype, ";")
 		mtype, params, err = mime.ParseMediaType(mctype)
@@ -204,7 +202,11 @@ func parseMediaType(ctype string) (mtype string, params map[string]string, err e
 			}
 			mtype, params, err = mime.ParseMediaType(mctype)
 			if err != nil {
-				return "", nil, err
+				// If the media parameter has special characters, ensure that it is quoted
+				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
+				if err != nil {
+					return "", nil, err
+				}
 			}
 		}
 	}
