@@ -236,7 +236,7 @@ func fixMangledMediaType(mtype, sep string) string {
 func fixUnquotedSpecials(s string) string {
 	if strings.Contains(s, "name=") {
 		nameSplit := strings.SplitAfter(s, "name=")
-		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") {
+		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") && !strings.HasSuffix(nameSplit[1], "\"") {
 			return fmt.Sprintf("%s\"%s\"", nameSplit[0], nameSplit[1])
 		}
 	}
