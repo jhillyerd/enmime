@@ -221,7 +221,7 @@ func fixMangledMediaType(mtype, sep string) string {
 	}
 	parts := strings.Split(mtype, sep)
 	mtype = ""
-	for _, p := range parts {
+	for i, p := range parts {
 		if strings.Contains(p, "=") {
 			pair := strings.Split(p, "=")
 			if strings.Contains(mtype, pair[0]+"=") {
@@ -229,7 +229,10 @@ func fixMangledMediaType(mtype, sep string) string {
 				continue
 			}
 		}
-		mtype += p + ";"
+		// only terminate with semicolon if not the last parameter and if it doesn't already have a semicolon
+		if i != len(parts)-1 && !strings.HasSuffix(p, ";") {
+			mtype += p + ";"
+		}
 	}
 	return mtype
 }
