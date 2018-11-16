@@ -27,6 +27,9 @@ const (
 	ctTextPlain        = "text/plain"
 	ctTextHTML         = "text/html"
 
+	// Used as a placeholder in case of malformed Content-Type headers
+	ctPlaceholder = "x-not-a-mime-type/x-not-a-mime-type"
+
 	// Standard Transfer encodings
 	cte7Bit            = "7bit"
 	cte8Bit            = "8bit"
@@ -210,6 +213,9 @@ func parseMediaType(ctype string) (mtype string, params map[string]string, err e
 			}
 		}
 	}
+	if mtype == ctPlaceholder {
+		mtype = ""
+	}
 	return mtype, params, err
 }
 
@@ -222,11 +228,19 @@ func fixMangledMediaType(mtype, sep string) string {
 	parts := strings.Split(mtype, sep)
 	mtype = ""
 	for i, p := range parts {
-		if strings.Contains(p, "=") {
-			pair := strings.Split(p, "=")
-			if strings.Contains(mtype, pair[0]+"=") {
-				// Ignore repeated parameters.
-				continue
+		switch i {
+		case 0:
+			if p == "" {
+				// The content type is completely missing. Put in a placeholder.
+				p = ctPlaceholder
+			}
+		default:
+			if strings.Contains(p, "=") {
+				pair := strings.Split(p, "=")
+				if strings.Contains(mtype, pair[0]+"=") {
+					// Ignore repeated parameters.
+					continue
+				}
 			}
 		}
 		mtype += p
