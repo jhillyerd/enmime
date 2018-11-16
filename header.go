@@ -231,7 +231,7 @@ func fixMangledMediaType(mtype, sep string) string {
 		}
 		mtype += p
 		// only terminate with semicolon if not the last parameter and if it doesn't already have a semicolon
-		if i != len(parts)-1 {
+		if i != len(parts)-1 && !strings.HasSuffix(mtype, ";") {
 			mtype += ";"
 		}
 	}
