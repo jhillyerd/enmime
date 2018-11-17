@@ -4,6 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Use iso-8859-1 character map when implicitly declared (thanks to requaos.)
+- Treat "inline" disposition as message content, not attachment unless it is
+  accompanied by parameters (e.g. a filename, thanks to requaos.)
+
 ## [0.3.0] - 2018-11-01
 
 ### Added
