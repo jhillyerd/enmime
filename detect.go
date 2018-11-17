@@ -29,9 +29,9 @@ func detectMultipartMessage(root *Part) bool {
 //  - Content-Disposition: inline; filename="frog.jpg"
 //  - Content-Type: attachment; filename="frog.jpg"
 func detectAttachmentHeader(header textproto.MIMEHeader) bool {
-	mediatype, _, _ := parseMediaType(header.Get(hnContentDisposition))
+	mediatype, params, _ := parseMediaType(header.Get(hnContentDisposition))
 	if strings.ToLower(mediatype) == cdAttachment ||
-		strings.ToLower(mediatype) == cdInline {
+		(strings.ToLower(mediatype) == cdInline && len(params) > 0) {
 		return true
 	}
 
