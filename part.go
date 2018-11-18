@@ -2,6 +2,7 @@ package enmime
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
 )
 
@@ -28,6 +30,7 @@ type Part struct {
 	Disposition string               // Content-Disposition header without parameters.
 	FileName    string               // The file-name from disposition or type header.
 	Charset     string               // The content charset encoding label.
+	OrigCharset string               // The original content charset encoding label in case a different charset was detected.
 	Errors      []*Error             // Errors encountered while parsing this part.
 	Content     []byte               // Content after decoding, UTF-8 conversion if applicable.
 	Epilogue    []byte               // Epilogue contains data following the closing boundary marker.
@@ -166,24 +169,58 @@ func (p *Part) decodeContent(r io.Reader) error {
 	}
 	// Build charset decoding reader.
 	if validEncoding && !detectAttachmentHeader(p.Header) {
-		if p.Charset != "" {
-			if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
+		var reader io.Reader
+
+		// get charset detector
+		var cd *chardet.Detector
+		cd = chardet.NewTextDetector()
+		if p.ContentType == "text/html" {
+			cd = chardet.NewHtmlDetector()
+		}
+		// detect charset
+		buf, err := ioutil.ReadAll(contentReader)
+		if err != nil {
+			return err
+		}
+		cs, err := cd.DetectBest(buf)
+		if err != nil {
+			return err
+		}
+		contentReader = bytes.NewReader(buf) // restore contentReader
+
+		if cs != nil && cs.Confidence >= 85 { // read with detected charset if confidence is high
+			if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
+				p.addWarning(ErrorCharsetDeclaration, fmt.Sprintf("Part %s: declared charset '%s', detected '%s', confidence %d", p.PartID, p.Charset, cs.Charset, cs.Confidence))
+			}
+			reader, err = coding.NewCharsetReader(cs.Charset, contentReader)
+			if err == nil {
 				contentReader = reader
-			} else {
-				// Try to parse charset again here to see if we can salvage some badly formed ones
-				// like charset="charset=utf-8".
-				charsetp := strings.Split(p.Charset, "=")
-				if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
-					p.Charset = charsetp[1]
-					if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
-						contentReader = reader
+				p.OrigCharset = p.Charset
+				p.Charset = cs.Charset
+			}
+
+		} else { // read declared charset otherwise
+			if p.Charset != "" {
+				reader, err = coding.NewCharsetReader(p.Charset, contentReader)
+				if err == nil {
+					contentReader = reader
+				} else {
+					// Try to parse charset again here to see if we can salvage some badly formed ones
+					// like charset="charset=utf-8".
+					charsetp := strings.Split(p.Charset, "=")
+					if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
+						p.Charset = charsetp[1]
+						reader, err = coding.NewCharsetReader(p.Charset, contentReader)
+						if err == nil {
+							contentReader = reader
+						} else {
+							// Failed to get a conversion reader.
+							p.addWarning(ErrorCharsetConversion, err.Error())
+						}
 					} else {
 						// Failed to get a conversion reader.
 						p.addWarning(ErrorCharsetConversion, err.Error())
 					}
-				} else {
-					// Failed to get a conversion reader.
-					p.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
 		}

@@ -19,6 +19,8 @@ const (
 	ErrorContentEncoding = "Content Encoding"
 	// ErrorPlainTextFromHTML name.
 	ErrorPlainTextFromHTML = "Plain Text from HTML"
+	// ErrorCharsetDeclaration name.
+	ErrorCharsetDeclaration = "Character Set Declaration Mismatch"
 )
 
 // Error describes an error encountered while parsing.

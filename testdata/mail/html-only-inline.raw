@@ -17,7 +17,7 @@ Content-Type: multipart/related;
 --Apple-Mail=_D2ABE25A-F0FE-404E-94EE-D98BD23448D5
 Content-Transfer-Encoding: 7bit
 Content-Type: text/html;
-	charset=us-ascii
+	charset=ISO-8859-1
 
 <html><head></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; "><font class="Apple-style-span" face="'Comic Sans MS'">Test of HTML section</font><img height="16" width="16" apple-width="yes" apple-height="yes" id="4579722f-d53d-45d0-88bc-f8209a2ca569" src="cid:8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet"></body></html>
 --Apple-Mail=_D2ABE25A-F0FE-404E-94EE-D98BD23448D5
