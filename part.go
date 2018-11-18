@@ -16,24 +16,28 @@ import (
 	"github.com/jhillyerd/enmime/internal/coding"
 )
 
+const minCharsetConfidence = 85
+
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
 	PartID      string               // PartID labels this parts position within the tree.
-	Header      textproto.MIMEHeader // Header for this Part.
 	Parent      *Part                // Parent of this part (can be nil.)
 	FirstChild  *Part                // FirstChild is the top most child of this part.
 	NextSibling *Part                // NextSibling of this part.
-	Boundary    string               // Boundary marker used within this part.
-	ContentID   string               // ContentID header for cid URL scheme.
-	ContentType string               // ContentType header without parameters.
-	Disposition string               // Content-Disposition header without parameters.
-	FileName    string               // The file-name from disposition or type header.
-	Charset     string               // The content charset encoding label.
-	OrigCharset string               // The original content charset encoding label in case a different charset was detected.
-	Errors      []*Error             // Errors encountered while parsing this part.
-	Content     []byte               // Content after decoding, UTF-8 conversion if applicable.
-	Epilogue    []byte               // Epilogue contains data following the closing boundary marker.
+	Header      textproto.MIMEHeader // Header for this Part.
+
+	Boundary    string // Boundary marker used within this part.
+	ContentID   string // ContentID header for cid URL scheme.
+	ContentType string // ContentType header without parameters.
+	Disposition string // Content-Disposition header without parameters.
+	FileName    string // The file-name from disposition or type header.
+	Charset     string // The content charset encoding, may differ from charset in header.
+	OrigCharset string // The original content charset when a different charset was detected.
+
+	Errors   []*Error // Errors encountered while parsing this part.
+	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
+	Epilogue []byte   // Epilogue contains data following the closing boundary marker.
 }
 
 // NewPart creates a new Part object.
@@ -169,15 +173,11 @@ func (p *Part) decodeContent(r io.Reader) error {
 	}
 	// Build charset decoding reader.
 	if validEncoding && !detectAttachmentHeader(p.Header) {
-		var reader io.Reader
-
-		// get charset detector
-		var cd *chardet.Detector
-		cd = chardet.NewTextDetector()
+		// Attempt to detect character set from part content.
+		cd := chardet.NewTextDetector()
 		if p.ContentType == "text/html" {
 			cd = chardet.NewHtmlDetector()
 		}
-		// detect charset
 		buf, err := ioutil.ReadAll(contentReader)
 		if err != nil {
 			return err
@@ -186,27 +186,33 @@ func (p *Part) decodeContent(r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		contentReader = bytes.NewReader(buf) // restore contentReader
+		contentReader = bytes.NewReader(buf) // Restore contentReader.
 
-		if cs != nil && cs.Confidence >= 85 { // read with detected charset if confidence is high
+		if cs != nil && cs.Confidence >= minCharsetConfidence {
+			// Confidence exceeded our threshold, use detected character set.
 			if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
-				p.addWarning(ErrorCharsetDeclaration, fmt.Sprintf("Part %s: declared charset '%s', detected '%s', confidence %d", p.PartID, p.Charset, cs.Charset, cs.Confidence))
+				p.addWarning(ErrorCharsetDeclaration,
+					fmt.Sprintf("Part %s: declared charset %q, detected %q, confidence %d",
+						p.PartID, p.Charset, cs.Charset, cs.Confidence))
 			}
-			reader, err = coding.NewCharsetReader(cs.Charset, contentReader)
+			reader, err := coding.NewCharsetReader(cs.Charset, contentReader)
 			if err == nil {
 				contentReader = reader
 				p.OrigCharset = p.Charset
 				p.Charset = cs.Charset
+			} else {
+				// Failed to get a conversion reader.
+				p.addWarning(ErrorCharsetConversion, err.Error())
 			}
-
-		} else { // read declared charset otherwise
+		} else {
+			// Low confidence, use declared character set.
 			if p.Charset != "" {
-				reader, err = coding.NewCharsetReader(p.Charset, contentReader)
+				reader, err := coding.NewCharsetReader(p.Charset, contentReader)
 				if err == nil {
 					contentReader = reader
 				} else {
-					// Try to parse charset again here to see if we can salvage some badly formed ones
-					// like charset="charset=utf-8".
+					// Try to parse charset again here to see if we can salvage some badly formed
+					// ones like charset="charset=utf-8".
 					charsetp := strings.Split(p.Charset, "=")
 					if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
 						p.Charset = charsetp[1]

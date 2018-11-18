@@ -1,5 +1,7 @@
 github.com/go-test/deep v1.0.1 h1:UQhStjbkDClarlmv0am7OXXO4/GaPdCGiUiMTvi28sg=
 github.com/go-test/deep v1.0.1/go.mod h1:wGDj63lr65AM2AQyKZd/NYHGb0R+1RLqB8NKt3aSFNA=
+github.com/gogs/chardet v0.0.0-20150115103509-2404f7772561 h1:aBzukfDxQlCTVS0NBUjI5YA3iVeaZ9Tb5PxNrrIP1xs=
+github.com/gogs/chardet v0.0.0-20150115103509-2404f7772561/go.mod h1:Pcatq5tYkCW2Q6yrR2VRHlbHpZ/R4/7qyL1TCF7vl14=
 github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0 h1:xqgexXAGQgY3HAjNPSaCqn5Aahbo5TKsmhp8VRfr1iQ=
 github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0/go.mod h1:CVKlgaMiht+LXvHG173ujK6JUhZXKb2u/BQtjPDIvyk=
 github.com/mattn/go-runewidth v0.0.3 h1:a+kO+98RDGEfo6asOGMmpodZq4FNtnGP54yps8BzLR4=

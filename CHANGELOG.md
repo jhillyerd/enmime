@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Override declared character set if another is detected with high confidence
+  (thanks to nerdlich.)
+
 ### Changed
 - Use iso-8859-1 character map when implicitly declared (thanks to requaos.)
 - Treat "inline" disposition as message content, not attachment unless it is
