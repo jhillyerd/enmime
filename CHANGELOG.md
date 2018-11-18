@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Override declared character set if another is detected with high confidence
   (thanks to nerdlich.)
+- Handle unquoted specials in media type parameters (thanks to requaos.)
 
 ### Changed
 - Use iso-8859-1 character map when implicitly declared (thanks to requaos.)

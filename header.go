@@ -202,7 +202,7 @@ func parseMediaType(ctype string) (mtype string, params map[string]string, err e
 			}
 			mtype, params, err = mime.ParseMediaType(mctype)
 			if err != nil {
-				// If the media parameter has special characters, ensure that it is quoted
+				// If the media parameter has special characters, ensure that it is quoted.
 				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
 				if err != nil {
 					return "", nil, err
@@ -230,7 +230,8 @@ func fixMangledMediaType(mtype, sep string) string {
 			}
 		}
 		mtype += p
-		// only terminate with semicolon if not the last parameter and if it doesn't already have a semicolon
+		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
+		// semicolon.
 		if i != len(parts)-1 && !strings.HasSuffix(mtype, ";") {
 			mtype += ";"
 		}
@@ -245,14 +246,15 @@ func fixMangledMediaType(mtype, sep string) string {
 func fixUnquotedSpecials(s string) string {
 	if strings.Contains(s, "name=") {
 		nameSplit := strings.SplitAfter(s, "name=")
-		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") && !strings.HasSuffix(nameSplit[1], "\"") {
+		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") &&
+			!strings.HasSuffix(nameSplit[1], "\"") {
 			return fmt.Sprintf("%s\"%s\"", nameSplit[0], nameSplit[1])
 		}
 	}
 	return s
 }
 
-// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc
+// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
 }
