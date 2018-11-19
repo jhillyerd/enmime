@@ -784,3 +784,31 @@ func TestBarrenContentType(t *testing.T) {
 			p.Errors)
 	}
 }
+
+func TestMalformedContentTypeParams(t *testing.T) {
+	r := test.OpenTestData("parts", "malformed-content-type-params.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/html",
+	}
+	test.ComparePart(t, p, wantp)
+	satisfied := false
+	for _, perr := range p.Errors {
+		if perr.Name == enmime.ErrorMalformedHeader {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			enmime.ErrorMalformedHeader,
+			p.Errors)
+	}
+}

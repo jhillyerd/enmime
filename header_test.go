@@ -181,6 +181,21 @@ func TestFixMangledMediaType(t *testing.T) {
 			sep:   " ",
 			want:  "one/two;name=\"file.two\"",
 		},
+		{
+			input: "; name=\"file.two\"",
+			sep:   ";",
+			want:  ctPlaceholder + "; name=\"file.two\"",
+		},
+		{
+			input: "one/two;iso-8859-1",
+			sep:   ";",
+			want:  "one/two;iso-8859-1=" + pvPlaceholder,
+		},
+		{
+			input: "one/two; name=\"file.two\"; iso-8859-1",
+			sep:   ";",
+			want:  "one/two; name=\"file.two\"; iso-8859-1=" + pvPlaceholder,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
