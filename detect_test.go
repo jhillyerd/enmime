@@ -98,6 +98,16 @@ func TestDetectAttachmentHeader(t *testing.T) {
 				"Content-Disposition": []string{"inline"}},
 		},
 		{
+			want: false,
+			header: textproto.MIMEHeader{
+				"Content-Disposition": []string{"inline; broken"}},
+		},
+		{
+			want: true,
+			header: textproto.MIMEHeader{
+				"Content-Disposition": []string{"attachment; broken"}},
+		},
+		{
 			want: true,
 			header: textproto.MIMEHeader{
 				"Content-Disposition": []string{"inline; filename=\"frog.jpg\""}},

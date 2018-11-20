@@ -110,7 +110,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		ctype = defaultContentType
 	}
 	// Parse Content-Type header.
-	mtype, mparams, err := parseMediaType(ctype)
+	mtype, mparams, minvalidParams, err := parseMediaType(ctype)
 	if err != nil {
 		return err
 	}
@@ -118,6 +118,12 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		p.addWarning(
 			ErrorMissingContentType,
 			"Content-Type header has parameters but no content type")
+	}
+	for i := range minvalidParams {
+		p.addWarning(
+			ErrorMalformedHeader,
+			"Content-Type header has malformed parameter %q",
+			minvalidParams[i])
 	}
 	p.ContentType = mtype
 	// Set disposition, filename, charset if available.
@@ -131,7 +137,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	// Determine content disposition, filename, character set.
-	disposition, dparams, err := parseMediaType(p.Header.Get(hnContentDisposition))
+	disposition, dparams, _, err := parseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
