@@ -207,6 +207,105 @@ func TestFixMangledMediaType(t *testing.T) {
 	}
 }
 
+func TestFixUnquotedSpecials(t *testing.T) {
+	testCases := []struct {
+		input, want string
+	}{
+		{
+			input: "",
+			want:  "",
+		},
+		{
+			input: "application/octet-stream",
+			want:  "application/octet-stream",
+		},
+		{
+			input: "application/octet-stream;",
+			want:  "application/octet-stream;",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1\"",
+			want:  "application/octet-stream; param1=\"value1\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1\"\\",
+			want:  "application/octet-stream; param1=\"value1\"\\",
+		},
+		{
+			input: "application/octet-stream; param1=value1",
+			want:  "application/octet-stream; param1=value1",
+		},
+		{
+			input: "application/octet-stream; param1=value1\\",
+			want:  "application/octet-stream; param1=value1",
+		},
+		{
+			input: "application/octet-stream; param1=value1\\\"",
+			want:  "application/octet-stream; param1=\"value1\\\"\"",
+		},
+		{
+			input: "application/octet-stream; param1=value\"1\"",
+			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value\\\"1\\\"\"",
+			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
+		},
+		{
+			input: "application/octet-stream; param1= value1",
+			want:  "application/octet-stream; param1= value1",
+		},
+		{
+			input: "application/octet-stream; param1=\tvalue1",
+			want:  "application/octet-stream; param1=\tvalue1",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1;\"",
+			want:  "application/octet-stream; param1=\"value1;\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value 1\"",
+			want:  "application/octet-stream; param1=\"value 1\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value\t1\"",
+			want:  "application/octet-stream; param1=\"value\t1\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value(1).pdf\"",
+			want:  "application/octet-stream; param1=\"value(1).pdf\"",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf",
+			want:  "application/octet-stream; param1=\"value(1).pdf\"",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf; param2=value(2).pdf",
+			want:  "application/octet-stream; param1=\"value(1).pdf\"; param2=\"value(2).pdf\"",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf;\tparam2=value2.pdf;",
+			want:  "application/octet-stream; param1=\"value(1).pdf\";\tparam2=value2.pdf;",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf;param2=value2.pdf;",
+			want:  "application/octet-stream; param1=\"value(1).pdf\";param2=value2.pdf;",
+		},
+		{
+			input: "application/octet-stream; param1=value/1",
+			want:  "application/octet-stream; param1=\"value/1\"",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := fixUnquotedSpecials(tc.input)
+			if got != tc.want {
+				t.Errorf("\ngot:  %s\nwant: %s", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestReadHeader(t *testing.T) {
 	prefix := "From: hooman\n \n being\n"
 	suffix := "Subject: hi\n\nPart body\n"

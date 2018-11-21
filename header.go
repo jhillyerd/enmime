@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	stderrors "errors"
-	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -270,16 +269,162 @@ func fixMangledMediaType(mtype, sep string) string {
 	return mtype
 }
 
-// fixUnquotedSpecials as defined in https://www.w3.org/Protocols/rfc1341/4_Content-Type.html
-func fixUnquotedSpecials(s string) string {
-	if strings.Contains(s, "name=") {
-		nameSplit := strings.SplitAfter(s, "name=")
-		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") &&
-			!strings.HasSuffix(nameSplit[1], "\"") {
-			return fmt.Sprintf("%s\"%s\"", nameSplit[0], nameSplit[1])
+func consumeParam(s string) (consumed, rest string) {
+	param := strings.Builder{}
+
+	i := strings.IndexByte(s, '=')
+	if i < 0 {
+		return "", s
+	}
+
+	param.WriteString(s[:i+1])
+	s = s[i+1:]
+
+	value := strings.Builder{}
+	valueQuotedOriginally := false
+	valueQuoteAdded := false
+	valueQuoteNeeded := false
+
+findValueStart:
+	for i = range s {
+		switch s[i] {
+		case ' ', '\t':
+			param.WriteByte(s[i])
+
+		case '"':
+			valueQuotedOriginally = true
+			valueQuoteAdded = true
+			value.WriteByte(s[i])
+
+			break findValueStart
+
+		default:
+			valueQuotedOriginally = false
+			valueQuoteAdded = false
+			value.WriteByte(s[i])
+
+			break findValueStart
 		}
 	}
-	return s
+
+	s = s[i+1:]
+
+	quoteIfUnquoted := func() {
+		if !valueQuoteNeeded {
+			if !valueQuoteAdded {
+				param.WriteByte('"')
+
+				valueQuoteAdded = true
+			}
+
+			valueQuoteNeeded = true
+		}
+	}
+
+findValueEnd:
+	for len(s) > 0 {
+		switch s[0] {
+		case ';', ' ', '\t':
+			if valueQuotedOriginally {
+				// We're in a quoted string, so whitespace is allowed.
+				value.WriteByte(s[0])
+				s = s[1:]
+				break
+			}
+
+			// Otherwise, we've reached the end of an unquoted value.
+
+			param.WriteString(value.String())
+			value.Reset()
+
+			if valueQuoteNeeded {
+				param.WriteByte('"')
+			}
+
+			param.WriteByte(s[0])
+			s = s[1:]
+
+			break findValueEnd
+
+		case '"':
+			if valueQuotedOriginally {
+				// We're in a quoted value. This is the end of that value.
+				param.WriteString(value.String())
+				value.Reset()
+
+				param.WriteByte(s[0])
+				s = s[1:]
+
+				break findValueEnd
+			}
+
+			quoteIfUnquoted()
+
+			value.WriteByte('\\')
+			value.WriteByte(s[0])
+			s = s[1:]
+
+		case '\\':
+			if len(s) > 1 {
+				value.WriteByte(s[0])
+				s = s[1:]
+
+				// Backslash escapes the next char. Consume that next char.
+				value.WriteByte(s[0])
+
+				quoteIfUnquoted()
+			}
+			// Else there is no next char to consume.
+			s = s[1:]
+
+		case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
+			quoteIfUnquoted()
+
+			fallthrough
+
+		default:
+			value.WriteByte(s[0])
+			s = s[1:]
+		}
+	}
+
+	if value.Len() > 0 {
+		// There is a value that ends with the string. Capture it.
+		param.WriteString(value.String())
+
+		if !valueQuotedOriginally && valueQuoteNeeded {
+			param.WriteByte('"')
+		}
+	}
+
+	return param.String(), s
+}
+
+// fixUnquotedSpecials as defined in RFC 2045, section 5.1:
+// https://tools.ietf.org/html/rfc2045#section-5.1
+func fixUnquotedSpecials(s string) string {
+	idx := strings.IndexByte(s, ';')
+	if idx < 0 || idx == len(s) {
+		// No parameters
+		return s
+	}
+
+	clean := strings.Builder{}
+	clean.WriteString(s[:idx+1])
+	s = s[idx+1:]
+
+	for len(s) > 0 {
+		var consumed string
+		consumed, s = consumeParam(s)
+
+		if len(consumed) == 0 {
+			return clean.String() + s
+		}
+
+		clean.WriteString(consumed)
+	}
+
+	return clean.String()
 }
 
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
