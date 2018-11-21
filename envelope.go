@@ -10,6 +10,7 @@ import (
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/pkg/errors"
 )
 
 // Envelope is a simplified wrapper for MIME email messages.
@@ -150,7 +151,7 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 	// Read MIME parts from reader
 	root, err := ReadParts(r)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to ReadParts: %v", err)
+		return nil, errors.WithMessage(err, "Failed to ReadParts")
 	}
 	return EnvelopeFromPart(root)
 }

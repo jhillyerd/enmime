@@ -98,7 +98,7 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 			r, _ := os.Open(filepath.Join("testdata", "low-quality", tt.filename))
 			e, err := ReadEnvelope(r)
 			if err != nil {
-				t.Fatal("Failed to parse MIME:", err)
+				t.Fatalf("Failed to parse MIME: %+v", err)
 			}
 
 			if len(e.Errors) == 0 {
