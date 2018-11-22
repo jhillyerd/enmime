@@ -4,12 +4,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [0.4.0] - 2018-11-21
 
 ### Added
 - Override declared character set if another is detected with high confidence
   (thanks to nerdlich.)
 - Handle unquoted specials in media type parameters (thanks to requaos.)
+- Handle barren Content-Type headers (thanks to dcormier.)
+- Better handle malformed media type parameters (thanks to dcormier.)
 
 ### Changed
 - Use iso-8859-1 character map when implicitly declared (thanks to requaos.)
@@ -67,6 +69,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.4.0]:      https://github.com/jhillyerd/enmime/compare/v0.3.0...v0.4.0
 [0.3.0]:      https://github.com/jhillyerd/enmime/compare/v0.2.1...v0.3.0
 [0.2.1]:      https://github.com/jhillyerd/enmime/compare/v0.2.0...v0.2.1
 [0.2.0]:      https://github.com/jhillyerd/enmime/compare/v0.1.0...v0.2.0
