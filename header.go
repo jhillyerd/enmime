@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -25,6 +26,13 @@ const (
 	ctMultipartRelated = "multipart/related"
 	ctTextPlain        = "text/plain"
 	ctTextHTML         = "text/html"
+
+	// Used as a placeholder in case of malformed Content-Type headers
+	ctPlaceholder = "x-not-a-mime-type/x-not-a-mime-type"
+	// Used as a placeholder param value in case of malformed
+	// Content-Type/Content-Disposition parameters that lack values.
+	// E.g.: Content-Type: text/html;iso-8859-1
+	pvPlaceholder = "not-a-param-value"
 
 	// Standard Transfer encodings
 	cte7Bit            = "7bit"
@@ -187,7 +195,7 @@ func decodeToUTF8Base64Header(input string) string {
 }
 
 // parseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
-func parseMediaType(ctype string) (mtype string, params map[string]string, err error) {
+func parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(ctype)
 	if err != nil {
 		// Small hack to remove harmless charset duplicate params.
@@ -201,11 +209,25 @@ func parseMediaType(ctype string) (mtype string, params map[string]string, err e
 			}
 			mtype, params, err = mime.ParseMediaType(mctype)
 			if err != nil {
-				return "", nil, err
+				// If the media parameter has special characters, ensure that it is quoted.
+				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
+				if err != nil {
+					return "", nil, nil, err
+				}
 			}
 		}
 	}
-	return mtype, params, err
+	if mtype == ctPlaceholder {
+		mtype = ""
+	}
+	for name, value := range params {
+		if value != pvPlaceholder {
+			continue
+		}
+		invalidParams = append(invalidParams, name)
+		delete(params, name)
+	}
+	return mtype, params, invalidParams, err
 }
 
 // fixMangledMediaType is used to insert ; separators into media type strings that lack them, and
@@ -216,20 +238,49 @@ func fixMangledMediaType(mtype, sep string) string {
 	}
 	parts := strings.Split(mtype, sep)
 	mtype = ""
-	for _, p := range parts {
-		if strings.Contains(p, "=") {
+	for i, p := range parts {
+		switch i {
+		case 0:
+			if p == "" {
+				// The content type is completely missing. Put in a placeholder.
+				p = ctPlaceholder
+			}
+		default:
+			if !strings.Contains(p, "=") {
+				p = p + "=" + pvPlaceholder
+			}
 			pair := strings.Split(p, "=")
 			if strings.Contains(mtype, pair[0]+"=") {
 				// Ignore repeated parameters.
 				continue
 			}
 		}
-		mtype += p + ";"
+		mtype += p
+		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
+		// semicolon.
+		if i != len(parts)-1 && !strings.HasSuffix(mtype, ";") {
+			mtype += ";"
+		}
+	}
+	if strings.HasSuffix(mtype, ";") {
+		mtype = mtype[:len(mtype)-1]
 	}
 	return mtype
 }
 
-// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc
+// fixUnquotedSpecials as defined in https://www.w3.org/Protocols/rfc1341/4_Content-Type.html
+func fixUnquotedSpecials(s string) string {
+	if strings.Contains(s, "name=") {
+		nameSplit := strings.SplitAfter(s, "name=")
+		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") &&
+			!strings.HasSuffix(nameSplit[1], "\"") {
+			return fmt.Sprintf("%s\"%s\"", nameSplit[0], nameSplit[1])
+		}
+	}
+	return s
+}
+
+// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
 }

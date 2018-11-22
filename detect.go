@@ -9,7 +9,7 @@ import (
 func detectMultipartMessage(root *Part) bool {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mediatype, _, err := parseMediaType(ctype)
+	mediatype, _, _, err := parseMediaType(ctype)
 	if err != nil {
 		return false
 	}
@@ -29,13 +29,13 @@ func detectMultipartMessage(root *Part) bool {
 //  - Content-Disposition: inline; filename="frog.jpg"
 //  - Content-Type: attachment; filename="frog.jpg"
 func detectAttachmentHeader(header textproto.MIMEHeader) bool {
-	mediatype, _, _ := parseMediaType(header.Get(hnContentDisposition))
+	mediatype, params, _, _ := parseMediaType(header.Get(hnContentDisposition))
 	if strings.ToLower(mediatype) == cdAttachment ||
-		strings.ToLower(mediatype) == cdInline {
+		(strings.ToLower(mediatype) == cdInline && len(params) > 0) {
 		return true
 	}
 
-	mediatype, _, _ = parseMediaType(header.Get(hnContentType))
+	mediatype, _, _, _ = parseMediaType(header.Get(hnContentType))
 	return strings.ToLower(mediatype) == cdAttachment
 }
 
@@ -48,7 +48,7 @@ func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) 
 		return true
 	}
 
-	mediatype, _, err := parseMediaType(ctype)
+	mediatype, _, _, err := parseMediaType(ctype)
 	if err != nil {
 		return false
 	}
@@ -72,7 +72,7 @@ func detectBinaryBody(root *Part) bool {
 		// 'text/plain' or 'text/html'.
 		// Example:
 		// Content-Type: application/pdf; name="doc.pdf"
-		mediatype, _, _ := parseMediaType(root.Header.Get(hnContentType))
+		mediatype, _, _, _ := parseMediaType(root.Header.Get(hnContentType))
 		mediatype = strings.ToLower(mediatype)
 		if mediatype != ctTextPlain && mediatype != ctTextHTML {
 			return true

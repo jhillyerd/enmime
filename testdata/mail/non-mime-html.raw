@@ -3,12 +3,12 @@ To: greg@inbucket.com
 From: James Hillyerd <james@hillyerd.com>
 Subject: test Sun, 14 Oct 2012 16:09:01 -0700
 X-Mailer: swaks v20120320.0 jetmore.org/john/code/swaks/
-Content-Type: text/html; charset="UTF-8"
+Content-Type: text/html; charset="ISO-8859-1"
 
 <html>
   <head>
     <title>Document Title</title>
-    <meta charset="utf-8"/>
+    <meta charset="iso-8859-1"/>
     <style>
       strong {
         font-size: 110%;
@@ -25,4 +25,3 @@ Content-Type: text/html; charset="UTF-8"
     </p>
   </body>
 </html>
-

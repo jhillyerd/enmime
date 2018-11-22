@@ -328,7 +328,7 @@ func TestMultiMixedParts(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "us-ascii",
+		Charset:     "ISO-8859-1",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -341,7 +341,7 @@ func TestMultiMixedParts(t *testing.T) {
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "us-ascii",
+		Charset:     "ISO-8859-1",
 		PartID:      "2",
 	}
 	test.ComparePart(t, p, wantp)
@@ -379,7 +379,7 @@ func TestMultiOtherParts(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "us-ascii",
+		Charset:     "ISO-8859-1",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -392,7 +392,7 @@ func TestMultiOtherParts(t *testing.T) {
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "us-ascii",
+		Charset:     "ISO-8859-1",
 		PartID:      "2",
 	}
 	test.ComparePart(t, p, wantp)
@@ -523,7 +523,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "us-ascii",
+		Charset:     "ISO-8859-1",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -739,4 +739,76 @@ func TestClonePart(t *testing.T) {
 
 	clone := p.Clone(nil)
 	test.ComparePart(t, clone, p)
+}
+
+func TestBarrenContentType(t *testing.T) {
+	r := test.OpenTestData("parts", "barren-content-type.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := ""
+	if p.ContentType != want {
+		t.Errorf("ContentType %q, want %q", p.ContentType, want)
+	}
+	want = ""
+	if p.FileName != want {
+		t.Errorf("FileName %q, want %q", p.FileName, want)
+	}
+	want = ""
+	if p.Charset != want {
+		t.Errorf("Charset %q, want %q", p.Charset, want)
+	}
+	want = "attachment"
+	if p.Disposition != want {
+		t.Errorf("Disposition %q, want %q", p.Disposition, want)
+	}
+	want = ""
+	if p.ContentID != want {
+		t.Errorf("ContentID %q, want %q", p.ContentID, want)
+	}
+	satisfied := false
+	for _, perr := range p.Errors {
+		if perr.Name == enmime.ErrorMissingContentType {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			enmime.ErrorMissingContentType,
+			p.Errors)
+	}
+}
+
+func TestMalformedContentTypeParams(t *testing.T) {
+	r := test.OpenTestData("parts", "malformed-content-type-params.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/html",
+	}
+	test.ComparePart(t, p, wantp)
+	satisfied := false
+	for _, perr := range p.Errors {
+		if perr.Name == enmime.ErrorMalformedHeader {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			enmime.ErrorMalformedHeader,
+			p.Errors)
+	}
 }

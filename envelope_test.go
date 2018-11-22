@@ -856,6 +856,19 @@ func TestDuplicateParamsInMime(t *testing.T) {
 	}
 }
 
+func TestUnquotedSpecialCharParamsInMime(t *testing.T) {
+	msg := test.OpenTestData("mail", "mime-unquoted-tspecials-param.raw")
+	e, err := enmime.ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if e.Attachments[0].FileName != "Invoice_(302232133150612).pdf" {
+		t.Fatal("Mail should have a part with filename Invoice_(302232133150612).pdf")
+	}
+}
+
 func TestBadContentTypeInMime(t *testing.T) {
 	msg := test.OpenTestData("mail", "mime-bad-content-type.raw")
 	e, err := enmime.ReadEnvelope(msg)

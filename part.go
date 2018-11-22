@@ -2,6 +2,7 @@ package enmime
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -11,26 +12,32 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
 )
+
+const minCharsetConfidence = 85
 
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
 	PartID      string               // PartID labels this parts position within the tree.
-	Header      textproto.MIMEHeader // Header for this Part.
 	Parent      *Part                // Parent of this part (can be nil.)
 	FirstChild  *Part                // FirstChild is the top most child of this part.
 	NextSibling *Part                // NextSibling of this part.
-	Boundary    string               // Boundary marker used within this part.
-	ContentID   string               // ContentID header for cid URL scheme.
-	ContentType string               // ContentType header without parameters.
-	Disposition string               // Content-Disposition header without parameters.
-	FileName    string               // The file-name from disposition or type header.
-	Charset     string               // The content charset encoding label.
-	Errors      []*Error             // Errors encountered while parsing this part.
-	Content     []byte               // Content after decoding, UTF-8 conversion if applicable.
-	Epilogue    []byte               // Epilogue contains data following the closing boundary marker.
+	Header      textproto.MIMEHeader // Header for this Part.
+
+	Boundary    string // Boundary marker used within this part.
+	ContentID   string // ContentID header for cid URL scheme.
+	ContentType string // ContentType header without parameters.
+	Disposition string // Content-Disposition header without parameters.
+	FileName    string // The file-name from disposition or type header.
+	Charset     string // The content charset encoding, may differ from charset in header.
+	OrigCharset string // The original content charset when a different charset was detected.
+
+	Errors   []*Error // Errors encountered while parsing this part.
+	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
+	Epilogue []byte   // Epilogue contains data following the closing boundary marker.
 }
 
 // NewPart creates a new Part object.
@@ -103,9 +110,20 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		ctype = defaultContentType
 	}
 	// Parse Content-Type header.
-	mtype, mparams, err := parseMediaType(ctype)
+	mtype, mparams, minvalidParams, err := parseMediaType(ctype)
 	if err != nil {
 		return err
+	}
+	if mtype == "" && len(mparams) > 0 {
+		p.addWarning(
+			ErrorMissingContentType,
+			"Content-Type header has parameters but no content type")
+	}
+	for i := range minvalidParams {
+		p.addWarning(
+			ErrorMalformedHeader,
+			"Content-Type header has malformed parameter %q",
+			minvalidParams[i])
 	}
 	p.ContentType = mtype
 	// Set disposition, filename, charset if available.
@@ -119,7 +137,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	// Determine content disposition, filename, character set.
-	disposition, dparams, err := parseMediaType(p.Header.Get(hnContentDisposition))
+	disposition, dparams, _, err := parseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
@@ -166,24 +184,60 @@ func (p *Part) decodeContent(r io.Reader) error {
 	}
 	// Build charset decoding reader.
 	if validEncoding && !detectAttachmentHeader(p.Header) {
-		if p.Charset != "" {
-			if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
+		// Attempt to detect character set from part content.
+		cd := chardet.NewTextDetector()
+		if p.ContentType == "text/html" {
+			cd = chardet.NewHtmlDetector()
+		}
+		buf, err := ioutil.ReadAll(contentReader)
+		if err != nil {
+			return err
+		}
+		cs, err := cd.DetectBest(buf)
+		if err != nil {
+			return err
+		}
+		contentReader = bytes.NewReader(buf) // Restore contentReader.
+
+		if cs != nil && cs.Confidence >= minCharsetConfidence {
+			// Confidence exceeded our threshold, use detected character set.
+			if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
+				p.addWarning(ErrorCharsetDeclaration,
+					fmt.Sprintf("Part %s: declared charset %q, detected %q, confidence %d",
+						p.PartID, p.Charset, cs.Charset, cs.Confidence))
+			}
+			reader, err := coding.NewCharsetReader(cs.Charset, contentReader)
+			if err == nil {
 				contentReader = reader
+				p.OrigCharset = p.Charset
+				p.Charset = cs.Charset
 			} else {
-				// Try to parse charset again here to see if we can salvage some badly formed ones
-				// like charset="charset=utf-8".
-				charsetp := strings.Split(p.Charset, "=")
-				if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
-					p.Charset = charsetp[1]
-					if reader, err := coding.NewCharsetReader(p.Charset, contentReader); err == nil {
-						contentReader = reader
+				// Failed to get a conversion reader.
+				p.addWarning(ErrorCharsetConversion, err.Error())
+			}
+		} else {
+			// Low confidence, use declared character set.
+			if p.Charset != "" {
+				reader, err := coding.NewCharsetReader(p.Charset, contentReader)
+				if err == nil {
+					contentReader = reader
+				} else {
+					// Try to parse charset again here to see if we can salvage some badly formed
+					// ones like charset="charset=utf-8".
+					charsetp := strings.Split(p.Charset, "=")
+					if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
+						p.Charset = charsetp[1]
+						reader, err = coding.NewCharsetReader(p.Charset, contentReader)
+						if err == nil {
+							contentReader = reader
+						} else {
+							// Failed to get a conversion reader.
+							p.addWarning(ErrorCharsetConversion, err.Error())
+						}
 					} else {
 						// Failed to get a conversion reader.
 						p.addWarning(ErrorCharsetConversion, err.Error())
 					}
-				} else {
-					// Failed to get a conversion reader.
-					p.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
 		}
