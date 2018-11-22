@@ -20,7 +20,7 @@ http://godoc.org/github.com/jhillyerd/enmime
 Part readers: `Part.Read()` and `Part.Utf8Reader` have been removed. Please use
 `Part.Content` instead.
 
-A brief guide to migrating from the old 2016 go.enmime API is available here:
+A brief guide to migrating from the old 2016 `go.enmime` API is available here:
 https://github.com/jhillyerd/enmime/wiki/Enmime-Migration-Guide
 
 
