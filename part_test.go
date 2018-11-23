@@ -13,7 +13,7 @@ func TestPlainTextPart(t *testing.T) {
 	r := test.OpenTestData("parts", "textplain.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -42,7 +42,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	r := test.OpenTestData("parts", "quoted-printable.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -71,7 +71,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	r := test.OpenTestData("parts", "quoted-printable-invalid.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -103,7 +103,7 @@ func TestMultiAlternParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -154,7 +154,7 @@ func TestRootMissingContentType(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -177,7 +177,7 @@ func TestPartMissingContentType(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -227,7 +227,7 @@ func TestPartEmptyHeader(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -307,7 +307,7 @@ func TestMultiMixedParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -358,7 +358,7 @@ func TestMultiOtherParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -409,7 +409,7 @@ func TestNestedAlternParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -502,7 +502,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -580,7 +580,7 @@ func TestBinaryDecode(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -635,7 +635,7 @@ func TestMultiBase64Parts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -687,7 +687,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -731,7 +731,7 @@ func TestClonePart(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
