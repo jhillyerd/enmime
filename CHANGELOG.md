@@ -4,6 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Use github.com/pkg/errors to decorate errors with stack traces (thanks to
+  dcomier.)
+
+
 ## [0.4.0] - 2018-11-21
 
 ### Added
