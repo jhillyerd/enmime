@@ -269,14 +269,34 @@ func fixMangledMediaType(mtype, sep string) string {
 	return mtype
 }
 
+// consumeParam takes the the parameter part of a Content-Type header, returns a clean version of
+// the first parameter (quoted as necessary), and the remainder of the parameter part of the
+// Content-Type header.
+//
+// Given this this header:
+//     `Content-Type: text/calendar; charset=utf-8; method=text/calendar`
+// `consumeParams` should be given this part:
+//     ` charset=utf-8; method=text/calendar`
+// And returns (first pass):
+//     `consumed = "charset=utf-8;"`
+//     `rest     = " method=text/calendar"`
+// Capture the `consumed` value (to build a clean Content-Type header value) and pass the value of
+// `rest` back to `consumeParam`. That second call will return:
+//     `consumed = " method=\"text/calendar\""`
+//     `rest     = ""`
+// Again, use the value of `consumed` to build a clean Content-Type header value. Given that `rest`
+// is empty, all of the parameters have been consumed successfully.
+//
+// If `consumed` is returned empty and `rest` is not empty, then the value of `rest` does not
+// begin with a parsable parameter. This does not necessarily indicate a problem. For example,
+// if there is trailing whitespace, it would be returned here.
 func consumeParam(s string) (consumed, rest string) {
-	param := strings.Builder{}
-
 	i := strings.IndexByte(s, '=')
 	if i < 0 {
 		return "", s
 	}
 
+	param := strings.Builder{}
 	param.WriteString(s[:i+1])
 	s = s[i+1:]
 
@@ -285,23 +305,24 @@ func consumeParam(s string) (consumed, rest string) {
 	valueQuoteAdded := false
 	valueQuoteNeeded := false
 
+	var r rune
 findValueStart:
-	for i = range s {
-		switch s[i] {
+	for i, r = range s {
+		switch r {
 		case ' ', '\t':
-			param.WriteByte(s[i])
+			param.WriteRune(r)
 
 		case '"':
 			valueQuotedOriginally = true
 			valueQuoteAdded = true
-			value.WriteByte(s[i])
+			value.WriteRune(r)
 
 			break findValueStart
 
 		default:
 			valueQuotedOriginally = false
 			valueQuoteAdded = false
-			value.WriteByte(s[i])
+			value.WriteRune(r)
 
 			break findValueStart
 		}
@@ -418,7 +439,8 @@ func fixUnquotedSpecials(s string) string {
 		consumed, s = consumeParam(s)
 
 		if len(consumed) == 0 {
-			return clean.String() + s
+			clean.WriteString(s)
+			return clean.String()
 		}
 
 		clean.WriteString(consumed)
