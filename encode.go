@@ -8,6 +8,7 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
+	"time"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
