@@ -32,6 +32,7 @@ type Part struct {
 	ContentType string // ContentType header without parameters.
 	Disposition string // Content-Disposition header without parameters.
 	FileName    string // The file-name from disposition or type header.
+	FileModDate Time   // The modification date of the file.
 	Charset     string // The content charset encoding, may differ from charset in header.
 	OrigCharset string // The original content charset when a different charset was detected.
 
