@@ -155,6 +155,97 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	}
 }
 
+// convertFromDetectedCharset attempts to detect the character set for the given part, and returns
+// an io.Reader that will convert from that charset to UTF-8. If the charset cannot be detected,
+// this method adds a warning to the part and automatically falls back to using
+// `convertFromStatedCharset` and returns the reader from that method.
+func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
+	// Attempt to detect character set from part content.
+	var cd *chardet.Detector
+	switch p.ContentType {
+	case "text/html":
+		cd = chardet.NewHtmlDetector()
+	default:
+		cd = chardet.NewTextDetector()
+	}
+
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	cs, err := cd.DetectBest(buf)
+	switch err {
+	case nil:
+		// Carry on
+	case chardet.NotDetectedError:
+		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
+	default:
+		return nil, errors.WithStack(err)
+	}
+
+	// Restore r.
+	r = bytes.NewReader(buf)
+
+	if cs != nil && cs.Confidence >= minCharsetConfidence {
+		// Confidence exceeded our threshold, use detected character set.
+		if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
+			p.addWarning(ErrorCharsetDeclaration,
+				"declared charset %q, detected %q, confidence %d",
+				p.Charset, cs.Charset, cs.Confidence)
+		}
+
+		reader, err := coding.NewCharsetReader(cs.Charset, r)
+		if err != nil {
+			// Failed to get a conversion reader.
+			p.addWarning(ErrorCharsetConversion, err.Error())
+		} else {
+			r = reader
+			p.OrigCharset = p.Charset
+			p.Charset = cs.Charset
+		}
+	} else {
+		// Low confidence, use declared character set.
+		r = p.convertFromStatedCharset(r)
+	}
+
+	return r, nil
+}
+
+// convertFromStatedCharset returns a reader that will convert from the charset specified for the
+// current `*Part` to UTF-8. In case of error, or an unhandled character set, a warning will be
+// added to the `*Part` and the original io.Reader will be returned.
+func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
+	if p.Charset == "" {
+		// US-ASCII. Just read.
+		return r
+	}
+
+	reader, err := coding.NewCharsetReader(p.Charset, r)
+	if err != nil {
+		// Failed to get a conversion reader.
+		p.addWarning(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
+	} else {
+		return reader
+	}
+
+	// Try to parse charset again here to see if we can salvage some badly formed
+	// ones like charset="charset=utf-8".
+	charsetp := strings.Split(p.Charset, "=")
+	if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
+		p.Charset = charsetp[1]
+		reader, err = coding.NewCharsetReader(p.Charset, r)
+		if err != nil {
+			// Failed to get a conversion reader.
+			p.addWarning(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
+		} else {
+			return reader
+		}
+	}
+
+	return r
+}
+
 // decodeContent performs transport decoding (base64, quoted-printable) and charset decoding,
 // placing the result into Part.Content.  IO errors will be returned immediately; other errors
 // and warnings will be added to Part.Errors.
@@ -184,63 +275,11 @@ func (p *Part) decodeContent(r io.Reader) error {
 			encoding)
 	}
 	// Build charset decoding reader.
-	if validEncoding && !detectAttachmentHeader(p.Header) {
-		// Attempt to detect character set from part content.
-		cd := chardet.NewTextDetector()
-		if p.ContentType == "text/html" {
-			cd = chardet.NewHtmlDetector()
-		}
-		buf, err := ioutil.ReadAll(contentReader)
+	if validEncoding && strings.HasPrefix(p.ContentType, "text/") {
+		var err error
+		contentReader, err = p.convertFromDetectedCharset(contentReader)
 		if err != nil {
-			return errors.WithStack(err)
-		}
-		cs, err := cd.DetectBest(buf)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		contentReader = bytes.NewReader(buf) // Restore contentReader.
-
-		if cs != nil && cs.Confidence >= minCharsetConfidence {
-			// Confidence exceeded our threshold, use detected character set.
-			if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
-				p.addWarning(ErrorCharsetDeclaration,
-					fmt.Sprintf("Part %s: declared charset %q, detected %q, confidence %d",
-						p.PartID, p.Charset, cs.Charset, cs.Confidence))
-			}
-			reader, err := coding.NewCharsetReader(cs.Charset, contentReader)
-			if err == nil {
-				contentReader = reader
-				p.OrigCharset = p.Charset
-				p.Charset = cs.Charset
-			} else {
-				// Failed to get a conversion reader.
-				p.addWarning(ErrorCharsetConversion, err.Error())
-			}
-		} else {
-			// Low confidence, use declared character set.
-			if p.Charset != "" {
-				reader, err := coding.NewCharsetReader(p.Charset, contentReader)
-				if err == nil {
-					contentReader = reader
-				} else {
-					// Try to parse charset again here to see if we can salvage some badly formed
-					// ones like charset="charset=utf-8".
-					charsetp := strings.Split(p.Charset, "=")
-					if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
-						p.Charset = charsetp[1]
-						reader, err = coding.NewCharsetReader(p.Charset, contentReader)
-						if err == nil {
-							contentReader = reader
-						} else {
-							// Failed to get a conversion reader.
-							p.addWarning(ErrorCharsetConversion, err.Error())
-						}
-					} else {
-						// Failed to get a conversion reader.
-						p.addWarning(ErrorCharsetConversion, err.Error())
-					}
-				}
-			}
+			return err
 		}
 	}
 	// Decode and store content.

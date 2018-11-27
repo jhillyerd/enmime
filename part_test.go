@@ -817,3 +817,58 @@ func TestContentTypeParamUnquotedSpecial(t *testing.T) {
 	}
 	test.ComparePart(t, p, wantp)
 }
+
+func TestChardetFailure(t *testing.T) {
+	const expectedContent = "GIF89ad\x00\x04\x00\x80\x00\x00\x00f\xccf\xff\x99!\xf9\x04\x00\x00\x00\x00\x00,\x00\x00\x00\x00d\x00\x04\x00\x00\x02\x1a\x8c\x8f\xa9\xcb\xed\x0f\xa3\x9c\xb4\xda\xeb\x80\u07bc\xfb\x0f\x86\xe2H\x96扦\xea*\x16\x00;"
+
+	t.Run("text part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-fail.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			ContentID:   "part3.E34FF3C4.059DAD00@example.com",
+			FileName:    "rzkly.txt",
+		}
+		test.ComparePart(t, p, wantp)
+		expected := enmime.ErrorCharsetDeclaration
+		satisfied := false
+		for _, perr := range p.Errors {
+			if perr.Name == expected {
+				satisfied = true
+				if perr.Severe {
+					t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+				}
+			}
+		}
+		if !satisfied {
+			t.Errorf(
+				"Did not find expected error on part. Expected %q, but had: %v",
+				expected,
+				p.Errors)
+		}
+		test.ContentEqualsString(t, p.Content, expectedContent)
+	})
+
+	t.Run("non-text part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-fail-non-txt.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(p.Errors) > 0 {
+			t.Errorf("Errors encountered while processing part: %v", p.Errors)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "image/gif",
+			ContentID:   "part3.E34FF3C4.059DAD00@example.com",
+			FileName:    "rzkly.gif",
+		}
+		test.ComparePart(t, p, wantp)
+		test.ContentEqualsString(t, p.Content, expectedContent)
+	})
+}
