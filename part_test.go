@@ -748,29 +748,16 @@ func TestBarrenContentType(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := ""
-	if p.ContentType != want {
-		t.Errorf("ContentType %q, want %q", p.ContentType, want)
+	wantp := &enmime.Part{
+		PartID:      "0",
+		Disposition: "attachment",
 	}
-	want = ""
-	if p.FileName != want {
-		t.Errorf("FileName %q, want %q", p.FileName, want)
-	}
-	want = ""
-	if p.Charset != want {
-		t.Errorf("Charset %q, want %q", p.Charset, want)
-	}
-	want = "attachment"
-	if p.Disposition != want {
-		t.Errorf("Disposition %q, want %q", p.Disposition, want)
-	}
-	want = ""
-	if p.ContentID != want {
-		t.Errorf("ContentID %q, want %q", p.ContentID, want)
-	}
+	test.ComparePart(t, p, wantp)
+
+	expected := enmime.ErrorMissingContentType
 	satisfied := false
 	for _, perr := range p.Errors {
-		if perr.Name == enmime.ErrorMissingContentType {
+		if perr.Name == expected {
 			satisfied = true
 			if perr.Severe {
 				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
@@ -780,7 +767,7 @@ func TestBarrenContentType(t *testing.T) {
 	if !satisfied {
 		t.Errorf(
 			"Did not find expected error on part. Expected %q, but had: %v",
-			enmime.ErrorMissingContentType,
+			expected,
 			p.Errors)
 	}
 }
@@ -789,16 +776,18 @@ func TestMalformedContentTypeParams(t *testing.T) {
 	r := test.OpenTestData("parts", "malformed-content-type-params.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("%+v", err)
 	}
 	wantp := &enmime.Part{
 		PartID:      "0",
 		ContentType: "text/html",
 	}
 	test.ComparePart(t, p, wantp)
+
+	expected := enmime.ErrorMalformedHeader
 	satisfied := false
 	for _, perr := range p.Errors {
-		if perr.Name == enmime.ErrorMalformedHeader {
+		if perr.Name == expected {
 			satisfied = true
 			if perr.Severe {
 				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
@@ -808,7 +797,23 @@ func TestMalformedContentTypeParams(t *testing.T) {
 	if !satisfied {
 		t.Errorf(
 			"Did not find expected error on part. Expected %q, but had: %v",
-			enmime.ErrorMalformedHeader,
+			expected,
 			p.Errors)
 	}
+}
+
+func TestContentTypeParamUnquotedSpecial(t *testing.T) {
+	r := test.OpenTestData("parts", "unquoted-ctype-param-special.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/calendar",
+		Disposition: "attachment",
+		FileName:    "calendar.ics",
+	}
+	test.ComparePart(t, p, wantp)
 }
