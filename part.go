@@ -154,6 +154,9 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	if p.Charset == "" {
 		p.Charset = mediaParams[hpCharset]
 	}
+	if p.FileModDate.IsZero() {
+		p.FileModDate, err = time.Parse(time.RFC822, mediaParams[hpModDate])
+	}
 }
 
 // decodeContent performs transport decoding (base64, quoted-printable) and charset decoding,
