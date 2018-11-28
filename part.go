@@ -155,7 +155,7 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 		p.Charset = mediaParams[hpCharset]
 	}
 	if p.FileModDate.IsZero() {
-		p.FileModDate, err = time.Parse(time.RFC822, mediaParams[hpModDate])
+		p.FileModDate, _ = time.Parse(time.RFC822, mediaParams[hpModDate])
 	}
 }
 
