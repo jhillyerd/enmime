@@ -1,4 +1,5 @@
-Content-Disposition: attachment; filename=stuff.zip
+Content-Disposition: attachment; filename=stuff.zip; modification-date="01
+ Feb 03 04:05 GMT"
 Content-Id: <mycontentid>
 Content-Transfer-Encoding: base64
 Content-Type: application/zip; boundary=enmime-abcdefg0123456789;

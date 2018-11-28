@@ -38,6 +38,7 @@ func TestEncodePartDefaultHeaders(t *testing.T) {
 	p.ContentID = "mycontentid"
 	p.Disposition = "attachment"
 	p.FileName = "stuff.zip"
+	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
 	p.Content = []byte("ZIPZIPZIP")
 
 	b := &bytes.Buffer{}
@@ -55,6 +56,7 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 	p.ContentID = "mycontentid"
 	p.Disposition = "attachment"
 	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
+	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
 	p.Content = []byte("ZIPZIPZIP")
 
 	b := &bytes.Buffer{}
