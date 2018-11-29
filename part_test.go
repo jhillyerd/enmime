@@ -818,6 +818,38 @@ func TestContentTypeParamUnquotedSpecial(t *testing.T) {
 	test.ComparePart(t, p, wantp)
 }
 
+func TestContentTypeParamMissingClosingQuote(t *testing.T) {
+	r := test.OpenTestData("parts", "missing-closing-param-quote.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/html",
+		Charset:     "UTF-8Return-Path:;bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com=not-a-param-value",
+	}
+	test.ComparePart(t, p, wantp)
+
+	expected := enmime.ErrorCharsetConversion
+	satisfied := false
+	for _, perr := range p.Errors {
+		if perr.Name == expected {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			expected,
+			p.Errors)
+	}
+}
+
 func TestChardetFailure(t *testing.T) {
 	const expectedContent = "GIF89ad\x00\x04\x00\x80\x00\x00\x00f\xccf\xff\x99!\xf9\x04\x00\x00\x00\x00\x00,\x00\x00\x00\x00d\x00\x04\x00\x00\x02\x1a\x8c\x8f\xa9\xcb\xed\x0f\xa3\x9c\xb4\xda\xeb\x80\u07bc\xfb\x0f\x86\xe2H\x96扦\xea*\x16\x00;"
 
