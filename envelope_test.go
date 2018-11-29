@@ -869,6 +869,24 @@ func TestUnquotedSpecialCharParamsInMime(t *testing.T) {
 	}
 }
 
+func TestBadAddressHeaderInMime(t *testing.T) {
+	msg := test.OpenTestData("mail", "malformedMultipleAddressHeaderValues.raw")
+	e, err := enmime.ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	froms, err := e.AddressList("From")
+	if err != nil {
+		t.Log(err)
+	}
+
+	if len(froms) < 1 {
+		t.Fatal("From header should have at least one entry")
+	}
+}
+
 func TestBadContentTypeInMime(t *testing.T) {
 	msg := test.OpenTestData("mail", "mime-bad-content-type.raw")
 	e, err := enmime.ReadEnvelope(msg)
