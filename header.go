@@ -54,6 +54,7 @@ const (
 	hpFile     = "file"
 	hpFilename = "filename"
 	hpName     = "name"
+	hpModDate  = "modification-date"
 
 	utf8 = "utf-8"
 )

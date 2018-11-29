@@ -3,6 +3,7 @@ package enmime_test
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
@@ -37,6 +38,7 @@ func TestEncodePartDefaultHeaders(t *testing.T) {
 	p.ContentID = "mycontentid"
 	p.Disposition = "attachment"
 	p.FileName = "stuff.zip"
+	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
 	p.Content = []byte("ZIPZIPZIP")
 
 	b := &bytes.Buffer{}
@@ -54,6 +56,7 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 	p.ContentID = "mycontentid"
 	p.Disposition = "attachment"
 	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
+	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
 	p.Content = []byte("ZIPZIPZIP")
 
 	b := &bytes.Buffer{}
@@ -177,4 +180,18 @@ func TestEncodePartContentBinary(t *testing.T) {
 		t.Fatal(err)
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-bin-content.golden")
+}
+
+func TestEncodeFileModDate(t *testing.T) {
+	p := enmime.NewPart("text/plain")
+	p.Content = []byte("¡Hola, señor! Welcome to MIME")
+	p.Disposition = "inline"
+	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-file-mod-date.golden")
 }
