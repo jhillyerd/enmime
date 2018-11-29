@@ -41,7 +41,6 @@ func (p *Part) Encode(writer io.Writer) error {
 		if err := p.encodeContent(b, cte); err != nil {
 			return err
 		}
-		b.Write(crnl)
 	}
 	if p.FirstChild == nil {
 		return b.Flush()
