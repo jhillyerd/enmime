@@ -166,6 +166,19 @@ func TestEncodePartContentQuotable(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-content.golden")
 }
 
+func TestEncodePartWithExistingEncodingHeader(t *testing.T) {
+	p := enmime.NewPart("text/plain")
+	p.Header.Add("Content-Transfer-Encoding", "quoted-printable")
+	p.Content = []byte("Hello=")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quotable-content.golden")
+}
+
 func TestEncodePartContentBinary(t *testing.T) {
 	c := make([]byte, 2000)
 	for i := range c {
