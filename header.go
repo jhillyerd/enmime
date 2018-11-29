@@ -414,7 +414,11 @@ findValueEnd:
 		// There is a value that ends with the string. Capture it.
 		param.WriteString(value.String())
 
-		if !valueQuotedOriginally && valueQuoteNeeded {
+		if valueQuotedOriginally || valueQuoteNeeded {
+			// If valueQuotedOriginally is true and we got here,
+			// that means there was no closing quote. So we'll add one.
+			// Otherwise, we're here because it was an unquoted value
+			// with a special char in it, and we had to quote it.
 			param.WriteByte('"')
 		}
 	}

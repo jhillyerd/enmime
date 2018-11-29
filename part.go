@@ -192,26 +192,26 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 	// Restore r.
 	r = bytes.NewReader(buf)
 
-	if cs != nil && cs.Confidence >= minCharsetConfidence {
-		// Confidence exceeded our threshold, use detected character set.
-		if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
-			p.addWarning(ErrorCharsetDeclaration,
-				"declared charset %q, detected %q, confidence %d",
-				p.Charset, cs.Charset, cs.Confidence)
-		}
-
-		reader, err := coding.NewCharsetReader(cs.Charset, r)
-		if err != nil {
-			// Failed to get a conversion reader.
-			p.addWarning(ErrorCharsetConversion, err.Error())
-		} else {
-			r = reader
-			p.OrigCharset = p.Charset
-			p.Charset = cs.Charset
-		}
-	} else {
+	if cs == nil || cs.Confidence < minCharsetConfidence {
 		// Low confidence, use declared character set.
-		r = p.convertFromStatedCharset(r)
+		return p.convertFromStatedCharset(r), nil
+	}
+
+	// Confidence exceeded our threshold, use detected character set.
+	if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
+		p.addWarning(ErrorCharsetDeclaration,
+			"declared charset %q, detected %q, confidence %d",
+			p.Charset, cs.Charset, cs.Confidence)
+	}
+
+	reader, err := coding.NewCharsetReader(cs.Charset, r)
+	if err != nil {
+		// Failed to get a conversion reader.
+		p.addWarning(ErrorCharsetConversion, err.Error())
+	} else {
+		r = reader
+		p.OrigCharset = p.Charset
+		p.Charset = cs.Charset
 	}
 
 	return r, nil
