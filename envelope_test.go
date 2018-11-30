@@ -870,7 +870,7 @@ func TestUnquotedSpecialCharParamsInMime(t *testing.T) {
 }
 
 func TestBadAddressHeaderInMime(t *testing.T) {
-	msg := test.OpenTestData("mail", "malformedMultipleAddressHeaderValues.raw")
+	msg := test.OpenTestData("mail", "malformed-multiple-address-header-values.raw")
 	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
