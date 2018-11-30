@@ -15,27 +15,19 @@ API documentation and examples can be found here:
 http://godoc.org/github.com/jhillyerd/enmime
 
 
-## API Changes
-
-Part readers: `Part.Read()` and `Part.Utf8Reader` have been removed. Please use
-`Part.Content` instead.
-
-A brief guide to migrating from the old 2016 `go.enmime` API is available here:
-https://github.com/jhillyerd/enmime/wiki/Enmime-Migration-Guide
-
-
 ## Development Status
 
-enmime is beta quality: it works but has not been tested with a wide variety of
-source data.  It's possible the API will evolve slightly before an official
-release.
+**Please base PRs off the `develop` branch**, enmime uses `master` for stable
+releases.  See [CONTRIBUTING.md] for more information.
 
-Please see [CONTRIBUTING.md] if you'd like to contribute code to the project.
+enmime is approaching production quality: it works but has not been tested with
+a wide variety of source data.  It's possible the API will evolve slightly
+before an official release.
 
 
 ## About
 
-enmime is written in [Google Go][Golang].
+enmime is written in [Go][Golang].
 
 enmime is open source software released under the MIT License.  The latest
 version can be found at https://github.com/jhillyerd/enmime
