@@ -329,7 +329,12 @@ findValueStart:
 		}
 	}
 
-	if (len(s) - i) > 0 {
+	if len(s)-i < 1 {
+		// parameter value starts at the end of the string, make empty
+		// quoted string to play nice with mime.ParseMediaType
+		param.WriteString(`""`)
+
+	} else {
 		// The beginning of the value is not at the end of the string
 
 		s = s[i+1:]

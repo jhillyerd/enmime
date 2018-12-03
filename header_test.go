@@ -165,7 +165,13 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: "",
 			sep:   "",
-			want:  ""},
+			want:  "",
+		},
+		{
+			input: "text/html;charset=",
+			sep:   ";",
+			want:  "text/html;charset=",
+		},
 		{
 			input: "application/pdf name=\"file.pdf\"",
 			sep:   " ",
@@ -301,7 +307,7 @@ func TestFixUnquotedSpecials(t *testing.T) {
 		},
 		{
 			input: `text/html;charset=`,
-			want:  `text/html;charset=`,
+			want:  `text/html;charset=""`,
 		},
 		{
 			input: `text/html;charset="`,
