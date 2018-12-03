@@ -299,6 +299,14 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			input: `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com`,
 			want:  `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com"`,
 		},
+		{
+			input: `text/html;charset=`,
+			want:  `text/html;charset=`,
+		},
+		{
+			input: `text/html;charset="`,
+			want:  `text/html;charset=""`,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
