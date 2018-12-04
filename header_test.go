@@ -168,6 +168,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "",
 		},
 		{
+			input: `text/HTML; charset=UTF-8; format=flowed; content-transfer-encoding: 7bit=`,
+			sep:   ";",
+			want:  "text/HTML; charset=UTF-8; format=flowed",
+		},
+		{
 			input: "text/html;charset=",
 			sep:   ";",
 			want:  "text/html;charset=",

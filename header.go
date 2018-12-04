@@ -256,6 +256,13 @@ func fixMangledMediaType(mtype, sep string) string {
 				// Ignore repeated parameters.
 				continue
 			}
+			if strings.ContainsAny(pair[0], "()<>@,;:\"\\/[]?") {
+				// attribute is a strict token and cannot be a quoted-string
+				// if any of the above characters are present in a token it
+				// must be quoted and is therefor an invalid attribute.
+				// Discard the pair.
+				continue
+			}
 		}
 		mtype += p
 		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
