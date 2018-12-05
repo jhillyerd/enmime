@@ -256,6 +256,13 @@ func fixMangledMediaType(mtype, sep string) string {
 				// Ignore repeated parameters.
 				continue
 			}
+			if strings.ContainsAny(pair[0], "()<>@,;:\"\\/[]?") {
+				// attribute is a strict token and cannot be a quoted-string
+				// if any of the above characters are present in a token it
+				// must be quoted and is therefor an invalid attribute.
+				// Discard the pair.
+				continue
+			}
 		}
 		mtype += p
 		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
@@ -329,84 +336,93 @@ findValueStart:
 		}
 	}
 
-	s = s[i+1:]
+	if len(s)-i < 1 {
+		// parameter value starts at the end of the string, make empty
+		// quoted string to play nice with mime.ParseMediaType
+		param.WriteString(`""`)
 
-	quoteIfUnquoted := func() {
-		if !valueQuoteNeeded {
-			if !valueQuoteAdded {
-				param.WriteByte('"')
+	} else {
+		// The beginning of the value is not at the end of the string
 
-				valueQuoteAdded = true
+		s = s[i+1:]
+
+		quoteIfUnquoted := func() {
+			if !valueQuoteNeeded {
+				if !valueQuoteAdded {
+					param.WriteByte('"')
+
+					valueQuoteAdded = true
+				}
+
+				valueQuoteNeeded = true
 			}
-
-			valueQuoteNeeded = true
 		}
-	}
 
-findValueEnd:
-	for len(s) > 0 {
-		switch s[0] {
-		case ';', ' ', '\t':
-			if valueQuotedOriginally {
-				// We're in a quoted string, so whitespace is allowed.
-				value.WriteByte(s[0])
-				s = s[1:]
-				break
-			}
+	findValueEnd:
+		for len(s) > 0 {
+			switch s[0] {
+			case ';', ' ', '\t':
+				if valueQuotedOriginally {
+					// We're in a quoted string, so whitespace is allowed.
+					value.WriteByte(s[0])
+					s = s[1:]
+					break
+				}
 
-			// Otherwise, we've reached the end of an unquoted value.
+				// Otherwise, we've reached the end of an unquoted value.
 
-			param.WriteString(value.String())
-			value.Reset()
-
-			if valueQuoteNeeded {
-				param.WriteByte('"')
-			}
-
-			param.WriteByte(s[0])
-			s = s[1:]
-
-			break findValueEnd
-
-		case '"':
-			if valueQuotedOriginally {
-				// We're in a quoted value. This is the end of that value.
 				param.WriteString(value.String())
 				value.Reset()
+
+				if valueQuoteNeeded {
+					param.WriteByte('"')
+				}
 
 				param.WriteByte(s[0])
 				s = s[1:]
 
 				break findValueEnd
-			}
 
-			quoteIfUnquoted()
+			case '"':
+				if valueQuotedOriginally {
+					// We're in a quoted value. This is the end of that value.
+					param.WriteString(value.String())
+					value.Reset()
 
-			value.WriteByte('\\')
-			value.WriteByte(s[0])
-			s = s[1:]
+					param.WriteByte(s[0])
+					s = s[1:]
 
-		case '\\':
-			if len(s) > 1 {
+					break findValueEnd
+				}
+
+				quoteIfUnquoted()
+
+				value.WriteByte('\\')
 				value.WriteByte(s[0])
 				s = s[1:]
 
-				// Backslash escapes the next char. Consume that next char.
-				value.WriteByte(s[0])
+			case '\\':
+				if len(s) > 1 {
+					value.WriteByte(s[0])
+					s = s[1:]
 
+					// Backslash escapes the next char. Consume that next char.
+					value.WriteByte(s[0])
+
+					quoteIfUnquoted()
+				}
+				// Else there is no next char to consume.
+				s = s[1:]
+
+			case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
 				quoteIfUnquoted()
+
+				fallthrough
+
+			default:
+				value.WriteByte(s[0])
+				s = s[1:]
 			}
-			// Else there is no next char to consume.
-			s = s[1:]
-
-		case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
-			quoteIfUnquoted()
-
-			fallthrough
-
-		default:
-			value.WriteByte(s[0])
-			s = s[1:]
 		}
 	}
 
