@@ -180,7 +180,7 @@ func selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncodi
 		return te7Bit
 	}
 	// Binary chars remaining before we choose b64 encoding.
-	threshold := b64Percent * 100 / len(content)
+	threshold := b64Percent * len(content) / 100
 	bincount := 0
 	for _, b := range content {
 		if (b < ' ' || '~' < b) && b != '\t' {
