@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	stderrors "errors"
-	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -257,6 +256,13 @@ func fixMangledMediaType(mtype, sep string) string {
 				// Ignore repeated parameters.
 				continue
 			}
+			if strings.ContainsAny(pair[0], "()<>@,;:\"\\/[]?") {
+				// attribute is a strict token and cannot be a quoted-string
+				// if any of the above characters are present in a token it
+				// must be quoted and is therefor an invalid attribute.
+				// Discard the pair.
+				continue
+			}
 		}
 		mtype += p
 		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
@@ -271,16 +277,197 @@ func fixMangledMediaType(mtype, sep string) string {
 	return mtype
 }
 
-// fixUnquotedSpecials as defined in https://www.w3.org/Protocols/rfc1341/4_Content-Type.html
-func fixUnquotedSpecials(s string) string {
-	if strings.Contains(s, "name=") {
-		nameSplit := strings.SplitAfter(s, "name=")
-		if strings.ContainsAny(nameSplit[1], "()<>@,;:\\/[]?.=") &&
-			!strings.HasSuffix(nameSplit[1], "\"") {
-			return fmt.Sprintf("%s\"%s\"", nameSplit[0], nameSplit[1])
+// consumeParam takes the the parameter part of a Content-Type header, returns a clean version of
+// the first parameter (quoted as necessary), and the remainder of the parameter part of the
+// Content-Type header.
+//
+// Given this this header:
+//     `Content-Type: text/calendar; charset=utf-8; method=text/calendar`
+// `consumeParams` should be given this part:
+//     ` charset=utf-8; method=text/calendar`
+// And returns (first pass):
+//     `consumed = "charset=utf-8;"`
+//     `rest     = " method=text/calendar"`
+// Capture the `consumed` value (to build a clean Content-Type header value) and pass the value of
+// `rest` back to `consumeParam`. That second call will return:
+//     `consumed = " method=\"text/calendar\""`
+//     `rest     = ""`
+// Again, use the value of `consumed` to build a clean Content-Type header value. Given that `rest`
+// is empty, all of the parameters have been consumed successfully.
+//
+// If `consumed` is returned empty and `rest` is not empty, then the value of `rest` does not
+// begin with a parsable parameter. This does not necessarily indicate a problem. For example,
+// if there is trailing whitespace, it would be returned here.
+func consumeParam(s string) (consumed, rest string) {
+	i := strings.IndexByte(s, '=')
+	if i < 0 {
+		return "", s
+	}
+
+	param := strings.Builder{}
+	param.WriteString(s[:i+1])
+	s = s[i+1:]
+
+	value := strings.Builder{}
+	valueQuotedOriginally := false
+	valueQuoteAdded := false
+	valueQuoteNeeded := false
+
+	var r rune
+findValueStart:
+	for i, r = range s {
+		switch r {
+		case ' ', '\t':
+			param.WriteRune(r)
+
+		case '"':
+			valueQuotedOriginally = true
+			valueQuoteAdded = true
+			value.WriteRune(r)
+
+			break findValueStart
+
+		default:
+			valueQuotedOriginally = false
+			valueQuoteAdded = false
+			value.WriteRune(r)
+
+			break findValueStart
 		}
 	}
-	return s
+
+	if len(s)-i < 1 {
+		// parameter value starts at the end of the string, make empty
+		// quoted string to play nice with mime.ParseMediaType
+		param.WriteString(`""`)
+
+	} else {
+		// The beginning of the value is not at the end of the string
+
+		s = s[i+1:]
+
+		quoteIfUnquoted := func() {
+			if !valueQuoteNeeded {
+				if !valueQuoteAdded {
+					param.WriteByte('"')
+
+					valueQuoteAdded = true
+				}
+
+				valueQuoteNeeded = true
+			}
+		}
+
+	findValueEnd:
+		for len(s) > 0 {
+			switch s[0] {
+			case ';', ' ', '\t':
+				if valueQuotedOriginally {
+					// We're in a quoted string, so whitespace is allowed.
+					value.WriteByte(s[0])
+					s = s[1:]
+					break
+				}
+
+				// Otherwise, we've reached the end of an unquoted value.
+
+				param.WriteString(value.String())
+				value.Reset()
+
+				if valueQuoteNeeded {
+					param.WriteByte('"')
+				}
+
+				param.WriteByte(s[0])
+				s = s[1:]
+
+				break findValueEnd
+
+			case '"':
+				if valueQuotedOriginally {
+					// We're in a quoted value. This is the end of that value.
+					param.WriteString(value.String())
+					value.Reset()
+
+					param.WriteByte(s[0])
+					s = s[1:]
+
+					break findValueEnd
+				}
+
+				quoteIfUnquoted()
+
+				value.WriteByte('\\')
+				value.WriteByte(s[0])
+				s = s[1:]
+
+			case '\\':
+				if len(s) > 1 {
+					value.WriteByte(s[0])
+					s = s[1:]
+
+					// Backslash escapes the next char. Consume that next char.
+					value.WriteByte(s[0])
+
+					quoteIfUnquoted()
+				}
+				// Else there is no next char to consume.
+				s = s[1:]
+
+			case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
+				quoteIfUnquoted()
+
+				fallthrough
+
+			default:
+				value.WriteByte(s[0])
+				s = s[1:]
+			}
+		}
+	}
+
+	if value.Len() > 0 {
+		// There is a value that ends with the string. Capture it.
+		param.WriteString(value.String())
+
+		if valueQuotedOriginally || valueQuoteNeeded {
+			// If valueQuotedOriginally is true and we got here,
+			// that means there was no closing quote. So we'll add one.
+			// Otherwise, we're here because it was an unquoted value
+			// with a special char in it, and we had to quote it.
+			param.WriteByte('"')
+		}
+	}
+
+	return param.String(), s
+}
+
+// fixUnquotedSpecials as defined in RFC 2045, section 5.1:
+// https://tools.ietf.org/html/rfc2045#section-5.1
+func fixUnquotedSpecials(s string) string {
+	idx := strings.IndexByte(s, ';')
+	if idx < 0 || idx == len(s) {
+		// No parameters
+		return s
+	}
+
+	clean := strings.Builder{}
+	clean.WriteString(s[:idx+1])
+	s = s[idx+1:]
+
+	for len(s) > 0 {
+		var consumed string
+		consumed, s = consumeParam(s)
+
+		if len(consumed) == 0 {
+			clean.WriteString(s)
+			return clean.String()
+		}
+
+		clean.WriteString(consumed)
+	}
+
+	return clean.String()
 }
 
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.

@@ -114,11 +114,20 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	if str == "" {
 		return nil, mail.ErrHeaderNotPresent
 	}
+
 	// These statements are handy for debugging ParseAddressList errors
 	// fmt.Println("in:  ", m.header.Get(key))
 	// fmt.Println("out: ", str)
 	ret, err := mail.ParseAddressList(str)
-	if err != nil {
+	switch {
+	case err == nil:
+		// carry on
+	case err.Error() == "mail: expected comma":
+		ret, err = mail.ParseAddressList(ensureCommaDelimitedAddresses(str))
+		if err != nil {
+			return nil, err
+		}
+	default:
 		return nil, err
 	}
 	return ret, nil
@@ -335,4 +344,63 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 // Used by Part matchers to locate the HTML body.  Not inlined because it's used in multiple places.
 func matchHTMLBodyPart(p *Part) bool {
 	return p.ContentType == ctTextHTML && p.Disposition != cdAttachment
+}
+
+// Used by AddressList to ensure that address lists are properly delimited
+func ensureCommaDelimitedAddresses(s string) string {
+	// This normalizes the whitespace, but may interfere with CFWS (comments with folding whitespace)
+	// RFC-5322 3.4.0:
+	//      because some legacy implementations interpret the comment,
+	//      comments generally SHOULD NOT be used in address fields
+	//      to avoid confusing such implementations.
+	s = strings.Join(strings.Fields(s), " ")
+
+	inQuotes := false
+	inDomain := false
+	escapeSequence := false
+	sb := strings.Builder{}
+	for _, r := range s {
+		if escapeSequence {
+			escapeSequence = false
+			sb.WriteRune(r)
+			continue
+		}
+		if r == '"' {
+			inQuotes = !inQuotes
+			sb.WriteRune(r)
+			continue
+		}
+		if inQuotes {
+			if r == '\\' {
+				escapeSequence = true
+				sb.WriteRune(r)
+				continue
+			}
+		} else {
+			if r == '@' {
+				inDomain = true
+				sb.WriteRune(r)
+				continue
+			}
+			if inDomain {
+				if r == ';' {
+					sb.WriteRune(r)
+					break
+				}
+				if r == ',' {
+					inDomain = false
+					sb.WriteRune(r)
+					continue
+				}
+				if r == ' ' {
+					inDomain = false
+					sb.WriteRune(',')
+					sb.WriteRune(r)
+					continue
+				}
+			}
+		}
+		sb.WriteRune(r)
+	}
+	return sb.String()
 }

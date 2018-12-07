@@ -36,7 +36,7 @@ func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
 	}
 }
 
-// readUntilBoundary returns a buffer containing the content up until boundary
+// Read returns a buffer containing the content up until boundary
 func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	if b.buffer.Len() >= len(dest) {
 		// This read request can be satisfied entirely by the buffer

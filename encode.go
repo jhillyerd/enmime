@@ -42,7 +42,6 @@ func (p *Part) Encode(writer io.Writer) error {
 		if err := p.encodeContent(b, cte); err != nil {
 			return err
 		}
-		b.Write(crnl)
 	}
 	if p.FirstChild == nil {
 		return b.Flush()
@@ -68,6 +67,11 @@ func (p *Part) Encode(writer io.Writer) error {
 // then sets the Content-Type (type, charset, filename, boundary) and Content-Disposition headers.
 func (p *Part) setupMIMEHeaders() transferEncoding {
 	// Determine content transfer encoding.
+
+	// If we are encoding a part that previously had content-transfer-encoding set, unset it so
+	// the correct encoding detection can be done below.
+	p.Header.Del(hnContentEncoding)
+
 	cte := te7Bit
 	if len(p.Content) > 0 {
 		cte = teBase64

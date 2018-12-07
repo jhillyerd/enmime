@@ -2,15 +2,12 @@ Content-Type: multipart/alternative; boundary=enmime-1234567890-parent;
  charset=utf-8
 
 Bro, do you even MIME?
-
 --enmime-1234567890-parent
 Content-Type: text/html; charset=utf-8
 
 <div>HTML part</div>
-
 --enmime-1234567890-parent
 Content-Type: text/plain; charset=utf-8
 
 Plain text part
-
 --enmime-1234567890-parent--
