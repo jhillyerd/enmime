@@ -3,9 +3,10 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
+
+	"github.com/pkg/errors"
 )
 
 // This constant needs to be at least 76 for this package to work correctly.  This is because
@@ -35,7 +36,7 @@ func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
 	}
 }
 
-// readUntilBoundary returns a buffer containing the content up until boundary
+// Read returns a buffer containing the content up until boundary
 func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	if b.buffer.Len() >= len(dest) {
 		// This read request can be satisfied entirely by the buffer
@@ -46,7 +47,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	peekEOF := (err == io.EOF)
 	if err != nil && !peekEOF && err != bufio.ErrBufferFull {
 		// Unexpected error
-		return 0, err
+		return 0, errors.WithStack(err)
 	}
 	var nCopy int
 	idx, complete := locateBoundary(peek, b.nlPrefix)
@@ -63,13 +64,13 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			nCopy = 0
 			if peekEOF {
 				// No more peek space remaining and no boundary found
-				return 0, io.ErrUnexpectedEOF
+				return 0, errors.WithStack(io.ErrUnexpectedEOF)
 			}
 		}
 	}
 	if nCopy > 0 {
 		if _, err = io.CopyN(b.buffer, b.r, int64(nCopy)); err != nil {
-			return 0, err
+			return 0, errors.WithStack(err)
 		}
 	}
 
@@ -78,7 +79,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		// Only the buffer is empty, not the boundaryReader
 		return n, nil
 	}
-	return
+	return n, err
 }
 
 // Next moves over the boundary to the next part, returns true if there is another part to be read.
@@ -93,7 +94,7 @@ func (b *boundaryReader) Next() (bool, error) {
 	for {
 		line, err := b.r.ReadSlice('\n')
 		if err != nil && err != io.EOF {
-			return false, err
+			return false, errors.WithStack(err)
 		}
 		if len(line) > 0 && (line[0] == '\r' || line[0] == '\n') {
 			// Blank line
@@ -109,6 +110,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			return true, nil
 		}
 		if err == io.EOF {
+			// Intentionally not wrapping with stack
 			return false, io.EOF
 		}
 		if b.partsRead == 0 {
@@ -117,7 +119,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			continue
 		}
 		b.finished = true
-		return false, fmt.Errorf("expecting boundary %q, got %q", string(b.prefix), string(line))
+		return false, errors.Errorf("expecting boundary %q, got %q", string(b.prefix), string(line))
 	}
 }
 
