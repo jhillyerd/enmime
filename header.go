@@ -3,7 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"mime"
@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -54,11 +55,12 @@ const (
 	hpFile     = "file"
 	hpFilename = "filename"
 	hpName     = "name"
+	hpModDate  = "modification-date"
 
 	utf8 = "utf-8"
 )
 
-var errEmptyHeaderBlock = errors.New("empty header block")
+var errEmptyHeaderBlock = stderrors.New("empty header block")
 
 // AddressHeaders is the set of SMTP headers that contain email addresses, used by
 // Envelope.AddressList().  Key characters must be all lowercase.
@@ -95,9 +97,10 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		// Pull out each line of the headers as a temporary slice s
 		s, err := tp.ReadLineBytes()
 		if err != nil {
-			if err == io.ErrUnexpectedEOF && buf.Len() == 0 {
-				return nil, errEmptyHeaderBlock
-			} else if err == io.EOF {
+			cause := errors.Cause(err)
+			if cause == io.ErrUnexpectedEOF && buf.Len() == 0 {
+				return nil, errors.WithStack(errEmptyHeaderBlock)
+			} else if cause == io.EOF {
 				buf.Write([]byte{'\r', '\n'})
 				break
 			}
@@ -142,7 +145,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadMIMEHeader()
-	return header, err
+	return header, errors.WithStack(err)
 }
 
 // decodeHeader decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
@@ -212,7 +215,7 @@ func parseMediaType(ctype string) (mtype string, params map[string]string, inval
 				// If the media parameter has special characters, ensure that it is quoted.
 				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
 				if err != nil {
-					return "", nil, nil, err
+					return "", nil, nil, errors.WithStack(err)
 				}
 			}
 		}

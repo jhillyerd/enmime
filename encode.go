@@ -8,6 +8,7 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
+	"time"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
@@ -109,6 +110,9 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		// Build disposition header.
 		param := make(map[string]string)
 		setParamValue(param, hpFilename, stringutil.ToASCII(p.FileName))
+		if !p.FileModDate.IsZero() {
+			setParamValue(param, hpModDate, p.FileModDate.Format(time.RFC822))
+		}
 		mt := mime.FormatMediaType(p.Disposition, param)
 		if mt == "" {
 			// There was an error, FormatMediaType couldn't encode the params.

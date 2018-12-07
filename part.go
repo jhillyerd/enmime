@@ -11,9 +11,11 @@ import (
 	"net/textproto"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/pkg/errors"
 )
 
 const minCharsetConfidence = 85
@@ -27,13 +29,14 @@ type Part struct {
 	NextSibling *Part                // NextSibling of this part.
 	Header      textproto.MIMEHeader // Header for this Part.
 
-	Boundary    string // Boundary marker used within this part.
-	ContentID   string // ContentID header for cid URL scheme.
-	ContentType string // ContentType header without parameters.
-	Disposition string // Content-Disposition header without parameters.
-	FileName    string // The file-name from disposition or type header.
-	Charset     string // The content charset encoding, may differ from charset in header.
-	OrigCharset string // The original content charset when a different charset was detected.
+	Boundary    string    // Boundary marker used within this part.
+	ContentID   string    // ContentID header for cid URL scheme.
+	ContentType string    // ContentType header without parameters.
+	Disposition string    // Content-Disposition header without parameters.
+	FileName    string    // The file-name from disposition or type header.
+	FileModDate time.Time // The modification date of the file.
+	Charset     string    // The content charset encoding, may differ from charset in header.
+	OrigCharset string    // The original content charset when a different charset was detected.
 
 	Errors   []*Error // Errors encountered while parsing this part.
 	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
@@ -191,11 +194,11 @@ func (p *Part) decodeContent(r io.Reader) error {
 		}
 		buf, err := ioutil.ReadAll(contentReader)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		cs, err := cd.DetectBest(buf)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		contentReader = bytes.NewReader(buf) // Restore contentReader.
 
@@ -245,7 +248,7 @@ func (p *Part) decodeContent(r io.Reader) error {
 	// Decode and store content.
 	content, err := ioutil.ReadAll(contentReader)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	p.Content = content
 	// Collect base64 errors.
@@ -318,7 +321,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	br := newBoundaryReader(reader, parent.Boundary)
 	for indexPartID := 1; true; indexPartID++ {
 		next, err := br.Next()
-		if err != nil && err != io.EOF {
+		if err != nil && errors.Cause(err) != io.EOF {
 			return err
 		}
 		if !next {
@@ -334,18 +337,20 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Look for part header.
 		bbr := bufio.NewReader(br)
 		err = p.setupHeaders(bbr, "")
-		if err == errEmptyHeaderBlock {
+		if errors.Cause(err) == errEmptyHeaderBlock {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.
 			if _, err = br.Next(); err != nil {
-				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
+				if errors.Cause(err) == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
 					// There are no more Parts. The error must belong to the parent, because this
 					// part doesn't exist.
 					parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
 						parent.Boundary)
 					break
 				}
-				return fmt.Errorf("error at boundary %v: %v", parent.Boundary, err)
+				// The error is already wrapped with a stack, so only adding a message here.
+				// TODO: Once `errors` releases a version > v0.8.0, change to use errors.WithMessagef()
+				return errors.WithMessage(err, fmt.Sprintf("error at boundary %v", parent.Boundary))
 			}
 		} else if err != nil {
 			return err
@@ -368,7 +373,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	// Store any content following the closing boundary marker into the epilogue.
 	epilogue, err := ioutil.ReadAll(reader)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	parent.Epilogue = epilogue
 	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
