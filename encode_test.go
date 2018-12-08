@@ -215,9 +215,9 @@ func TestEncodePartContentNonAsciiText(t *testing.T) {
 	threshold := 20
 
 	cases := []int{
-		threshold -1,
+		threshold - 1,
 		threshold,
-		threshold+1,
+		threshold + 1,
 	}
 
 	for _, numNonAscii := range cases {
