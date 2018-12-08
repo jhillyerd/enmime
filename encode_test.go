@@ -208,3 +208,34 @@ func TestEncodeFileModDate(t *testing.T) {
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-file-mod-date.golden")
 }
+
+func TestEncodePartContentNonAsciiText(t *testing.T) {
+	p := enmime.NewPart("text/plain")
+
+	threshold := 20
+
+	cases := []int{
+		threshold -1,
+		threshold,
+		threshold+1,
+	}
+
+	for _, numNonAscii := range cases {
+		nonAscii := bytes.Repeat([]byte{byte(0x10)}, numNonAscii)
+		ascii := bytes.Repeat([]byte{0x41}, 100-numNonAscii)
+
+		p.Content = append(nonAscii, ascii[:]...)
+
+		b := &bytes.Buffer{}
+		err := p.Encode(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if numNonAscii < threshold {
+			test.DiffStrings(t, []string{p.Header.Get("Content-Transfer-Encoding")}, []string{"quoted-printable"})
+		} else {
+			test.DiffStrings(t, []string{p.Header.Get("Content-Transfer-Encoding")}, []string{"base64"})
+		}
+	}
+}
