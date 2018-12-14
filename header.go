@@ -251,11 +251,16 @@ func fixMangledMediaType(mtype, sep string) string {
 			if !strings.Contains(p, "=") {
 				p = p + "=" + pvPlaceholder
 			}
+
+			// RFC-2047 encoded attribute name
+			p = rfc2047AttributeName(p)
+
 			pair := strings.Split(p, "=")
 			if strings.Contains(mtype, pair[0]+"=") {
 				// Ignore repeated parameters.
 				continue
 			}
+
 			if strings.ContainsAny(pair[0], "()<>@,;:\"\\/[]?") {
 				// attribute is a strict token and cannot be a quoted-string
 				// if any of the above characters are present in a token it
@@ -473,4 +478,16 @@ func fixUnquotedSpecials(s string) string {
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
+}
+
+// rfc2047AttributeName checks if the attribute name is encoded in RFC2047 format
+// RFC2047 Example:
+//     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
+func rfc2047AttributeName(s string) string {
+	if !strings.Contains(s, "?=") {
+		return s
+	}
+	pair := strings.SplitAfter(s, "?=")
+	pair[0] = decodeHeader(pair[0])
+	return strings.Join(pair, "")
 }
