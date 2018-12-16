@@ -9,7 +9,15 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Use github.com/pkg/errors to decorate errors with stack traces (thanks to
   dcomier.)
+- Several improvements to Content-Type header decoding (thanks to dcormier.)
+- File modification date to encode/decode (thanks to dann7387.)
+- Handle non-delimited address lists (thanks to requaos.)
+- RFC-2047 attribute name deocding (thanks to requaos.)
 
+### Fixed
+- Only detect charset on `text/*` parts (thanks to dcormier.)
+- Stop adding extra newline during encode (thanks to dann7387.)
+- Math bug in selecting QP or base64 encoding (thanks to dann7387.)
 
 ## [0.4.0] - 2018-11-21
 
