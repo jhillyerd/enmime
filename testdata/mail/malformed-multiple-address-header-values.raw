@@ -1,0 +1,39 @@
+Subject: Test
+To: alice@intern
+From: Bob Dunite <bob@extern> Bobby Dunite <bobby@extern>
+Content-Type: multipart/mixed;
+	boundary="0__=4EBB0828DFD318FF8f9e8a93df938690918c4EBB0828DFD318FF"
+Content-Disposition: inline
+MIME-Version: 1.0
+
+--0__=4EBB0828DFD318FF8f9e8a93df938690918c4EBB0828DFD318FF
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+
+Simple text.
+
+--0__=4EBB0828DFD318FF8f9e8a93df938690918c4EBB0828DFD318FF
+Content-Type: application/pdf; name="test.pdf"; name="test.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="test.pdf"
+
+JVBERi0xLjINCg0KNCAwIG9iag0KPDwNCi9FIDYxOTUNCi9IIFsgMTIxMSAxNDUgXQ0KL0wgNjUy
+MA0KL0xpbmVhcml6ZWQgMQ0KL04gMQ0KL08gNw0KL1QgNjM5MA0KPj4gICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+DQplbmRvYmoNCg0KeHJlZg0KNCA4DQowMDAwMDAwMDEyIDAwMDAwIG4NCjAwMDAwMDEwODggMDAw
+MDAgbg0KMDAwMDAwMTIxMSAwMDAwMCBuDQowMDAwMDAxMzU2IDAwMDAwIG4NCjAwMDAwMDE2MDcg
+MDAwMDAgbg0KMDAwMDAwMTcxNiAwMDAwMCBuDQowMDAwMDAxODI0IDAwMDAwIG4NCjAwMDAwMDQz
+MTkgMDAwMDAgbg0KdHJhaWxlcg0KPDwNCi9BQkNwZGYgODEwNw0KL0lEIFsgPDNENzc5REU2NjU0
+RDM4ODczMTYzODBBNTY3REY0MDhFPg0KPDc5OEQ0RjVGNkUyNzIzQjA1MTFCQzU0QzYwMTczRDI3
+PiBdDQovSW5mbyAzIDAgUg0KL1ByZXYgNjM4MA0KL1Jvb3QgNSAwIFINCi9TaXplIDEyDQovU291
+cmNlIChXZUpYRnh
+
+--0__=4EBB0828DFD318FF8f9e8a93df938690918c4EBB0828DFD318FF
+Content-Type: text/plain; name="test.txt"; name="test.txt"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="test.txt"
+
+Text attachment.
+
+--0__=4EBB0828DFD318FF8f9e8a93df938690918c4EBB0828DFD318FF--

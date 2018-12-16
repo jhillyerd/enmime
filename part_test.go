@@ -13,7 +13,7 @@ func TestPlainTextPart(t *testing.T) {
 	r := test.OpenTestData("parts", "textplain.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -42,7 +42,7 @@ func TestQuotedPrintablePart(t *testing.T) {
 	r := test.OpenTestData("parts", "quoted-printable.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -71,7 +71,7 @@ func TestQuotedPrintableInvalidPart(t *testing.T) {
 	r := test.OpenTestData("parts", "quoted-printable-invalid.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -103,7 +103,7 @@ func TestMultiAlternParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -154,7 +154,7 @@ func TestRootMissingContentType(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -177,7 +177,7 @@ func TestPartMissingContentType(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -227,7 +227,7 @@ func TestPartEmptyHeader(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -307,7 +307,7 @@ func TestMultiMixedParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -358,7 +358,7 @@ func TestMultiOtherParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -409,7 +409,7 @@ func TestNestedAlternParts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -502,7 +502,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -580,7 +580,7 @@ func TestBinaryDecode(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -635,7 +635,7 @@ func TestMultiBase64Parts(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -687,7 +687,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -731,7 +731,7 @@ func TestClonePart(t *testing.T) {
 
 	// Examine root
 	if err != nil {
-		t.Fatal("Unexpected parse error:", err)
+		t.Fatalf("Unexpected parse error: %+v", err)
 	}
 	if p == nil {
 		t.Fatal("Root node should not be nil")
@@ -748,29 +748,16 @@ func TestBarrenContentType(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := ""
-	if p.ContentType != want {
-		t.Errorf("ContentType %q, want %q", p.ContentType, want)
+	wantp := &enmime.Part{
+		PartID:      "0",
+		Disposition: "attachment",
 	}
-	want = ""
-	if p.FileName != want {
-		t.Errorf("FileName %q, want %q", p.FileName, want)
-	}
-	want = ""
-	if p.Charset != want {
-		t.Errorf("Charset %q, want %q", p.Charset, want)
-	}
-	want = "attachment"
-	if p.Disposition != want {
-		t.Errorf("Disposition %q, want %q", p.Disposition, want)
-	}
-	want = ""
-	if p.ContentID != want {
-		t.Errorf("ContentID %q, want %q", p.ContentID, want)
-	}
+	test.ComparePart(t, p, wantp)
+
+	expected := enmime.ErrorMissingContentType
 	satisfied := false
 	for _, perr := range p.Errors {
-		if perr.Name == enmime.ErrorMissingContentType {
+		if perr.Name == expected {
 			satisfied = true
 			if perr.Severe {
 				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
@@ -780,7 +767,7 @@ func TestBarrenContentType(t *testing.T) {
 	if !satisfied {
 		t.Errorf(
 			"Did not find expected error on part. Expected %q, but had: %v",
-			enmime.ErrorMissingContentType,
+			expected,
 			p.Errors)
 	}
 }
@@ -789,16 +776,18 @@ func TestMalformedContentTypeParams(t *testing.T) {
 	r := test.OpenTestData("parts", "malformed-content-type-params.raw")
 	p, err := enmime.ReadParts(r)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("%+v", err)
 	}
 	wantp := &enmime.Part{
 		PartID:      "0",
 		ContentType: "text/html",
 	}
 	test.ComparePart(t, p, wantp)
+
+	expected := enmime.ErrorMalformedHeader
 	satisfied := false
 	for _, perr := range p.Errors {
-		if perr.Name == enmime.ErrorMalformedHeader {
+		if perr.Name == expected {
 			satisfied = true
 			if perr.Severe {
 				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
@@ -808,7 +797,110 @@ func TestMalformedContentTypeParams(t *testing.T) {
 	if !satisfied {
 		t.Errorf(
 			"Did not find expected error on part. Expected %q, but had: %v",
-			enmime.ErrorMalformedHeader,
+			expected,
 			p.Errors)
 	}
+}
+
+func TestContentTypeParamUnquotedSpecial(t *testing.T) {
+	r := test.OpenTestData("parts", "unquoted-ctype-param-special.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/calendar",
+		Disposition: "attachment",
+		FileName:    "calendar.ics",
+	}
+	test.ComparePart(t, p, wantp)
+}
+
+func TestContentTypeParamMissingClosingQuote(t *testing.T) {
+	r := test.OpenTestData("parts", "missing-closing-param-quote.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/html",
+		Charset:     "UTF-8Return-Path:",
+	}
+	test.ComparePart(t, p, wantp)
+
+	expected := enmime.ErrorCharsetConversion
+	satisfied := false
+	for _, perr := range p.Errors {
+		if perr.Name == expected {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			expected,
+			p.Errors)
+	}
+}
+
+func TestChardetFailure(t *testing.T) {
+	const expectedContent = "GIF89ad\x00\x04\x00\x80\x00\x00\x00f\xccf\xff\x99!\xf9\x04\x00\x00\x00\x00\x00,\x00\x00\x00\x00d\x00\x04\x00\x00\x02\x1a\x8c\x8f\xa9\xcb\xed\x0f\xa3\x9c\xb4\xda\xeb\x80\u07bc\xfb\x0f\x86\xe2H\x96扦\xea*\x16\x00;"
+
+	t.Run("text part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-fail.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			ContentID:   "part3.E34FF3C4.059DAD00@example.com",
+			FileName:    "rzkly.txt",
+		}
+		test.ComparePart(t, p, wantp)
+		expected := enmime.ErrorCharsetDeclaration
+		satisfied := false
+		for _, perr := range p.Errors {
+			if perr.Name == expected {
+				satisfied = true
+				if perr.Severe {
+					t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+				}
+			}
+		}
+		if !satisfied {
+			t.Errorf(
+				"Did not find expected error on part. Expected %q, but had: %v",
+				expected,
+				p.Errors)
+		}
+		test.ContentEqualsString(t, p.Content, expectedContent)
+	})
+
+	t.Run("non-text part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-fail-non-txt.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(p.Errors) > 0 {
+			t.Errorf("Errors encountered while processing part: %v", p.Errors)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "image/gif",
+			ContentID:   "part3.E34FF3C4.059DAD00@example.com",
+			FileName:    "rzkly.gif",
+		}
+		test.ComparePart(t, p, wantp)
+		test.ContentEqualsString(t, p.Content, expectedContent)
+	})
 }

@@ -165,7 +165,23 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: "",
 			sep:   "",
-			want:  ""},
+			want:  "",
+		},
+		{
+			input: `text/HTML; charset=UTF-8; format=flowed; content-transfer-encoding: 7bit=`,
+			sep:   ";",
+			want:  "text/HTML; charset=UTF-8; format=flowed",
+		},
+		{
+			input: "text/html;charset=",
+			sep:   ";",
+			want:  "text/html;charset=",
+		},
+		{
+			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
+			sep:   ";",
+			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg",
+		},
 		{
 			input: "application/pdf name=\"file.pdf\"",
 			sep:   " ",
@@ -202,6 +218,117 @@ func TestFixMangledMediaType(t *testing.T) {
 			got := fixMangledMediaType(tc.input, tc.sep)
 			if got != tc.want {
 				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFixUnquotedSpecials(t *testing.T) {
+	testCases := []struct {
+		input, want string
+	}{
+		{
+			input: "",
+			want:  "",
+		},
+		{
+			input: "application/octet-stream",
+			want:  "application/octet-stream",
+		},
+		{
+			input: "application/octet-stream;",
+			want:  "application/octet-stream;",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1\"",
+			want:  "application/octet-stream; param1=\"value1\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1\"\\",
+			want:  "application/octet-stream; param1=\"value1\"\\",
+		},
+		{
+			input: "application/octet-stream; param1=value1",
+			want:  "application/octet-stream; param1=value1",
+		},
+		{
+			input: "application/octet-stream; param1=value1\\",
+			want:  "application/octet-stream; param1=value1",
+		},
+		{
+			input: "application/octet-stream; param1=value1\\\"",
+			want:  "application/octet-stream; param1=\"value1\\\"\"",
+		},
+		{
+			input: "application/octet-stream; param1=value\"1\"",
+			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value\\\"1\\\"\"",
+			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
+		},
+		{
+			input: "application/octet-stream; param1= value1",
+			want:  "application/octet-stream; param1= value1",
+		},
+		{
+			input: "application/octet-stream; param1=\tvalue1",
+			want:  "application/octet-stream; param1=\tvalue1",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1;\"",
+			want:  "application/octet-stream; param1=\"value1;\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value 1\"",
+			want:  "application/octet-stream; param1=\"value 1\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value\t1\"",
+			want:  "application/octet-stream; param1=\"value\t1\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value(1).pdf\"",
+			want:  "application/octet-stream; param1=\"value(1).pdf\"",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf",
+			want:  "application/octet-stream; param1=\"value(1).pdf\"",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf; param2=value(2).pdf",
+			want:  "application/octet-stream; param1=\"value(1).pdf\"; param2=\"value(2).pdf\"",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf;\tparam2=value2.pdf;",
+			want:  "application/octet-stream; param1=\"value(1).pdf\";\tparam2=value2.pdf;",
+		},
+		{
+			input: "application/octet-stream; param1=value(1).pdf;param2=value2.pdf;",
+			want:  "application/octet-stream; param1=\"value(1).pdf\";param2=value2.pdf;",
+		},
+		{
+			input: "application/octet-stream; param1=value/1",
+			want:  "application/octet-stream; param1=\"value/1\"",
+		},
+		{
+			input: `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com`,
+			want:  `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com"`,
+		},
+		{
+			input: `text/html;charset=`,
+			want:  `text/html;charset=""`,
+		},
+		{
+			input: `text/html;charset="`,
+			want:  `text/html;charset=""`,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := fixUnquotedSpecials(tc.input)
+			if got != tc.want {
+				t.Errorf("\ngot:  %s\nwant: %s", got, tc.want)
 			}
 		})
 	}
@@ -369,6 +496,68 @@ func TestReadHeader(t *testing.T) {
 		}
 		if got != want {
 			t.Errorf("Line got: %q, want: %q", got, want)
+		}
+	}
+}
+
+func TestCommaDelimitedAddressLists(t *testing.T) {
+	testData := []struct {
+		have string
+		want string
+	}{
+		{
+			have: `"Joe @ Company" <joe@company.com> <other@company.com>`,
+			want: `"Joe @ Company" <joe@company.com>, <other@company.com>`,
+		},
+		{
+			have: `Joe Company <joe@company.com> <other@company.com>`,
+			want: `Joe Company <joe@company.com>, <other@company.com>`,
+		},
+		{
+			have: `Joe Company:Joey <joe@company.com> John <other@company.com>;`,
+			want: `Joe Company:Joey <joe@company.com>, John <other@company.com>;`,
+		},
+		{
+			have: `Joe Company:Joey <joe@company.com> John <other@company.com>; Jimmy John <jimmy.john@company.com>`,
+			want: `Joe Company:Joey <joe@company.com>, John <other@company.com>;`,
+		},
+		{
+			have: `Joe Company <joe@company.com> John Company <other@company.com>`,
+			want: `Joe Company <joe@company.com>, John Company <other@company.com>`,
+		},
+		{
+			have: `Joe Company <joe@company.com>,John Company <other@company.com>`,
+			want: `Joe Company <joe@company.com>,John Company <other@company.com>`,
+		},
+		{
+			have: `joe@company.com other@company.com`,
+			want: `joe@company.com, other@company.com`,
+		},
+		{
+			have: `Jimmy John <jimmy.john@company.com> joe@company.com other@company.com`,
+			want: `Jimmy John <jimmy.john@company.com>, joe@company.com, other@company.com`,
+		},
+		{
+			have: `Jimmy John <jimmy.john@company.com> joe@company.com John Company <other@company.com>`,
+			want: `Jimmy John <jimmy.john@company.com>, joe@company.com, John Company <other@company.com>`,
+		},
+		{
+			have: `<boss@nil.test> "Giant; \"Big\" Box" <sysservices@example.net>`,
+			want: `<boss@nil.test>, "Giant; \"Big\" Box" <sysservices@example.net>`,
+		},
+		{
+			have: `A Group:Ed Jones <c@a.test>,joe@where.test,John <jdoe@one.test>;`,
+			want: `A Group:Ed Jones <c@a.test>,joe@where.test,John <jdoe@one.test>;`,
+		},
+		{
+			have: `A Group:Ed Jones <c@a.test> joe@where.test John <jdoe@one.test>;`,
+			want: `A Group:Ed Jones <c@a.test>, joe@where.test, John <jdoe@one.test>;`,
+		},
+	}
+	for i := range testData {
+		v := ensureCommaDelimitedAddresses(testData[i].have)
+		if testData[i].want != v {
+			t.Fatalf("Expected %s, but got %s", testData[i].want, v)
 		}
 	}
 }

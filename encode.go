@@ -8,6 +8,7 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
+	"time"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
@@ -41,7 +42,6 @@ func (p *Part) Encode(writer io.Writer) error {
 		if err := p.encodeContent(b, cte); err != nil {
 			return err
 		}
-		b.Write(crnl)
 	}
 	if p.FirstChild == nil {
 		return b.Flush()
@@ -67,6 +67,11 @@ func (p *Part) Encode(writer io.Writer) error {
 // then sets the Content-Type (type, charset, filename, boundary) and Content-Disposition headers.
 func (p *Part) setupMIMEHeaders() transferEncoding {
 	// Determine content transfer encoding.
+
+	// If we are encoding a part that previously had content-transfer-encoding set, unset it so
+	// the correct encoding detection can be done below.
+	p.Header.Del(hnContentEncoding)
+
 	cte := te7Bit
 	if len(p.Content) > 0 {
 		cte = teBase64
@@ -109,6 +114,9 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		// Build disposition header.
 		param := make(map[string]string)
 		setParamValue(param, hpFilename, stringutil.ToASCII(p.FileName))
+		if !p.FileModDate.IsZero() {
+			setParamValue(param, hpModDate, p.FileModDate.Format(time.RFC822))
+		}
 		mt := mime.FormatMediaType(p.Disposition, param)
 		if mt == "" {
 			// There was an error, FormatMediaType couldn't encode the params.
@@ -180,7 +188,7 @@ func selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncodi
 		return te7Bit
 	}
 	// Binary chars remaining before we choose b64 encoding.
-	threshold := b64Percent * 100 / len(content)
+	threshold := b64Percent * len(content) / 100
 	bincount := 0
 	for _, b := range content {
 		if (b < ' ' || '~' < b) && b != '\t' {

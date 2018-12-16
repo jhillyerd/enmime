@@ -11,9 +11,11 @@ import (
 	"net/textproto"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/pkg/errors"
 )
 
 const minCharsetConfidence = 85
@@ -27,13 +29,14 @@ type Part struct {
 	NextSibling *Part                // NextSibling of this part.
 	Header      textproto.MIMEHeader // Header for this Part.
 
-	Boundary    string // Boundary marker used within this part.
-	ContentID   string // ContentID header for cid URL scheme.
-	ContentType string // ContentType header without parameters.
-	Disposition string // Content-Disposition header without parameters.
-	FileName    string // The file-name from disposition or type header.
-	Charset     string // The content charset encoding, may differ from charset in header.
-	OrigCharset string // The original content charset when a different charset was detected.
+	Boundary    string    // Boundary marker used within this part.
+	ContentID   string    // ContentID header for cid URL scheme.
+	ContentType string    // ContentType header without parameters.
+	Disposition string    // Content-Disposition header without parameters.
+	FileName    string    // The file-name from disposition or type header.
+	FileModDate time.Time // The modification date of the file.
+	Charset     string    // The content charset encoding, may differ from charset in header.
+	OrigCharset string    // The original content charset when a different charset was detected.
 
 	Errors   []*Error // Errors encountered while parsing this part.
 	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
@@ -152,6 +155,100 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	if p.Charset == "" {
 		p.Charset = mediaParams[hpCharset]
 	}
+	if p.FileModDate.IsZero() {
+		p.FileModDate, _ = time.Parse(time.RFC822, mediaParams[hpModDate])
+	}
+}
+
+// convertFromDetectedCharset attempts to detect the character set for the given part, and returns
+// an io.Reader that will convert from that charset to UTF-8. If the charset cannot be detected,
+// this method adds a warning to the part and automatically falls back to using
+// `convertFromStatedCharset` and returns the reader from that method.
+func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
+	// Attempt to detect character set from part content.
+	var cd *chardet.Detector
+	switch p.ContentType {
+	case "text/html":
+		cd = chardet.NewHtmlDetector()
+	default:
+		cd = chardet.NewTextDetector()
+	}
+
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	cs, err := cd.DetectBest(buf)
+	switch err {
+	case nil:
+		// Carry on
+	case chardet.NotDetectedError:
+		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
+	default:
+		return nil, errors.WithStack(err)
+	}
+
+	// Restore r.
+	r = bytes.NewReader(buf)
+
+	if cs == nil || cs.Confidence < minCharsetConfidence {
+		// Low confidence, use declared character set.
+		return p.convertFromStatedCharset(r), nil
+	}
+
+	// Confidence exceeded our threshold, use detected character set.
+	if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
+		p.addWarning(ErrorCharsetDeclaration,
+			"declared charset %q, detected %q, confidence %d",
+			p.Charset, cs.Charset, cs.Confidence)
+	}
+
+	reader, err := coding.NewCharsetReader(cs.Charset, r)
+	if err != nil {
+		// Failed to get a conversion reader.
+		p.addWarning(ErrorCharsetConversion, err.Error())
+	} else {
+		r = reader
+		p.OrigCharset = p.Charset
+		p.Charset = cs.Charset
+	}
+
+	return r, nil
+}
+
+// convertFromStatedCharset returns a reader that will convert from the charset specified for the
+// current `*Part` to UTF-8. In case of error, or an unhandled character set, a warning will be
+// added to the `*Part` and the original io.Reader will be returned.
+func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
+	if p.Charset == "" {
+		// US-ASCII. Just read.
+		return r
+	}
+
+	reader, err := coding.NewCharsetReader(p.Charset, r)
+	if err != nil {
+		// Failed to get a conversion reader.
+		p.addWarning(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
+	} else {
+		return reader
+	}
+
+	// Try to parse charset again here to see if we can salvage some badly formed
+	// ones like charset="charset=utf-8".
+	charsetp := strings.Split(p.Charset, "=")
+	if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
+		p.Charset = charsetp[1]
+		reader, err = coding.NewCharsetReader(p.Charset, r)
+		if err != nil {
+			// Failed to get a conversion reader.
+			p.addWarning(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
+		} else {
+			return reader
+		}
+	}
+
+	return r
 }
 
 // decodeContent performs transport decoding (base64, quoted-printable) and charset decoding,
@@ -183,69 +280,17 @@ func (p *Part) decodeContent(r io.Reader) error {
 			encoding)
 	}
 	// Build charset decoding reader.
-	if validEncoding && !detectAttachmentHeader(p.Header) {
-		// Attempt to detect character set from part content.
-		cd := chardet.NewTextDetector()
-		if p.ContentType == "text/html" {
-			cd = chardet.NewHtmlDetector()
-		}
-		buf, err := ioutil.ReadAll(contentReader)
+	if validEncoding && strings.HasPrefix(p.ContentType, "text/") {
+		var err error
+		contentReader, err = p.convertFromDetectedCharset(contentReader)
 		if err != nil {
 			return err
-		}
-		cs, err := cd.DetectBest(buf)
-		if err != nil {
-			return err
-		}
-		contentReader = bytes.NewReader(buf) // Restore contentReader.
-
-		if cs != nil && cs.Confidence >= minCharsetConfidence {
-			// Confidence exceeded our threshold, use detected character set.
-			if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
-				p.addWarning(ErrorCharsetDeclaration,
-					fmt.Sprintf("Part %s: declared charset %q, detected %q, confidence %d",
-						p.PartID, p.Charset, cs.Charset, cs.Confidence))
-			}
-			reader, err := coding.NewCharsetReader(cs.Charset, contentReader)
-			if err == nil {
-				contentReader = reader
-				p.OrigCharset = p.Charset
-				p.Charset = cs.Charset
-			} else {
-				// Failed to get a conversion reader.
-				p.addWarning(ErrorCharsetConversion, err.Error())
-			}
-		} else {
-			// Low confidence, use declared character set.
-			if p.Charset != "" {
-				reader, err := coding.NewCharsetReader(p.Charset, contentReader)
-				if err == nil {
-					contentReader = reader
-				} else {
-					// Try to parse charset again here to see if we can salvage some badly formed
-					// ones like charset="charset=utf-8".
-					charsetp := strings.Split(p.Charset, "=")
-					if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
-						p.Charset = charsetp[1]
-						reader, err = coding.NewCharsetReader(p.Charset, contentReader)
-						if err == nil {
-							contentReader = reader
-						} else {
-							// Failed to get a conversion reader.
-							p.addWarning(ErrorCharsetConversion, err.Error())
-						}
-					} else {
-						// Failed to get a conversion reader.
-						p.addWarning(ErrorCharsetConversion, err.Error())
-					}
-				}
-			}
 		}
 	}
 	// Decode and store content.
 	content, err := ioutil.ReadAll(contentReader)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	p.Content = content
 	// Collect base64 errors.
@@ -318,7 +363,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	br := newBoundaryReader(reader, parent.Boundary)
 	for indexPartID := 1; true; indexPartID++ {
 		next, err := br.Next()
-		if err != nil && err != io.EOF {
+		if err != nil && errors.Cause(err) != io.EOF {
 			return err
 		}
 		if !next {
@@ -334,18 +379,20 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Look for part header.
 		bbr := bufio.NewReader(br)
 		err = p.setupHeaders(bbr, "")
-		if err == errEmptyHeaderBlock {
+		if errors.Cause(err) == errEmptyHeaderBlock {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.
 			if _, err = br.Next(); err != nil {
-				if err == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
+				if errors.Cause(err) == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
 					// There are no more Parts. The error must belong to the parent, because this
 					// part doesn't exist.
 					parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
 						parent.Boundary)
 					break
 				}
-				return fmt.Errorf("error at boundary %v: %v", parent.Boundary, err)
+				// The error is already wrapped with a stack, so only adding a message here.
+				// TODO: Once `errors` releases a version > v0.8.0, change to use errors.WithMessagef()
+				return errors.WithMessage(err, fmt.Sprintf("error at boundary %v", parent.Boundary))
 			}
 		} else if err != nil {
 			return err
@@ -368,7 +415,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	// Store any content following the closing boundary marker into the epilogue.
 	epilogue, err := ioutil.ReadAll(reader)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	parent.Epilogue = epilogue
 	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
