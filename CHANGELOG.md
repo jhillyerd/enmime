@@ -4,7 +4,7 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [0.5.0] - 2018-12-15
 
 ### Added
 - Use github.com/pkg/errors to decorate errors with stack traces (thanks to
@@ -84,6 +84,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.5.0]:      https://github.com/jhillyerd/enmime/compare/v0.4.0...v0.5.0
 [0.4.0]:      https://github.com/jhillyerd/enmime/compare/v0.3.0...v0.4.0
 [0.3.0]:      https://github.com/jhillyerd/enmime/compare/v0.2.1...v0.3.0
 [0.2.1]:      https://github.com/jhillyerd/enmime/compare/v0.2.0...v0.2.1
