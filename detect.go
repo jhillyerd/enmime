@@ -18,10 +18,10 @@ func detectMultipartMessage(root *Part) bool {
 	return strings.HasPrefix(mediatype, ctMultipartPrefix)
 }
 
-// detectAttachmentHeader returns true, if the given header defines an attachment.  First it checks
-// if the Content-Disposition header defines an attachement or inline attachment. If this test is
-// false, the Content-Type header is checked for attachment, but not inline.  Email clients use
-// inline for their text bodies.
+// detectAttachmentHeader returns true, if the given header defines an attachment. First it checks
+// if the Content-Disposition header defines either an attachment part or an inline part with at
+// least one parameter. If this test is false, the Content-Type header is checked for attachment,
+// but not inline. Email clients use inline for their text bodies.
 //
 // Valid Attachment-Headers:
 //
