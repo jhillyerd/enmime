@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	stderrors "errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -170,7 +171,15 @@ func decodeToUTF8Base64Header(input string) string {
 		return input
 	}
 
-	tokens := strings.FieldsFunc(input, whiteSpaceRune)
+	// The standard lib performs an incremental inspection of this string, where the
+	// "skipSpace" method only strings.trimLeft for spaces and tabs. Here we have a
+	// hard dependency on space existing and not on next expected rune
+	//
+	// For resolving #112 with the least change, I will implement the
+	// "quoted display-name" detector, which will resolve the case specific
+	// issue stated in #112, but only in the case of a quoted display-name
+	// followed, without whitespace, by addr-spec.
+	tokens := strings.FieldsFunc(quotedDisplayName(input), whiteSpaceRune)
 	output := make([]string, len(tokens))
 	for i, token := range tokens {
 		if len(token) > 4 && strings.Contains(token, "=?") {
@@ -196,8 +205,21 @@ func decodeToUTF8Base64Header(input string) string {
 	return strings.Join(output, " ")
 }
 
-// parseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
-func parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+func quotedDisplayName(s string) string {
+	if !strings.HasPrefix(s, "\"") {
+		return s
+	}
+	idx := strings.LastIndex(s, "\"")
+	return fmt.Sprintf("%s %s", s[:idx+1], s[idx+1:])
+}
+
+// ParseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
+//
+// Tolerances accounted for:
+//   * Missing ';' between content-type and media parameters
+//   * Repeating media parameters
+//   * Unquoted values in media parameters containing 'tspecials' characters
+func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(ctype)
 	if err != nil {
 		// Small hack to remove harmless charset duplicate params.
