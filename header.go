@@ -213,8 +213,13 @@ func quotedDisplayName(s string) string {
 	return fmt.Sprintf("%s %s", s[:idx+1], s[idx+1:])
 }
 
-// parseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
-func parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+// ParseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
+//
+// Tolerances accounted for:
+//   * Missing ';' between content-type and media parameters
+//   * Repeating media parameters
+//   * Unquoted values in media parameters containing 'tspecials' characters
+func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(ctype)
 	if err != nil {
 		// Small hack to remove harmless charset duplicate params.
