@@ -900,6 +900,25 @@ func TestBadContentTypeInMime(t *testing.T) {
 	}
 }
 
+func TestBadContentTransferEncodingInMime(t *testing.T) {
+	msg := test.OpenTestData("mail", "mime-bad-content-transfer-encoding.raw")
+	e, err := enmime.ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	var expectedErrorPresent bool
+	for _, v := range e.Errors {
+		if v.Name == enmime.ErrorMalformedBase64 && v.Severe {
+			expectedErrorPresent = true
+		}
+	}
+	if !expectedErrorPresent {
+		t.Fatal("Mail should have a severe malformed base64 error")
+	}
+}
+
 func TestBlankMediaName(t *testing.T) {
 	msg := test.OpenTestData("mail", "mime-blank-media-name.raw")
 	e, err := enmime.ReadEnvelope(msg)
