@@ -510,6 +510,13 @@ func rfc2047AttributeName(s string) string {
 		return s
 	}
 	pair := strings.SplitAfter(s, "?=")
-	pair[0] = decodeHeader(pair[0])
+	// lets assume that the attribute was encoded because of unicode characters being present
+	// then the attribute value should be quoted
+	keyValuePair := strings.SplitAfter(decodeHeader(pair[0]), "=")
+	// only quote the parameter value if it isn't already quoted
+	if !strings.HasPrefix(keyValuePair[1], "\"") {
+		keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
+	}
+	pair[0] = strings.Join(keyValuePair, "")
 	return strings.Join(pair, "")
 }

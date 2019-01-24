@@ -195,6 +195,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "one/two; name=\"file.two\"",
 		},
 		{
+			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
+			sep:   " ",
+			want:  "application/octet-stream;name=\"ð.msg",
+		},
+		{
 			input: "one/two name=\"file.two\" name=\"file.two\"",
 			sep:   " ",
 			want:  "one/two;name=\"file.two\"",
