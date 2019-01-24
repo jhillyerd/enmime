@@ -284,13 +284,13 @@ func (p *Part) decodeContent(r io.Reader) error {
 		var err error
 		contentReader, err = p.convertFromDetectedCharset(contentReader)
 		if err != nil {
-			return err
+			return p.base64CorruptInputCheck(err)
 		}
 	}
 	// Decode and store content.
 	content, err := ioutil.ReadAll(contentReader)
 	if err != nil {
-		return errors.WithStack(err)
+		return p.base64CorruptInputCheck(errors.WithStack(err))
 	}
 	p.Content = content
 	// Collect base64 errors.
@@ -304,6 +304,24 @@ func (p *Part) decodeContent(r io.Reader) error {
 		}
 	}
 	return nil
+}
+
+// base64CorruptInputCheck will avoid fatal failure on corrupt base64 input
+//
+// This is a switch on errors.Cause(err).(type) for base64.CorruptInputError
+func (p *Part) base64CorruptInputCheck(err error) error {
+	switch errors.Cause(err).(type) {
+	case base64.CorruptInputError:
+		p.Content = nil
+		p.Errors = append(p.Errors, &Error{
+			Name:   ErrorMalformedBase64,
+			Detail: err.Error(),
+			Severe: true,
+		})
+		return nil
+	default:
+		return err
+	}
 }
 
 // Clone returns a clone of the current Part.
