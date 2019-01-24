@@ -284,14 +284,12 @@ func (p *Part) decodeContent(r io.Reader) error {
 		var err error
 		contentReader, err = p.convertFromDetectedCharset(contentReader)
 		if err != nil {
-			// need to switch on errors.Cause(err).(type) for base64.CorruptInputError
 			return p.base64CorruptInputCheck(err)
 		}
 	}
 	// Decode and store content.
 	content, err := ioutil.ReadAll(contentReader)
 	if err != nil {
-		// need to
 		return p.base64CorruptInputCheck(errors.WithStack(err))
 	}
 	p.Content = content
