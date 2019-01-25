@@ -182,7 +182,12 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
 			sep:   ";",
-			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg",
+			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
+		},
+		{
+			input: "application/; name=\"Voice message from =?UTF-8?B?4piOICsxIDI1MS0yNDUtODA0NC5tc2c=?=\";",
+			sep:   ";",
+			want:  "application/octet-stream;name=\"Voice message from ☎ +1 251-245-8044.msg\"",
 		},
 		{
 			input: "application/pdf name=\"file.pdf\"",
@@ -197,7 +202,7 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
 			sep:   " ",
-			want:  "application/octet-stream;name=\"ð.msg",
+			want:  "application/octet-stream;name=\"ð.msg\"",
 		},
 		{
 			input: "one/two name=\"file.two\" name=\"file.two\"",

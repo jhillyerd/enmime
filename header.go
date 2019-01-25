@@ -509,16 +509,47 @@ func rfc2047AttributeName(s string) string {
 	if !strings.Contains(s, "?=") {
 		return s
 	}
-	pair := strings.SplitAfter(s, "?=")
-	// lets assume that the attribute was encoded because of unicode characters being present
-	// then the attribute value should be quoted
-	keyValuePair := strings.SplitAfter(decodeHeader(pair[0]), "=")
-	// only quote the parameter value if it isn't already quoted
-	if len(keyValuePair) > 1 {
-		if !strings.HasPrefix(keyValuePair[1], "\"") {
-			keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
+	// copy the string so we can return the original if we encounter any issues
+	temp := s
+
+	// handle n-number of RFC2047 chunk occurrences
+	count := strings.Count(s, "?=")
+	result := &strings.Builder{}
+	var beginning, ending int
+	for i := 0; i < count; i++ {
+		beginning = strings.Index(temp, "=?")
+		ending = strings.Index(temp, "?=")
+
+		if beginning == -1 || ending == -1 {
+			// the RFC2047 chunk is either malformed or is not an RFC2047 chunk
+			return s
 		}
+
+		_, err := result.WriteString(temp[:beginning])
+		if err != nil {
+			return s
+		}
+		_, err = result.WriteString(decodeHeader(temp[beginning : ending+2]))
+		if err != nil {
+			return s
+		}
+
+		temp = temp[ending+2:]
 	}
-	pair[0] = strings.Join(keyValuePair, "")
-	return strings.Join(pair, "")
+	_, err := result.WriteString(temp)
+	if err != nil {
+		return s
+	}
+	keyValuePair := strings.SplitAfter(result.String(), "=")
+	if len(keyValuePair) < 2 {
+		return result.String()
+	}
+	// Add quotes as needed
+	if !strings.HasPrefix(keyValuePair[1], "\"") {
+		keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
+	}
+	if !strings.HasSuffix(keyValuePair[1], "\"") {
+		keyValuePair[1] = fmt.Sprintf("%s\"", keyValuePair[1])
+	}
+	return strings.Join(keyValuePair, "")
 }
