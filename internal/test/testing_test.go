@@ -199,9 +199,7 @@ func TestCompareEnvelope(t *testing.T) {
 	}
 
 	// Fail on root Part mismatch nil
-	var envelopeB enmime.Envelope
-	// copy the bytes and not the pointer
-	envelopeB = *envelopeA
+	envelopeB := *envelopeA
 	envelopeB.Root = nil
 	success = CompareEnvelope(&testing.T{}, envelopeA, &envelopeB)
 	if success {
