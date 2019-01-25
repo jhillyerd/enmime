@@ -20,11 +20,13 @@ const (
 	cdInline     = "inline"
 
 	// Standard MIME content types
+	ctAppPrefix        = "application/"
 	ctAppOctetStream   = "application/octet-stream"
 	ctMultipartAltern  = "multipart/alternative"
 	ctMultipartMixed   = "multipart/mixed"
 	ctMultipartPrefix  = "multipart/"
 	ctMultipartRelated = "multipart/related"
+	ctTextPrefix       = "text/"
 	ctTextPlain        = "text/plain"
 	ctTextHTML         = "text/html"
 
@@ -269,6 +271,20 @@ func fixMangledMediaType(mtype, sep string) string {
 				// The content type is completely missing. Put in a placeholder.
 				p = ctPlaceholder
 			}
+			// Check for missing token after slash
+			if strings.HasSuffix(p, "/") {
+				switch p {
+				case ctTextPrefix:
+					p = ctTextPlain
+				case ctAppPrefix:
+					p = ctAppOctetStream
+				case ctMultipartPrefix:
+					p = ctMultipartMixed
+				default:
+					// Safe default
+					p = ctAppOctetStream
+				}
+			}
 		default:
 			if !strings.Contains(p, "=") {
 				p = p + "=" + pvPlaceholder
@@ -277,8 +293,8 @@ func fixMangledMediaType(mtype, sep string) string {
 			// RFC-2047 encoded attribute name
 			p = rfc2047AttributeName(p)
 
-			pair := strings.Split(p, "=")
-			if strings.Contains(mtype, pair[0]+"=") {
+			pair := strings.SplitAfter(p, "=")
+			if strings.Contains(mtype, pair[0]) {
 				// Ignore repeated parameters.
 				continue
 			}

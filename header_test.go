@@ -187,7 +187,7 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: "application/; name=\"Voice message from =?UTF-8?B?4piOICsxIDI1MS0yNDUtODA0NC5tc2c=?=\";",
 			sep:   ";",
-			want:  "application/octet-stream;name=\"Voice message from ☎ +1 251-245-8044.msg\"",
+			want:  "application/octet-stream; name=\"Voice message from ☎ +1 251-245-8044.msg\"",
 		},
 		{
 			input: "application/pdf name=\"file.pdf\"",
