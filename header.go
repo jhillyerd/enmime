@@ -521,40 +521,40 @@ func whiteSpaceRune(r rune) bool {
 // rfc2047AttributeName checks if the attribute name is encoded in RFC2047 format
 // RFC2047 Example:
 //     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
-func rfc2047AttributeName(s string) string {
-	if !strings.Contains(s, "?=") {
-		return s
+func rfc2047AttributeName(name string) string {
+	if !strings.Contains(name, "?=") {
+		return name
 	}
 	// copy the string so we can return the original if we encounter any issues
-	temp := s
+	s := name
 
 	// handle n-number of RFC2047 chunk occurrences
-	count := strings.Count(s, "?=")
+	count := strings.Count(name, "?=")
 	result := &strings.Builder{}
 	var beginning, ending int
 	for i := 0; i < count; i++ {
-		beginning = strings.Index(temp, "=?")
-		ending = strings.Index(temp, "?=")
+		beginning = strings.Index(s, "=?")
+		ending = strings.Index(s, "?=")
 
 		if beginning == -1 || ending == -1 {
 			// the RFC2047 chunk is either malformed or is not an RFC2047 chunk
-			return s
+			return name
 		}
 
-		_, err := result.WriteString(temp[:beginning])
+		_, err := result.WriteString(s[:beginning])
 		if err != nil {
-			return s
+			return name
 		}
-		_, err = result.WriteString(decodeHeader(temp[beginning : ending+2]))
+		_, err = result.WriteString(decodeHeader(s[beginning : ending+2]))
 		if err != nil {
-			return s
+			return name
 		}
 
-		temp = temp[ending+2:]
+		s = s[ending+2:]
 	}
-	_, err := result.WriteString(temp)
+	_, err := result.WriteString(s)
 	if err != nil {
-		return s
+		return name
 	}
 	keyValuePair := strings.SplitAfter(result.String(), "=")
 	if len(keyValuePair) < 2 {
