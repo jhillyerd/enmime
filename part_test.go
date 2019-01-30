@@ -715,6 +715,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 	p = p.NextSibling
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2",
@@ -816,6 +817,40 @@ func TestContentTypeParamUnquotedSpecial(t *testing.T) {
 		FileName:    "calendar.ics",
 	}
 	test.ComparePart(t, p, wantp)
+}
+
+func TestNoClosingBoundary(t *testing.T) {
+	r := test.OpenTestData("parts", "multimixed-no-closing-boundary.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Errorf("%+v", err)
+	}
+	if p == nil {
+		t.Fatal("Expected part but got nil")
+	}
+
+	wantp := &enmime.Part{
+		Parent:      test.PartExists,
+		PartID:      "1",
+		ContentType: "text/html",
+		Charset:     "UTF-8",
+	}
+	test.ComparePart(t, p.FirstChild, wantp)
+	t.Log(string(p.FirstChild.Content))
+
+	expected := "Missing Boundary"
+	hasCorrectError := false
+	for _, v := range p.Errors {
+		if v.Severe {
+			t.Errorf("Expected Severe to be false, got true for %q", v.Name)
+		}
+		if v.Name == expected {
+			hasCorrectError = true
+		}
+	}
+	if !hasCorrectError {
+		t.Fatalf("Did not find expected error on part. Expected %q but got %v", expected, p.Errors)
+	}
 }
 
 func TestContentTypeParamMissingClosingQuote(t *testing.T) {
