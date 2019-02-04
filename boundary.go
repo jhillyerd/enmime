@@ -3,6 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,7 +17,7 @@ import (
 // from it.
 const peekBufferSize = 4096
 
-var errNoBoundaryTerminator = errors.New("expected boundary not present")
+var errNoBoundaryTerminator = stderrors.New("expected boundary not present")
 
 type boundaryReader struct {
 	finished        bool          // No parts remain when finished
