@@ -235,8 +235,9 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 			}
 			mtype, params, err = mime.ParseMediaType(mctype)
 			if err != nil {
-				// If the media parameter has special characters, ensure that it is quoted.
-				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
+				// If the media parameter has special characters, ensure that
+				// it is quoted and that any existing quotes are escaped.
+				mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
 				if err != nil {
 					return "", nil, nil, errors.WithStack(err)
 				}
@@ -511,6 +512,78 @@ func fixUnquotedSpecials(s string) string {
 	}
 
 	return clean.String()
+}
+
+func fixUnescapedQuotes(s string) string {
+	split := strings.SplitAfter(s, ";")
+	fresh := &strings.Builder{}
+	for i := 0; i < len(split); i++ {
+		// find the "="
+		idx := strings.IndexByte(split[i], '=')
+		if idx < 0 {
+			// no "=", must be the content-type or a comment
+			fresh.WriteString(split[i])
+			continue
+		}
+		fresh.WriteString(split[i][:idx])
+		param := split[i][idx:]
+		openingQuoteIdx := strings.IndexByte(param, '"')
+		closingQuoteIdx := strings.LastIndexByte(param, '"')
+		// cut out early if there are no quotes
+		if openingQuoteIdx < 0 && closingQuoteIdx < 0 {
+			// value isn't quoted
+			fresh.WriteString(param)
+			continue
+		}
+		// lets append the next chunk of split here in case of a semicolon mid string
+		if closingQuoteIdx == openingQuoteIdx {
+			param = fmt.Sprintf("%s%s", param, split[i+1])
+			closingQuoteIdx = strings.LastIndexByte(param, '"')
+			i++
+		}
+		// it's got quotes, lets put the k/v separator back in along with everything upto the first quote
+		fresh.WriteByte('=')
+		// quotes start here
+		fresh.WriteByte('"')
+		fresh.WriteString(param[1:openingQuoteIdx])
+		// get just the value, less the outer quotes
+		rest := param[closingQuoteIdx+1:]
+		// if there is stuff after the last quote then we should escape the first quote
+		if len(rest) > 0 {
+			fresh.WriteString("\\\"")
+		}
+		param = param[openingQuoteIdx+1 : closingQuoteIdx]
+		alreadyEscaped := false
+		for strIdx := range param {
+			switch param[strIdx] {
+			case '"':
+				// we are inside of a quoted string, so lets escape this guy if it isn't already escaped
+				if !alreadyEscaped {
+					fresh.WriteByte('\\')
+					alreadyEscaped = false
+				}
+				fresh.WriteByte(param[strIdx])
+			case '\\':
+				// something is getting escaped, a quote is the only char that needs
+				// this, so lets assume the following char is a double-quote
+				alreadyEscaped = true
+				fresh.WriteByte('\\')
+			default:
+				fresh.WriteByte(param[strIdx])
+			}
+		}
+		// if there is stuff after the last quote then we should escape
+		// the last quote, apply the rest and terminate with a quote
+		if len(rest) > 0 {
+			fresh.WriteByte('\\')
+			fresh.WriteByte('"')
+			fresh.WriteString(rest)
+			fresh.WriteByte('"')
+		} else {
+			fresh.WriteByte('"')
+		}
+	}
+	return fresh.String()
 }
 
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
