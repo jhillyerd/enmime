@@ -226,6 +226,9 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 	if err != nil {
 		// Small hack to remove harmless charset duplicate params.
 		mctype := fixMangledMediaType(ctype, ";")
+		if mctype == "" {
+			return "", nil, nil, nil
+		}
 		mtype, params, err = mime.ParseMediaType(mctype)
 		if err != nil {
 			// Some badly formed media types forget to send ; between fields.
