@@ -296,12 +296,13 @@ func (p *Part) decodeContent(r io.Reader) error {
 	// Collect base64 errors.
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {
-			p.Errors = append(p.Errors, &Error{
-				Name:   ErrorMalformedBase64,
-				Detail: err.Error(),
-				Severe: false,
-			})
+			p.addWarning(ErrorMalformedBase64, err.Error())
 		}
+	}
+	// Set empty content-type error
+	if p.ContentType == "" {
+		p.addWarning(
+			ErrorMissingContentType, "content-type is empty for part id: %s", p.PartID)
 	}
 	return nil
 }
