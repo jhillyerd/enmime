@@ -574,12 +574,16 @@ func fixUnescapedQuotes(s string) string {
 		}
 		// if there is stuff after the last quote then we should escape
 		// the last quote, apply the rest and terminate with a quote
-		if len(rest) > 0 && rest != ";" {
+		switch rest {
+		case ";":
+			fresh.WriteByte('"')
+			fresh.WriteString(rest)
+		case "":
+			fresh.WriteByte('"')
+		default:
 			fresh.WriteByte('\\')
 			fresh.WriteByte('"')
 			fresh.WriteString(rest)
-			fresh.WriteByte('"')
-		} else {
 			fresh.WriteByte('"')
 		}
 	}
