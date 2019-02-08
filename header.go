@@ -549,7 +549,7 @@ func fixUnescapedQuotes(s string) string {
 		// get just the value, less the outer quotes
 		rest := param[closingQuoteIdx+1:]
 		// if there is stuff after the last quote then we should escape the first quote
-		if len(rest) > 0 {
+		if len(rest) > 0 && rest != ";" {
 			fresh.WriteString("\\\"")
 		}
 		param = param[openingQuoteIdx+1 : closingQuoteIdx]
