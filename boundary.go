@@ -44,79 +44,118 @@ func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
 }
 
 // Read returns a buffer containing the content up until boundary
+//
+//   Excerpt from io package on io.Reader implementations:
+//
+//     type Reader interface {
+//        Read(p []byte) (n int, err error)
+//     }
+//
+//     Read reads up to len(p) bytes into p. It returns the number of
+//     bytes read (0 <= n <= len(p)) and any error encountered. Even
+//     if Read returns n < len(p), it may use all of p as scratch space
+//     during the call. If some data is available but not len(p) bytes,
+//     Read conventionally returns what is available instead of waiting
+//     for more.
+//
+//     When Read encounters an error or end-of-file condition after
+//     successfully reading n > 0 bytes, it returns the number of bytes
+//     read. It may return the (non-nil) error from the same call or
+//     return the error (and n == 0) from a subsequent call. An instance
+//     of this general case is that a Reader returning a non-zero number
+//     of bytes at the end of the input stream may return either err == EOF
+//     or err == nil. The next Read should return 0, EOF.
+//
+//     Callers should always process the n > 0 bytes returned before
+//     considering the error err. Doing so correctly handles I/O errors
+//     that happen after reading some bytes and also both of the allowed
+//     EOF behaviors.
 func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	if b.buffer.Len() >= len(dest) {
-		// This read request can be satisfied entirely by the buffer
+		// This read request can be satisfied entirely by the buffer.
 		return b.buffer.Read(dest)
 	}
 
 	for i := 0; i < cap(dest); i++ {
-		oneByte, err := b.r.Peek(1)
+		c, err := b.r.Peek(1)
 		if err != nil && err != io.EOF {
 			return 0, errors.WithStack(err)
 		}
-		if bytes.Equal(oneByte, []byte{'\n'}) {
-			peek, err := b.r.Peek(len(b.nlPrefix) + 2)
-			switch err {
-			case nil:
-				// don't check the boundary until we only have one new line
-				if bytes.HasPrefix(peek, []byte("\n\n")) ||
-					bytes.HasPrefix(peek, []byte("\n\r")) {
-					break
-				}
-				// check for a match against boundary or terminal boundary
-				if b.isDelimiter(peek[1:]) || b.isTerminator(peek[1:]) {
-					// if we stashed a carriage return, lets pop that back onto the io.Reader
-					if b.crBoundaryPrefix {
-						err = b.r.UnreadByte()
+		// Ensure that we can switch on the first byte of 'c' without panic
+		if len(c) > 0 {
+			switch c[0] {
+			// Check for line feed as potential LF boundary prefix
+			case '\n':
+				peek, err := b.r.Peek(len(b.nlPrefix) + 2)
+				switch err {
+				case nil:
+					// Check the whitespace at the head of the peek to avoid checking for a boundary early.
+					if bytes.HasPrefix(peek, []byte("\n\n")) ||
+						bytes.HasPrefix(peek, []byte("\n\r")) {
+						break
+					}
+					// Check the peek buffer for a boundary delimiter or terminator.
+					if b.isDelimiter(peek[1:]) || b.isTerminator(peek[1:]) {
+						// Check if we stored a carriage return.
+						if b.crBoundaryPrefix {
+							b.crBoundaryPrefix = false
+							// Let us now unread that back onto the io.Reader, since
+							// we have found what we are looking for and this byte
+							// belongs to the bounded block we are reading.
+							err = b.r.UnreadByte()
+							switch err {
+							case nil:
+								// Carry on
+							case bufio.ErrInvalidUnreadByte:
+								// Carriage return boundary prefix bit already unread
+							default:
+								return 0, errors.WithStack(err)
+							}
+						}
+						// We have found our boundary terminator, lets write out the final bytes
+						// and return io.EOF to indicate that this section read is complete.
+						n, err = b.buffer.Read(dest)
 						switch err {
-						case nil, bufio.ErrInvalidUnreadByte:
-							// carriage return boundary prefix bit already unread
+						case nil, io.EOF:
+							return n, io.EOF
 						default:
-							// this should never happen, fatal error
 							return 0, errors.WithStack(err)
 						}
-						b.crBoundaryPrefix = false
 					}
-					n, err = b.buffer.Read(dest)
-					switch err {
-					case nil, io.EOF:
-						return n, io.EOF
-					default:
+				case io.EOF:
+					// We have reached the end without finding a boundary,
+					// so we flag the boundary reader to add an error to
+					// the errors slice and write what we have to the buffer.
+					b.unbounded = true
+				default:
+					continue
+				}
+				// Checked '\n' was not prefix to a boundary.
+				if b.crBoundaryPrefix {
+					b.crBoundaryPrefix = false
+					// Stored '\r' should be written to the buffer now.
+					err = b.buffer.WriteByte('\r')
+					if err != nil {
 						return 0, errors.WithStack(err)
 					}
 				}
-			default:
-				// got to the end without seeing a boundary
-				if err == io.EOF {
-					b.unbounded = true
-					break
-				}
-				continue
-			}
-			// wasn't a boundary, write the stored carriage return
-			if b.crBoundaryPrefix {
-				err = b.buffer.WriteByte(byte('\r'))
+			// Check for carriage return as potential CRLF boundary prefix
+			case '\r':
+				_, err := b.r.ReadByte()
 				if err != nil {
 					return 0, errors.WithStack(err)
 				}
-				b.crBoundaryPrefix = false
+				// Flag the boundary reader to indicate that we
+				// have stored a '\r' as a potential CRLF prefix
+				b.crBoundaryPrefix = true
+				continue
 			}
-		}
-
-		// store this carriage return just in case it begins a boundary
-		if bytes.Equal(oneByte, []byte{'\r'}) {
-			_, err := b.r.ReadByte()
-			if err != nil {
-				return 0, errors.WithStack(err)
-			}
-			b.crBoundaryPrefix = true
-			continue
 		}
 
 		_, err = io.CopyN(b.buffer, b.r, 1)
 		if err != nil {
-			// EOF is not fatal
+			// EOF is not fatal, it just means
+			// that we have drained the reader.
 			if errors.Cause(err) == io.EOF {
 				break
 			}
@@ -124,6 +163,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		}
 	}
 
+	// Read the contents of the buffer into the destination slice.
 	n, err = b.buffer.Read(dest)
 	return n, err
 }
