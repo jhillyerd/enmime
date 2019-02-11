@@ -80,10 +80,10 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		if err != nil && err != io.EOF {
 			return 0, errors.WithStack(err)
 		}
-		// Ensure that we can switch on the first byte of 'c' without panic
+		// Ensure that we can switch on the first byte of 'c' without panic.
 		if len(c) > 0 {
 			switch c[0] {
-			// Check for line feed as potential LF boundary prefix
+			// Check for line feed as potential LF boundary prefix.
 			case '\n':
 				peek, err := b.r.Peek(len(b.nlPrefix) + 2)
 				switch err {
@@ -104,9 +104,9 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 							err = b.r.UnreadByte()
 							switch err {
 							case nil:
-								// Carry on
+								// Carry on.
 							case bufio.ErrInvalidUnreadByte:
-								// Carriage return boundary prefix bit already unread
+								// Carriage return boundary prefix bit already unread.
 							default:
 								return 0, errors.WithStack(err)
 							}
@@ -138,14 +138,14 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 						return 0, errors.WithStack(err)
 					}
 				}
-			// Check for carriage return as potential CRLF boundary prefix
+			// Check for carriage return as potential CRLF boundary prefix.
 			case '\r':
 				_, err := b.r.ReadByte()
 				if err != nil {
 					return 0, errors.WithStack(err)
 				}
 				// Flag the boundary reader to indicate that we
-				// have stored a '\r' as a potential CRLF prefix
+				// have stored a '\r' as a potential CRLF prefix.
 				b.crBoundaryPrefix = true
 				continue
 			}
@@ -153,8 +153,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 
 		_, err = io.CopyN(b.buffer, b.r, 1)
 		if err != nil {
-			// EOF is not fatal, it just means
-			// that we have drained the reader.
+			// EOF is not fatal, it just means that we have drained the reader.
 			if errors.Cause(err) == io.EOF {
 				break
 			}
@@ -173,7 +172,7 @@ func (b *boundaryReader) Next() (bool, error) {
 		return false, nil
 	}
 	if b.partsRead > 0 {
-		// Exhaust the current part to prevent errors when moving to the next part
+		// Exhaust the current part to prevent errors when moving to the next part.
 		_, _ = io.Copy(ioutil.Discard, b)
 	}
 	for {
@@ -190,17 +189,17 @@ func (b *boundaryReader) Next() (bool, error) {
 			return false, nil
 		}
 		if err != io.EOF && b.isDelimiter(line) {
-			// Start of a new part
+			// Start of a new part.
 			b.partsRead++
 			return true, nil
 		}
 		if err == io.EOF {
-			// Intentionally not wrapping with stack
+			// Intentionally not wrapping with stack.
 			return false, io.EOF
 		}
 		if b.partsRead == 0 {
 			// The first part didn't find the starting delimiter, burn off any preamble in front of
-			// the boundary
+			// the boundary.
 			continue
 		}
 		b.finished = true
@@ -215,7 +214,7 @@ func (b *boundaryReader) isDelimiter(buf []byte) bool {
 		return false
 	}
 
-	// Fast forward to the end of the boundary prefix
+	// Fast forward to the end of the boundary prefix.
 	buf = buf[idx+len(b.prefix):]
 	if len(buf) > 0 {
 		if unicode.IsSpace(rune(buf[0])) {

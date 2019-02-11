@@ -295,7 +295,7 @@ func TestBoundaryReaderNoTerminator(t *testing.T) {
 		t.Fatal("Next() = false, want: true")
 	}
 
-	// There is no second part should, error should be EOF
+	// There is no second part should, error should be EOF.
 	want := "EOF"
 	next, err = br.Next()
 	if err == nil {
