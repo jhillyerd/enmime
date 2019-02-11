@@ -19,6 +19,11 @@ func TestBoundaryReader(t *testing.T) {
 			want:     "good",
 		},
 		{
+			input:    "good\r\n--STOPHERE\t\r\nafter",
+			boundary: "STOPHERE",
+			want:     "good",
+		},
+		{
 			input:    "good\r\n--STOPHERE--\r\nafter",
 			boundary: "STOPHERE",
 			want:     "good",
