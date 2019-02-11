@@ -76,13 +76,13 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	}
 
 	for i := 0; i < cap(dest); i++ {
-		c, err := b.r.Peek(1)
+		cs, err := b.r.Peek(1)
 		if err != nil && err != io.EOF {
 			return 0, errors.WithStack(err)
 		}
-		// Ensure that we can switch on the first byte of 'c' without panic.
-		if len(c) > 0 {
-			switch c[0] {
+		// Ensure that we can switch on the first byte of 'cs' without panic.
+		if len(cs) > 0 {
+			switch cs[0] {
 			// Check for line feed as potential LF boundary prefix.
 			case '\n':
 				peek, err := b.r.Peek(len(b.nlPrefix) + 2)
