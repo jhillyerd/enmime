@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	stderrors "errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"unicode"
@@ -205,7 +204,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			continue
 		}
 		b.finished = true
-		return false, errors.WithMessage(errNoBoundaryTerminator, fmt.Sprintf("expecting boundary %q, got %q", string(b.prefix), string(line)))
+		return false, errors.WithMessagef(errNoBoundaryTerminator, "expecting boundary %q, got %q", string(b.prefix), string(line))
 	}
 }
 
