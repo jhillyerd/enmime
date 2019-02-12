@@ -228,16 +228,16 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 		mctype := fixMangledMediaType(ctype, ";")
 		mtype, params, err = mime.ParseMediaType(mctype)
 		if err != nil {
-			// Some badly formed media types forget to send ; between fields.
-			mctype := fixMangledMediaType(ctype, " ")
-			if strings.Contains(mctype, `name=""`) {
-				mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-			}
-			mtype, params, err = mime.ParseMediaType(mctype)
+			// If the media parameter has special characters, ensure that
+			// it is quoted and that any existing quotes are escaped.
+			mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
 			if err != nil {
-				// If the media parameter has special characters, ensure that
-				// it is quoted and that any existing quotes are escaped.
-				mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
+				// Some badly formed media types forget to send ; between fields.
+				mctype := fixMangledMediaType(ctype, " ")
+				if strings.Contains(mctype, `name=""`) {
+					mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+				}
+				mtype, params, err = mime.ParseMediaType(mctype)
 				if err != nil {
 					return "", nil, nil, errors.WithStack(err)
 				}
@@ -540,6 +540,9 @@ func fixUnescapedQuotes(s string) string {
 			param = fmt.Sprintf("%s%s", param, split[i+1])
 			closingQuoteIdx = strings.LastIndexByte(param, '"')
 			i++
+			if closingQuoteIdx == openingQuoteIdx {
+				return fresh.String()
+			}
 		}
 		// it's got quotes, lets put the k/v separator back in along with everything upto the first quote
 		fresh.WriteByte('=')
