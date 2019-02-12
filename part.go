@@ -384,6 +384,10 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		if err != nil && errors.Cause(err) != io.EOF {
 			return err
 		}
+		if br.unbounded {
+			parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
+				parent.Boundary)
+		}
 		if !next {
 			break
 		}
@@ -401,13 +405,6 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.
 			if _, err = br.Next(); err != nil {
-				if errors.Cause(err) == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
-					// There are no more Parts. The error must belong to the parent, because this
-					// part doesn't exist.
-					parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
-						parent.Boundary)
-					break
-				}
 				// The error is already wrapped with a stack, so only adding a message here.
 				// TODO: Once `errors` releases a version > v0.8.0, change to use errors.WithMessagef()
 				return errors.WithMessage(err, fmt.Sprintf("error at boundary %v", parent.Boundary))
