@@ -514,83 +514,85 @@ func fixUnquotedSpecials(s string) string {
 	return clean.String()
 }
 
-func fixUnescapedQuotes(s string) string {
-	split := strings.SplitAfter(s, ";")
-	fresh := &strings.Builder{}
-	for i := 0; i < len(split); i++ {
-		// find the "="
-		idx := strings.IndexByte(split[i], '=')
-		if idx < 0 {
-			// no "=", must be the content-type or a comment
-			fresh.WriteString(split[i])
+func fixUnescapedQuotes(hvalue string) string {
+	params := strings.SplitAfter(hvalue, ";")
+	sb := &strings.Builder{}
+	for i := 0; i < len(params); i++ {
+		// Inspect for "=" byte.
+		eq := strings.IndexByte(params[i], '=')
+		if eq < 0 {
+			// No "=", must be the content-type or a comment.
+			sb.WriteString(params[i])
 			continue
 		}
-		fresh.WriteString(split[i][:idx])
-		param := split[i][idx:]
-		openingQuoteIdx := strings.IndexByte(param, '"')
-		closingQuoteIdx := strings.LastIndexByte(param, '"')
-		// cut out early if there are no quotes
-		if openingQuoteIdx < 0 && closingQuoteIdx < 0 {
-			// value isn't quoted
-			fresh.WriteString(param)
+		sb.WriteString(params[i][:eq])
+		param := params[i][eq:]
+		startingQuote := strings.IndexByte(param, '"')
+		closingQuote := strings.LastIndexByte(param, '"')
+		// Opportunity to exit early if there are no quotes.
+		if startingQuote < 0 && closingQuote < 0 {
+			// This value is not quoted, write the value and carry on.
+			sb.WriteString(param)
 			continue
 		}
-		// lets append the next chunk of split here in case of a semicolon mid string
-		if closingQuoteIdx == openingQuoteIdx {
-			param = fmt.Sprintf("%s%s", param, split[i+1])
-			closingQuoteIdx = strings.LastIndexByte(param, '"')
+		// Check if only one quote was found in the string.
+		if closingQuote == startingQuote {
+			// Append the next chunk of params here in case of a semicolon mid string.
+			param = fmt.Sprintf("%s%s", param, params[i+1])
+			closingQuote = strings.LastIndexByte(param, '"')
 			i++
-			if closingQuoteIdx == openingQuoteIdx {
-				return fresh.String()
+			if closingQuote == startingQuote {
+				return sb.String()
 			}
 		}
-		// it's got quotes, lets put the k/v separator back in along with everything upto the first quote
-		fresh.WriteByte('=')
-		// quotes start here
-		fresh.WriteByte('"')
-		fresh.WriteString(param[1:openingQuoteIdx])
-		// get just the value, less the outer quotes
-		rest := param[closingQuoteIdx+1:]
-		// if there is stuff after the last quote then we should escape the first quote
+		// Write the k/v separator back in along with everything up until the first quote.
+		sb.WriteByte('=')
+		// Starting quote
+		sb.WriteByte('"')
+		sb.WriteString(param[1:startingQuote])
+		// Get just the value, less the outer quotes.
+		rest := param[closingQuote+1:]
+		// If there is stuff after the last quote then we should escape the first quote.
 		if len(rest) > 0 && rest != ";" {
-			fresh.WriteString("\\\"")
+			sb.WriteString("\\\"")
 		}
-		param = param[openingQuoteIdx+1 : closingQuoteIdx]
-		alreadyEscaped := false
+		param = param[startingQuote+1 : closingQuote]
+		escaped := false
 		for strIdx := range param {
 			switch param[strIdx] {
 			case '"':
-				// we are inside of a quoted string, so lets escape this guy if it isn't already escaped
-				if !alreadyEscaped {
-					fresh.WriteByte('\\')
-					alreadyEscaped = false
+				// We are inside of a quoted string, so lets escape this guy if it isn't already escaped.
+				if !escaped {
+					sb.WriteByte('\\')
+					escaped = false
 				}
-				fresh.WriteByte(param[strIdx])
+				sb.WriteByte(param[strIdx])
 			case '\\':
-				// something is getting escaped, a quote is the only char that needs
-				// this, so lets assume the following char is a double-quote
-				alreadyEscaped = true
-				fresh.WriteByte('\\')
+				// Something is getting escaped, a quote is the only char that needs
+				// this, so lets assume the following char is a double-quote.
+				escaped = true
+				sb.WriteByte('\\')
 			default:
-				fresh.WriteByte(param[strIdx])
+				escaped = false
+				sb.WriteByte(param[strIdx])
 			}
 		}
-		// if there is stuff after the last quote then we should escape
-		// the last quote, apply the rest and terminate with a quote
+		// If there is stuff after the last quote then we should escape
+		// the last quote, apply the rest and terminate with a quote.
 		switch rest {
 		case ";":
-			fresh.WriteByte('"')
-			fresh.WriteString(rest)
+			sb.WriteByte('"')
+			sb.WriteString(rest)
 		case "":
-			fresh.WriteByte('"')
+			sb.WriteByte('"')
 		default:
-			fresh.WriteByte('\\')
-			fresh.WriteByte('"')
-			fresh.WriteString(rest)
-			fresh.WriteByte('"')
+			sb.WriteByte('\\')
+			sb.WriteByte('"')
+			sb.WriteString(rest)
+			sb.WriteByte('"')
 		}
 	}
-	return fresh.String()
+	return sb.String()
 }
 
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
