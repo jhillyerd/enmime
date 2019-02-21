@@ -299,7 +299,7 @@ func (p *Part) decodeContent(r io.Reader) error {
 			p.addWarning(ErrorMalformedBase64, err.Error())
 		}
 	}
-	// Set empty content-type error
+	// Set empty content-type error.
 	if p.ContentType == "" {
 		p.addWarning(
 			ErrorMissingContentType, "content-type is empty for part id: %s", p.PartID)
