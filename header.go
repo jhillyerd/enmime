@@ -514,6 +514,10 @@ func fixUnquotedSpecials(s string) string {
 	return clean.String()
 }
 
+// fixUnescapedQuotes inspects for unescaped quotes inside of a quoted string and escapes them
+//
+//  Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
+//  Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
 func fixUnescapedQuotes(hvalue string) string {
 	params := strings.SplitAfter(hvalue, ";")
 	sb := &strings.Builder{}
