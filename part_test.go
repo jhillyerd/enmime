@@ -773,6 +773,38 @@ func TestBarrenContentType(t *testing.T) {
 	}
 }
 
+func TestEmptyContentTypeBadContent(t *testing.T) {
+	r := test.OpenTestData("parts", "empty-ctype-bad-content.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "1",
+		Parent:      test.PartExists,
+		Disposition: "",
+	}
+	test.ComparePart(t, p.FirstChild, wantp)
+
+	expected := enmime.ErrorMissingContentType
+	satisfied := false
+	for _, perr := range p.FirstChild.Errors {
+		if perr.Name == expected {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			expected,
+			p.Errors)
+	}
+}
+
 func TestMalformedContentTypeParams(t *testing.T) {
 	r := test.OpenTestData("parts", "malformed-content-type-params.raw")
 	p, err := enmime.ReadParts(r)
