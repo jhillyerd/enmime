@@ -346,6 +346,37 @@ func TestFixUnquotedSpecials(t *testing.T) {
 	}
 }
 
+func TestFixUnEscapedQuotes(t *testing.T) {
+	testCases := []struct {
+		input, want string
+	}{
+		{
+			input: "application/rtf; charset=iso-8859-1; name=\"\"V047411.rtf\".rtf\"",
+			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/rtf; charset=iso-8859-1; name=b\"V047411.rtf\".rtf",
+			want:  "application/rtf; charset=iso-8859-1; name=\"b\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf\".rtf",
+			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf;\".rtf",
+			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf;\\\".rtf\"",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := fixUnescapedQuotes(tc.input)
+			if got != tc.want {
+				t.Errorf("\ngot:  %s\nwant: %s", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestReadHeader(t *testing.T) {
 	prefix := "From: hooman\n \n being\n"
 	suffix := "Subject: hi\n\nPart body\n"

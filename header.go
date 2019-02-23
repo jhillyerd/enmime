@@ -228,15 +228,16 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 		mctype := fixMangledMediaType(ctype, ";")
 		mtype, params, err = mime.ParseMediaType(mctype)
 		if err != nil {
-			// Some badly formed media types forget to send ; between fields.
-			mctype := fixMangledMediaType(ctype, " ")
-			if strings.Contains(mctype, `name=""`) {
-				mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-			}
-			mtype, params, err = mime.ParseMediaType(mctype)
+			// If the media parameter has special characters, ensure that
+			// it is quoted and that any existing quotes are escaped.
+			mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
 			if err != nil {
-				// If the media parameter has special characters, ensure that it is quoted.
-				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
+				// Some badly formed media types forget to send ; between fields.
+				mctype := fixMangledMediaType(ctype, " ")
+				if strings.Contains(mctype, `name=""`) {
+					mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+				}
+				mtype, params, err = mime.ParseMediaType(mctype)
 				if err != nil {
 					return "", nil, nil, errors.WithStack(err)
 				}
@@ -511,6 +512,91 @@ func fixUnquotedSpecials(s string) string {
 	}
 
 	return clean.String()
+}
+
+// fixUnescapedQuotes inspects for unescaped quotes inside of a quoted string and escapes them
+//
+//  Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
+//  Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
+func fixUnescapedQuotes(hvalue string) string {
+	params := strings.SplitAfter(hvalue, ";")
+	sb := &strings.Builder{}
+	for i := 0; i < len(params); i++ {
+		// Inspect for "=" byte.
+		eq := strings.IndexByte(params[i], '=')
+		if eq < 0 {
+			// No "=", must be the content-type or a comment.
+			sb.WriteString(params[i])
+			continue
+		}
+		sb.WriteString(params[i][:eq])
+		param := params[i][eq:]
+		startingQuote := strings.IndexByte(param, '"')
+		closingQuote := strings.LastIndexByte(param, '"')
+		// Opportunity to exit early if there are no quotes.
+		if startingQuote < 0 && closingQuote < 0 {
+			// This value is not quoted, write the value and carry on.
+			sb.WriteString(param)
+			continue
+		}
+		// Check if only one quote was found in the string.
+		if closingQuote == startingQuote {
+			// Append the next chunk of params here in case of a semicolon mid string.
+			param = fmt.Sprintf("%s%s", param, params[i+1])
+			closingQuote = strings.LastIndexByte(param, '"')
+			i++
+			if closingQuote == startingQuote {
+				return sb.String()
+			}
+		}
+		// Write the k/v separator back in along with everything up until the first quote.
+		sb.WriteByte('=')
+		// Starting quote
+		sb.WriteByte('"')
+		sb.WriteString(param[1:startingQuote])
+		// Get just the value, less the outer quotes.
+		rest := param[closingQuote+1:]
+		// If there is stuff after the last quote then we should escape the first quote.
+		if len(rest) > 0 && rest != ";" {
+			sb.WriteString("\\\"")
+		}
+		param = param[startingQuote+1 : closingQuote]
+		escaped := false
+		for strIdx := range param {
+			switch param[strIdx] {
+			case '"':
+				// We are inside of a quoted string, so lets escape this guy if it isn't already escaped.
+				if !escaped {
+					sb.WriteByte('\\')
+					escaped = false
+				}
+				sb.WriteByte(param[strIdx])
+			case '\\':
+				// Something is getting escaped, a quote is the only char that needs
+				// this, so lets assume the following char is a double-quote.
+				escaped = true
+				sb.WriteByte('\\')
+			default:
+				escaped = false
+				sb.WriteByte(param[strIdx])
+			}
+		}
+		// If there is stuff after the last quote then we should escape
+		// the last quote, apply the rest and terminate with a quote.
+		switch rest {
+		case ";":
+			sb.WriteByte('"')
+			sb.WriteString(rest)
+		case "":
+			sb.WriteByte('"')
+		default:
+			sb.WriteByte('\\')
+			sb.WriteByte('"')
+			sb.WriteString(rest)
+			sb.WriteByte('"')
+		}
+	}
+	return sb.String()
 }
 
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.

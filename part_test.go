@@ -863,7 +863,7 @@ func TestContentTypeParamMissingClosingQuote(t *testing.T) {
 	wantp := &enmime.Part{
 		PartID:      "0",
 		ContentType: "text/html",
-		Charset:     "UTF-8Return-Path:",
+		Charset:     "UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com",
 	}
 	test.ComparePart(t, p, wantp)
 
