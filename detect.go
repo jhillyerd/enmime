@@ -69,11 +69,7 @@ func detectBinaryBody(root *Part) bool {
 		// Check for attachment only, or inline body is marked
 		// as attachment, too.
 		mediatype, _, _, _ := ParseMediaType(root.Header.Get(hnContentDisposition))
-		if strings.ToLower(mediatype) == cdAttachment {
-			return true
-		}
-
-		return false
+		return strings.ToLower(mediatype) == cdAttachment
 	}
 
 	isBin := detectAttachmentHeader(root.Header)
