@@ -51,6 +51,7 @@ func TestDetectBinaryBody(t *testing.T) {
 		{filename: "attachment-only.raw", disposition: "attachment"},
 		{filename: "attachment-only-inline.raw", disposition: "inline"},
 		{filename: "attachment-only-no-disposition.raw", disposition: "none"},
+		{filename: "attachment-only-text-attachment.raw", disposition: "attachment"},
 	}
 	for _, tt := range ttable {
 		r, _ := os.Open(filepath.Join("testdata", "mail", tt.filename))

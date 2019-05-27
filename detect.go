@@ -63,7 +63,13 @@ func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) 
 // detectBinaryBody returns true if the mail header defines a binary body.
 func detectBinaryBody(root *Part) bool {
 	if detectTextHeader(root.Header, true) {
-		return false
+		// It is text/plain, but an attachment.
+		// Content-Type: text/plain; name="test.csv"
+		// Content-Disposition: attachment; filename="test.csv"
+		// Check for attachment only, or inline body is marked
+		// as attachment, too.
+		mediatype, _, _, _ := ParseMediaType(root.Header.Get(hnContentDisposition))
+		return strings.ToLower(mediatype) == cdAttachment
 	}
 
 	isBin := detectAttachmentHeader(root.Header)
