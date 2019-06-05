@@ -96,7 +96,6 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			}
 
 			if check {
-				check = false
 				peek, err := b.r.Peek(len(b.nlPrefix) + padding + 1)
 				switch err {
 				case nil:
