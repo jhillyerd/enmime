@@ -82,35 +82,32 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		}
 		// Ensure that we can switch on the first byte of 'cs' without panic.
 		if len(cs) > 0 {
+			padding := 1
+			check := false
+
 			switch cs[0] {
+			// Check for carriage return as potential CRLF boundary prefix.
+			case '\r':
+				padding = 2
+				check = true
 			// Check for line feed as potential LF boundary prefix.
 			case '\n':
-				peek, err := b.r.Peek(len(b.nlPrefix) + 2)
+				check = true
+			}
+
+			if check {
+				peek, err := b.r.Peek(len(b.nlPrefix) + padding + 1)
 				switch err {
 				case nil:
 					// Check the whitespace at the head of the peek to avoid checking for a boundary early.
 					if bytes.HasPrefix(peek, []byte("\n\n")) ||
-						bytes.HasPrefix(peek, []byte("\n\r")) {
+						bytes.HasPrefix(peek, []byte("\n\r")) ||
+						bytes.HasPrefix(peek, []byte("\r\n\r")) ||
+						bytes.HasPrefix(peek, []byte("\r\n\n")) {
 						break
 					}
 					// Check the peek buffer for a boundary delimiter or terminator.
-					if b.isDelimiter(peek[1:]) || b.isTerminator(peek[1:]) {
-						// Check if we stored a carriage return.
-						if b.crBoundaryPrefix {
-							b.crBoundaryPrefix = false
-							// Let us now unread that back onto the io.Reader, since
-							// we have found what we are looking for and this byte
-							// belongs to the bounded block we are reading.
-							err = b.r.UnreadByte()
-							switch err {
-							case nil:
-								// Carry on.
-							case bufio.ErrInvalidUnreadByte:
-								// Carriage return boundary prefix bit already unread.
-							default:
-								return 0, errors.WithStack(err)
-							}
-						}
+					if b.isDelimiter(peek[padding:]) || b.isTerminator(peek[padding:]) {
 						// We have found our boundary terminator, lets write out the final bytes
 						// and return io.EOF to indicate that this section read is complete.
 						n, err = b.buffer.Read(dest)
@@ -129,25 +126,6 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 				default:
 					continue
 				}
-				// Checked '\n' was not prefix to a boundary.
-				if b.crBoundaryPrefix {
-					b.crBoundaryPrefix = false
-					// Stored '\r' should be written to the buffer now.
-					err = b.buffer.WriteByte('\r')
-					if err != nil {
-						return 0, errors.WithStack(err)
-					}
-				}
-			// Check for carriage return as potential CRLF boundary prefix.
-			case '\r':
-				_, err := b.r.ReadByte()
-				if err != nil {
-					return 0, errors.WithStack(err)
-				}
-				// Flag the boundary reader to indicate that we
-				// have stored a '\r' as a potential CRLF prefix.
-				b.crBoundaryPrefix = true
-				continue
 			}
 		}
 
