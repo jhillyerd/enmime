@@ -4,6 +4,18 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Make ParseMediaType public.
+
+### Fixed
+- Improve quoted display name handling (#112, thanks to requaos.)
+- Refactor MIME part boundary detection (thanks to requaos.)
+- Several improvements to MIME attribute decoding (thanks to requaos.)
+- Detect text/plain attachments properly (thanks to davrux.)
+
+
 ## [0.5.0] - 2018-12-15
 
 ### Added
