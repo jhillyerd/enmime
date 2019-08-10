@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	stderrors "errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -19,11 +20,13 @@ const (
 	cdInline     = "inline"
 
 	// Standard MIME content types
+	ctAppPrefix        = "application/"
 	ctAppOctetStream   = "application/octet-stream"
 	ctMultipartAltern  = "multipart/alternative"
 	ctMultipartMixed   = "multipart/mixed"
 	ctMultipartPrefix  = "multipart/"
 	ctMultipartRelated = "multipart/related"
+	ctTextPrefix       = "text/"
 	ctTextPlain        = "text/plain"
 	ctTextHTML         = "text/html"
 
@@ -170,7 +173,15 @@ func decodeToUTF8Base64Header(input string) string {
 		return input
 	}
 
-	tokens := strings.FieldsFunc(input, whiteSpaceRune)
+	// The standard lib performs an incremental inspection of this string, where the
+	// "skipSpace" method only strings.trimLeft for spaces and tabs. Here we have a
+	// hard dependency on space existing and not on next expected rune
+	//
+	// For resolving #112 with the least change, I will implement the
+	// "quoted display-name" detector, which will resolve the case specific
+	// issue stated in #112, but only in the case of a quoted display-name
+	// followed, without whitespace, by addr-spec.
+	tokens := strings.FieldsFunc(quotedDisplayName(input), whiteSpaceRune)
 	output := make([]string, len(tokens))
 	for i, token := range tokens {
 		if len(token) > 4 && strings.Contains(token, "=?") {
@@ -196,23 +207,40 @@ func decodeToUTF8Base64Header(input string) string {
 	return strings.Join(output, " ")
 }
 
-// parseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
-func parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+func quotedDisplayName(s string) string {
+	if !strings.HasPrefix(s, "\"") {
+		return s
+	}
+	idx := strings.LastIndex(s, "\"")
+	return fmt.Sprintf("%s %s", s[:idx+1], s[idx+1:])
+}
+
+// ParseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
+//
+// Tolerances accounted for:
+//   * Missing ';' between content-type and media parameters
+//   * Repeating media parameters
+//   * Unquoted values in media parameters containing 'tspecials' characters
+func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(ctype)
 	if err != nil {
+		if err.Error() == "mime: no media type" {
+			return "", nil, nil, nil
+		}
 		// Small hack to remove harmless charset duplicate params.
 		mctype := fixMangledMediaType(ctype, ";")
 		mtype, params, err = mime.ParseMediaType(mctype)
 		if err != nil {
-			// Some badly formed media types forget to send ; between fields.
-			mctype := fixMangledMediaType(ctype, " ")
-			if strings.Contains(mctype, `name=""`) {
-				mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-			}
-			mtype, params, err = mime.ParseMediaType(mctype)
+			// If the media parameter has special characters, ensure that
+			// it is quoted and that any existing quotes are escaped.
+			mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
 			if err != nil {
-				// If the media parameter has special characters, ensure that it is quoted.
-				mtype, params, err = mime.ParseMediaType(fixUnquotedSpecials(mctype))
+				// Some badly formed media types forget to send ; between fields.
+				mctype := fixMangledMediaType(ctype, " ")
+				if strings.Contains(mctype, `name=""`) {
+					mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
+				}
+				mtype, params, err = mime.ParseMediaType(mctype)
 				if err != nil {
 					return "", nil, nil, errors.WithStack(err)
 				}
@@ -247,6 +275,20 @@ func fixMangledMediaType(mtype, sep string) string {
 				// The content type is completely missing. Put in a placeholder.
 				p = ctPlaceholder
 			}
+			// Check for missing token after slash
+			if strings.HasSuffix(p, "/") {
+				switch p {
+				case ctTextPrefix:
+					p = ctTextPlain
+				case ctAppPrefix:
+					p = ctAppOctetStream
+				case ctMultipartPrefix:
+					p = ctMultipartMixed
+				default:
+					// Safe default
+					p = ctAppOctetStream
+				}
+			}
 		default:
 			if !strings.Contains(p, "=") {
 				p = p + "=" + pvPlaceholder
@@ -255,8 +297,8 @@ func fixMangledMediaType(mtype, sep string) string {
 			// RFC-2047 encoded attribute name
 			p = rfc2047AttributeName(p)
 
-			pair := strings.Split(p, "=")
-			if strings.Contains(mtype, pair[0]+"=") {
+			pair := strings.SplitAfter(p, "=")
+			if strings.Contains(mtype, pair[0]) {
 				// Ignore repeated parameters.
 				continue
 			}
@@ -475,6 +517,91 @@ func fixUnquotedSpecials(s string) string {
 	return clean.String()
 }
 
+// fixUnescapedQuotes inspects for unescaped quotes inside of a quoted string and escapes them
+//
+//  Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
+//  Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
+func fixUnescapedQuotes(hvalue string) string {
+	params := strings.SplitAfter(hvalue, ";")
+	sb := &strings.Builder{}
+	for i := 0; i < len(params); i++ {
+		// Inspect for "=" byte.
+		eq := strings.IndexByte(params[i], '=')
+		if eq < 0 {
+			// No "=", must be the content-type or a comment.
+			sb.WriteString(params[i])
+			continue
+		}
+		sb.WriteString(params[i][:eq])
+		param := params[i][eq:]
+		startingQuote := strings.IndexByte(param, '"')
+		closingQuote := strings.LastIndexByte(param, '"')
+		// Opportunity to exit early if there are no quotes.
+		if startingQuote < 0 && closingQuote < 0 {
+			// This value is not quoted, write the value and carry on.
+			sb.WriteString(param)
+			continue
+		}
+		// Check if only one quote was found in the string.
+		if closingQuote == startingQuote {
+			// Append the next chunk of params here in case of a semicolon mid string.
+			param = fmt.Sprintf("%s%s", param, params[i+1])
+			closingQuote = strings.LastIndexByte(param, '"')
+			i++
+			if closingQuote == startingQuote {
+				return sb.String()
+			}
+		}
+		// Write the k/v separator back in along with everything up until the first quote.
+		sb.WriteByte('=')
+		// Starting quote
+		sb.WriteByte('"')
+		sb.WriteString(param[1:startingQuote])
+		// Get just the value, less the outer quotes.
+		rest := param[closingQuote+1:]
+		// If there is stuff after the last quote then we should escape the first quote.
+		if len(rest) > 0 && rest != ";" {
+			sb.WriteString("\\\"")
+		}
+		param = param[startingQuote+1 : closingQuote]
+		escaped := false
+		for strIdx := range param {
+			switch param[strIdx] {
+			case '"':
+				// We are inside of a quoted string, so lets escape this guy if it isn't already escaped.
+				if !escaped {
+					sb.WriteByte('\\')
+					escaped = false
+				}
+				sb.WriteByte(param[strIdx])
+			case '\\':
+				// Something is getting escaped, a quote is the only char that needs
+				// this, so lets assume the following char is a double-quote.
+				escaped = true
+				sb.WriteByte('\\')
+			default:
+				escaped = false
+				sb.WriteByte(param[strIdx])
+			}
+		}
+		// If there is stuff after the last quote then we should escape
+		// the last quote, apply the rest and terminate with a quote.
+		switch rest {
+		case ";":
+			sb.WriteByte('"')
+			sb.WriteString(rest)
+		case "":
+			sb.WriteByte('"')
+		default:
+			sb.WriteByte('\\')
+			sb.WriteByte('"')
+			sb.WriteString(rest)
+			sb.WriteByte('"')
+		}
+	}
+	return sb.String()
+}
+
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
@@ -483,11 +610,51 @@ func whiteSpaceRune(r rune) bool {
 // rfc2047AttributeName checks if the attribute name is encoded in RFC2047 format
 // RFC2047 Example:
 //     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
-func rfc2047AttributeName(s string) string {
-	if !strings.Contains(s, "?=") {
-		return s
+func rfc2047AttributeName(name string) string {
+	if !strings.Contains(name, "?=") {
+		return name
 	}
-	pair := strings.SplitAfter(s, "?=")
-	pair[0] = decodeHeader(pair[0])
-	return strings.Join(pair, "")
+	// copy the string so we can return the original if we encounter any issues
+	s := name
+
+	// handle n-number of RFC2047 chunk occurrences
+	count := strings.Count(name, "?=")
+	result := &strings.Builder{}
+	var beginning, ending int
+	for i := 0; i < count; i++ {
+		beginning = strings.Index(s, "=?")
+		ending = strings.Index(s, "?=")
+
+		if beginning == -1 || ending == -1 {
+			// the RFC2047 chunk is either malformed or is not an RFC2047 chunk
+			return name
+		}
+
+		_, err := result.WriteString(s[:beginning])
+		if err != nil {
+			return name
+		}
+		_, err = result.WriteString(decodeHeader(s[beginning : ending+2]))
+		if err != nil {
+			return name
+		}
+
+		s = s[ending+2:]
+	}
+	_, err := result.WriteString(s)
+	if err != nil {
+		return name
+	}
+	keyValuePair := strings.SplitAfter(result.String(), "=")
+	if len(keyValuePair) < 2 {
+		return result.String()
+	}
+	// Add quotes as needed
+	if !strings.HasPrefix(keyValuePair[1], "\"") {
+		keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
+	}
+	if !strings.HasSuffix(keyValuePair[1], "\"") {
+		keyValuePair[1] = fmt.Sprintf("%s\"", keyValuePair[1])
+	}
+	return strings.Join(keyValuePair, "")
 }

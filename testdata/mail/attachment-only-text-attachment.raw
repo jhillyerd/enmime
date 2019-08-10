@@ -1,0 +1,11 @@
+To: bob@test.com
+From: alice@test.com
+Subject: Test
+Message-ID: <56A0AA5F.4020203@test.com>
+Date: Thu, 21 Jan 2016 10:52:31 +0100
+MIME-Version: 1.0
+Content-Type: text/plain; name="test.csv"
+Content-Disposition: attachment; filename="test.csv"
+Content-Transfer-Encoding: base64
+
+VGVzdDtUZXN0Cg==

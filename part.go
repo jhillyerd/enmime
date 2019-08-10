@@ -113,7 +113,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		ctype = defaultContentType
 	}
 	// Parse Content-Type header.
-	mtype, mparams, minvalidParams, err := parseMediaType(ctype)
+	mtype, mparams, minvalidParams, err := ParseMediaType(ctype)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	// Determine content disposition, filename, character set.
-	disposition, dparams, _, err := parseMediaType(p.Header.Get(hnContentDisposition))
+	disposition, dparams, _, err := ParseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
@@ -284,26 +284,45 @@ func (p *Part) decodeContent(r io.Reader) error {
 		var err error
 		contentReader, err = p.convertFromDetectedCharset(contentReader)
 		if err != nil {
-			return err
+			return p.base64CorruptInputCheck(err)
 		}
 	}
 	// Decode and store content.
 	content, err := ioutil.ReadAll(contentReader)
 	if err != nil {
-		return errors.WithStack(err)
+		return p.base64CorruptInputCheck(errors.WithStack(err))
 	}
 	p.Content = content
 	// Collect base64 errors.
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {
-			p.Errors = append(p.Errors, &Error{
-				Name:   ErrorMalformedBase64,
-				Detail: err.Error(),
-				Severe: false,
-			})
+			p.addWarning(ErrorMalformedBase64, err.Error())
 		}
 	}
+	// Set empty content-type error.
+	if p.ContentType == "" {
+		p.addWarning(
+			ErrorMissingContentType, "content-type is empty for part id: %s", p.PartID)
+	}
 	return nil
+}
+
+// base64CorruptInputCheck will avoid fatal failure on corrupt base64 input
+//
+// This is a switch on errors.Cause(err).(type) for base64.CorruptInputError
+func (p *Part) base64CorruptInputCheck(err error) error {
+	switch errors.Cause(err).(type) {
+	case base64.CorruptInputError:
+		p.Content = nil
+		p.Errors = append(p.Errors, &Error{
+			Name:   ErrorMalformedBase64,
+			Detail: err.Error(),
+			Severe: true,
+		})
+		return nil
+	default:
+		return err
+	}
 }
 
 // Clone returns a clone of the current Part.
@@ -366,6 +385,10 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		if err != nil && errors.Cause(err) != io.EOF {
 			return err
 		}
+		if br.unbounded {
+			parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
+				parent.Boundary)
+		}
 		if !next {
 			break
 		}
@@ -383,13 +406,6 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			// Empty header probably means the part didn't use the correct trailing "--" syntax to
 			// close its boundary.
 			if _, err = br.Next(); err != nil {
-				if errors.Cause(err) == io.EOF || strings.HasSuffix(err.Error(), "EOF") {
-					// There are no more Parts. The error must belong to the parent, because this
-					// part doesn't exist.
-					parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
-						parent.Boundary)
-					break
-				}
 				// The error is already wrapped with a stack, so only adding a message here.
 				// TODO: Once `errors` releases a version > v0.8.0, change to use errors.WithMessagef()
 				return errors.WithMessage(err, fmt.Sprintf("error at boundary %v", parent.Boundary))

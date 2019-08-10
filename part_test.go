@@ -715,6 +715,7 @@ func TestBadBoundaryTerm(t *testing.T) {
 	p = p.NextSibling
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
 		ContentType: "text/html",
 		Charset:     "us-ascii",
 		PartID:      "2",
@@ -757,6 +758,38 @@ func TestBarrenContentType(t *testing.T) {
 	expected := enmime.ErrorMissingContentType
 	satisfied := false
 	for _, perr := range p.Errors {
+		if perr.Name == expected {
+			satisfied = true
+			if perr.Severe {
+				t.Errorf("Expected Severe to be false, got true for %q", perr.Name)
+			}
+		}
+	}
+	if !satisfied {
+		t.Errorf(
+			"Did not find expected error on part. Expected %q, but had: %v",
+			expected,
+			p.Errors)
+	}
+}
+
+func TestEmptyContentTypeBadContent(t *testing.T) {
+	r := test.OpenTestData("parts", "empty-ctype-bad-content.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "1",
+		Parent:      test.PartExists,
+		Disposition: "",
+	}
+	test.ComparePart(t, p.FirstChild, wantp)
+
+	expected := enmime.ErrorMissingContentType
+	satisfied := false
+	for _, perr := range p.FirstChild.Errors {
 		if perr.Name == expected {
 			satisfied = true
 			if perr.Severe {
@@ -818,6 +851,40 @@ func TestContentTypeParamUnquotedSpecial(t *testing.T) {
 	test.ComparePart(t, p, wantp)
 }
 
+func TestNoClosingBoundary(t *testing.T) {
+	r := test.OpenTestData("parts", "multimixed-no-closing-boundary.raw")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Errorf("%+v", err)
+	}
+	if p == nil {
+		t.Fatal("Expected part but got nil")
+	}
+
+	wantp := &enmime.Part{
+		Parent:      test.PartExists,
+		PartID:      "1",
+		ContentType: "text/html",
+		Charset:     "UTF-8",
+	}
+	test.ComparePart(t, p.FirstChild, wantp)
+	t.Log(string(p.FirstChild.Content))
+
+	expected := "Missing Boundary"
+	hasCorrectError := false
+	for _, v := range p.Errors {
+		if v.Severe {
+			t.Errorf("Expected Severe to be false, got true for %q", v.Name)
+		}
+		if v.Name == expected {
+			hasCorrectError = true
+		}
+	}
+	if !hasCorrectError {
+		t.Fatalf("Did not find expected error on part. Expected %q but got %v", expected, p.Errors)
+	}
+}
+
 func TestContentTypeParamMissingClosingQuote(t *testing.T) {
 	r := test.OpenTestData("parts", "missing-closing-param-quote.raw")
 	p, err := enmime.ReadParts(r)
@@ -828,7 +895,7 @@ func TestContentTypeParamMissingClosingQuote(t *testing.T) {
 	wantp := &enmime.Part{
 		PartID:      "0",
 		ContentType: "text/html",
-		Charset:     "UTF-8Return-Path:",
+		Charset:     "UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com",
 	}
 	test.ComparePart(t, p, wantp)
 

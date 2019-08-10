@@ -69,3 +69,30 @@ func TestFindCharsetInHTML(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertToUTF8String(t *testing.T) {
+	var testTable = []struct {
+		charset string
+		input   []byte
+		want    string
+	}{
+		{"utf-8", []byte("abcABC\u2014"), "abcABC\u2014"},
+		{"windows-1250", []byte{'a', 'Z', 0x96}, "aZ\u2013"},
+		{"big5", []byte{0xa1, 0x5d, 0xa1, 0x61, 0xa1, 0x71}, "\uff08\uff5b\u3008"},
+	}
+	// Success Conditions
+	for _, v := range testTable {
+		s, err := coding.ConvertToUTF8String(v.charset, v.input)
+		if err != nil {
+			t.Error("UTF-8 conversion failed")
+		}
+		if s != v.want {
+			t.Errorf("Got %s, but wanted %s", s, v.want)
+		}
+	}
+	// Fail for unsupported charset
+	_, err := coding.ConvertToUTF8String("123", []byte("there is no 123 charset"))
+	if err == nil {
+		t.Error("Charset 123 should not exist")
+	}
+}

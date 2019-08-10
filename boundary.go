@@ -3,8 +3,10 @@ package enmime
 import (
 	"bufio"
 	"bytes"
+	stderrors "errors"
 	"io"
 	"io/ioutil"
+	"unicode"
 
 	"github.com/pkg/errors"
 )
@@ -14,14 +16,18 @@ import (
 // from it.
 const peekBufferSize = 4096
 
+var errNoBoundaryTerminator = stderrors.New("expected boundary not present")
+
 type boundaryReader struct {
-	finished  bool          // No parts remain when finished
-	partsRead int           // Number of parts read thus far
-	r         *bufio.Reader // Source reader
-	nlPrefix  []byte        // NL + MIME boundary prefix
-	prefix    []byte        // MIME boundary prefix
-	final     []byte        // Final boundary prefix
-	buffer    *bytes.Buffer // Content waiting to be read
+	finished         bool          // No parts remain when finished
+	partsRead        int           // Number of parts read thus far
+	r                *bufio.Reader // Source reader
+	nlPrefix         []byte        // NL + MIME boundary prefix
+	prefix           []byte        // MIME boundary prefix
+	final            []byte        // Final boundary prefix
+	buffer           *bytes.Buffer // Content waiting to be read
+	crBoundaryPrefix bool          // Flag for CR in CRLF + MIME boundary
+	unbounded        bool          // Flag to throw errNoBoundaryTerminator
 }
 
 // newBoundaryReader returns an initialized boundaryReader
@@ -37,48 +43,104 @@ func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
 }
 
 // Read returns a buffer containing the content up until boundary
+//
+//   Excerpt from io package on io.Reader implementations:
+//
+//     type Reader interface {
+//        Read(p []byte) (n int, err error)
+//     }
+//
+//     Read reads up to len(p) bytes into p. It returns the number of
+//     bytes read (0 <= n <= len(p)) and any error encountered. Even
+//     if Read returns n < len(p), it may use all of p as scratch space
+//     during the call. If some data is available but not len(p) bytes,
+//     Read conventionally returns what is available instead of waiting
+//     for more.
+//
+//     When Read encounters an error or end-of-file condition after
+//     successfully reading n > 0 bytes, it returns the number of bytes
+//     read. It may return the (non-nil) error from the same call or
+//     return the error (and n == 0) from a subsequent call. An instance
+//     of this general case is that a Reader returning a non-zero number
+//     of bytes at the end of the input stream may return either err == EOF
+//     or err == nil. The next Read should return 0, EOF.
+//
+//     Callers should always process the n > 0 bytes returned before
+//     considering the error err. Doing so correctly handles I/O errors
+//     that happen after reading some bytes and also both of the allowed
+//     EOF behaviors.
 func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	if b.buffer.Len() >= len(dest) {
-		// This read request can be satisfied entirely by the buffer
+		// This read request can be satisfied entirely by the buffer.
 		return b.buffer.Read(dest)
 	}
 
-	peek, err := b.r.Peek(peekBufferSize)
-	peekEOF := (err == io.EOF)
-	if err != nil && !peekEOF && err != bufio.ErrBufferFull {
-		// Unexpected error
-		return 0, errors.WithStack(err)
-	}
-	var nCopy int
-	idx, complete := locateBoundary(peek, b.nlPrefix)
-	if idx != -1 {
-		// Peeked boundary prefix, read until that point
-		nCopy = idx
-		if !complete && nCopy == 0 {
-			// Incomplete boundary, move past it
-			nCopy = 1
+	for i := 0; i < cap(dest); i++ {
+		cs, err := b.r.Peek(1)
+		if err != nil && err != io.EOF {
+			return 0, errors.WithStack(err)
 		}
-	} else {
-		// No boundary found, move forward a safe distance
-		if nCopy = len(peek) - len(b.nlPrefix) - 1; nCopy <= 0 {
-			nCopy = 0
-			if peekEOF {
-				// No more peek space remaining and no boundary found
-				return 0, errors.WithStack(io.ErrUnexpectedEOF)
+		// Ensure that we can switch on the first byte of 'cs' without panic.
+		if len(cs) > 0 {
+			padding := 1
+			check := false
+
+			switch cs[0] {
+			// Check for carriage return as potential CRLF boundary prefix.
+			case '\r':
+				padding = 2
+				check = true
+			// Check for line feed as potential LF boundary prefix.
+			case '\n':
+				check = true
+			}
+
+			if check {
+				peek, err := b.r.Peek(len(b.nlPrefix) + padding + 1)
+				switch err {
+				case nil:
+					// Check the whitespace at the head of the peek to avoid checking for a boundary early.
+					if bytes.HasPrefix(peek, []byte("\n\n")) ||
+						bytes.HasPrefix(peek, []byte("\n\r")) ||
+						bytes.HasPrefix(peek, []byte("\r\n\r")) ||
+						bytes.HasPrefix(peek, []byte("\r\n\n")) {
+						break
+					}
+					// Check the peek buffer for a boundary delimiter or terminator.
+					if b.isDelimiter(peek[padding:]) || b.isTerminator(peek[padding:]) {
+						// We have found our boundary terminator, lets write out the final bytes
+						// and return io.EOF to indicate that this section read is complete.
+						n, err = b.buffer.Read(dest)
+						switch err {
+						case nil, io.EOF:
+							return n, io.EOF
+						default:
+							return 0, errors.WithStack(err)
+						}
+					}
+				case io.EOF:
+					// We have reached the end without finding a boundary,
+					// so we flag the boundary reader to add an error to
+					// the errors slice and write what we have to the buffer.
+					b.unbounded = true
+				default:
+					continue
+				}
 			}
 		}
-	}
-	if nCopy > 0 {
-		if _, err = io.CopyN(b.buffer, b.r, int64(nCopy)); err != nil {
-			return 0, errors.WithStack(err)
+
+		_, err = io.CopyN(b.buffer, b.r, 1)
+		if err != nil {
+			// EOF is not fatal, it just means that we have drained the reader.
+			if errors.Cause(err) == io.EOF {
+				break
+			}
+			return 0, err
 		}
 	}
 
+	// Read the contents of the buffer into the destination slice.
 	n, err = b.buffer.Read(dest)
-	if err == io.EOF && !complete {
-		// Only the buffer is empty, not the boundaryReader
-		return n, nil
-	}
 	return n, err
 }
 
@@ -88,7 +150,7 @@ func (b *boundaryReader) Next() (bool, error) {
 		return false, nil
 	}
 	if b.partsRead > 0 {
-		// Exhaust the current part to prevent errors when moving to the next part
+		// Exhaust the current part to prevent errors when moving to the next part.
 		_, _ = io.Copy(ioutil.Discard, b)
 	}
 	for {
@@ -105,21 +167,21 @@ func (b *boundaryReader) Next() (bool, error) {
 			return false, nil
 		}
 		if err != io.EOF && b.isDelimiter(line) {
-			// Start of a new part
+			// Start of a new part.
 			b.partsRead++
 			return true, nil
 		}
 		if err == io.EOF {
-			// Intentionally not wrapping with stack
+			// Intentionally not wrapping with stack.
 			return false, io.EOF
 		}
 		if b.partsRead == 0 {
 			// The first part didn't find the starting delimiter, burn off any preamble in front of
-			// the boundary
+			// the boundary.
 			continue
 		}
 		b.finished = true
-		return false, errors.Errorf("expecting boundary %q, got %q", string(b.prefix), string(line))
+		return false, errors.WithMessagef(errNoBoundaryTerminator, "expecting boundary %q, got %q", string(b.prefix), string(line))
 	}
 }
 
@@ -130,11 +192,10 @@ func (b *boundaryReader) isDelimiter(buf []byte) bool {
 		return false
 	}
 
-	// Fast forward to the end of the boundary prefix
+	// Fast forward to the end of the boundary prefix.
 	buf = buf[idx+len(b.prefix):]
-	buf = bytes.TrimLeft(buf, " \t")
 	if len(buf) > 0 {
-		if buf[0] == '\r' || buf[0] == '\n' {
+		if unicode.IsSpace(rune(buf[0])) {
 			return true
 		}
 	}
@@ -146,43 +207,4 @@ func (b *boundaryReader) isDelimiter(buf []byte) bool {
 func (b *boundaryReader) isTerminator(buf []byte) bool {
 	idx := bytes.Index(buf, b.final)
 	return idx != -1
-}
-
-// Locate boundaryPrefix in buf, returning its starting idx. If complete is true, the boundary
-// is terminated properly in buf, otherwise it could be false due to running out of buffer, or
-// because it is not the actual boundary.
-//
-// Complete boundaries end in "--" or a newline
-func locateBoundary(buf, boundaryPrefix []byte) (idx int, complete bool) {
-	bpLen := len(boundaryPrefix)
-	idx = bytes.Index(buf, boundaryPrefix)
-	if idx == -1 {
-		return
-	}
-
-	// Handle CR if present
-	if idx > 0 && buf[idx-1] == '\r' {
-		idx--
-		bpLen++
-	}
-
-	// Fast forward to the end of the boundary prefix
-	buf = buf[idx+bpLen:]
-	if len(buf) == 0 {
-		// Need more bytes to verify completeness
-		return
-	}
-	if len(buf) > 1 {
-		if buf[0] == '-' && buf[1] == '-' {
-			return idx, true
-		}
-	}
-	buf = bytes.TrimLeft(buf, " \t")
-	if len(buf) > 0 {
-		if buf[0] == '\r' || buf[0] == '\n' {
-			return idx, true
-		}
-	}
-
-	return
 }

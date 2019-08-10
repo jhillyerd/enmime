@@ -4,6 +4,18 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.6.0] - 2019-08-10
+
+### Added
+- Make ParseMediaType public.
+
+### Fixed
+- Improve quoted display name handling (#112, thanks to requaos.)
+- Refactor MIME part boundary detection (thanks to requaos.)
+- Several improvements to MIME attribute decoding (thanks to requaos.)
+- Detect text/plain attachments properly (thanks to davrux.)
+
+
 ## [0.5.0] - 2018-12-15
 
 ### Added
@@ -84,6 +96,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.6.0]:      https://github.com/jhillyerd/enmime/compare/v0.5.0...v0.6.0
 [0.5.0]:      https://github.com/jhillyerd/enmime/compare/v0.4.0...v0.5.0
 [0.4.0]:      https://github.com/jhillyerd/enmime/compare/v0.3.0...v0.4.0
 [0.3.0]:      https://github.com/jhillyerd/enmime/compare/v0.2.1...v0.3.0

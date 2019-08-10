@@ -148,6 +148,8 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 		{"=?UTF-8?Q?Miros=C5=82aw?= <u@h>", "=?UTF-8?b?TWlyb3PFgmF3?= <u@h>"},
 		{"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
 			"First Last <u@h> (=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?=)"},
+		// Quoted display name without space before angle-addr spec, Issue #112
+		{"\"=?UTF-8?b?TWlyb3PFgmF3?=\"<u@h>", "=?UTF-8?b?Ik1pcm9zxYJhdyI=?= <u@h>"},
 	}
 
 	for _, tt := range testTable {
@@ -180,7 +182,12 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
 			sep:   ";",
-			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg",
+			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
+		},
+		{
+			input: "application/; name=\"Voice message from =?UTF-8?B?4piOICsxIDI1MS0yNDUtODA0NC5tc2c=?=\";",
+			sep:   ";",
+			want:  "application/octet-stream; name=\"Voice message from ☎ +1 251-245-8044.msg\"",
 		},
 		{
 			input: "application/pdf name=\"file.pdf\"",
@@ -191,6 +198,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			input: "one/two; name=\"file.two\"; name=\"file.two\"",
 			sep:   ";",
 			want:  "one/two; name=\"file.two\"",
+		},
+		{
+			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
+			sep:   " ",
+			want:  "application/octet-stream;name=\"ð.msg\"",
 		},
 		{
 			input: "one/two name=\"file.two\" name=\"file.two\"",
@@ -327,6 +339,37 @@ func TestFixUnquotedSpecials(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
 			got := fixUnquotedSpecials(tc.input)
+			if got != tc.want {
+				t.Errorf("\ngot:  %s\nwant: %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFixUnEscapedQuotes(t *testing.T) {
+	testCases := []struct {
+		input, want string
+	}{
+		{
+			input: "application/rtf; charset=iso-8859-1; name=\"\"V047411.rtf\".rtf\"",
+			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/rtf; charset=iso-8859-1; name=b\"V047411.rtf\".rtf",
+			want:  "application/rtf; charset=iso-8859-1; name=\"b\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf\".rtf",
+			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf;\".rtf",
+			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf;\\\".rtf\"",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := fixUnescapedQuotes(tc.input)
 			if got != tc.want {
 				t.Errorf("\ngot:  %s\nwant: %s", got, tc.want)
 			}
