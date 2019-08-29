@@ -970,4 +970,22 @@ func TestChardetFailure(t *testing.T) {
 		test.ComparePart(t, p, wantp)
 		test.ContentEqualsString(t, p.Content, expectedContent)
 	})
+
+	t.Run("not enough characters part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-fail-not-long-enough.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(p.Errors) > 0 {
+			t.Errorf("Errors encountered while processing part: %v", p.Errors)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			Charset:     "UTF-8",
+		}
+		test.ComparePart(t, p, wantp)
+		test.ContentEqualsString(t, p.Content, "和弟弟\r\n")
+	})
 }
