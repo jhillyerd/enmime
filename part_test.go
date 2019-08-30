@@ -868,7 +868,6 @@ func TestNoClosingBoundary(t *testing.T) {
 		Charset:     "UTF-8",
 	}
 	test.ComparePart(t, p.FirstChild, wantp)
-	t.Log(string(p.FirstChild.Content))
 
 	expected := "Missing Boundary"
 	hasCorrectError := false
