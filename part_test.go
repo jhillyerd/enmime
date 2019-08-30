@@ -989,3 +989,70 @@ func TestChardetFailure(t *testing.T) {
 		test.ContentEqualsString(t, p.Content, "和弟弟\r\n")
 	})
 }
+
+func TestChardetSuccess(t *testing.T) {
+	// Testdata in these tests licensed under CC0: Public Domain
+	t.Run("big-5 data in us-ascii part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-success-big-5.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedErr := enmime.Error{
+			Name:   "Character Set Declaration Mismatch",
+			Detail: "declared charset \"us-ascii\", detected \"Big5\", confidence 100",
+			Severe: false,
+		}
+		foundExpectedErr := false
+		if len(p.Errors) > 0 {
+			for _, v := range p.Errors {
+				if *v == expectedErr {
+					foundExpectedErr = true
+				} else {
+					t.Errorf("Error encountered while processing part: %v", v)
+				}
+			}
+		}
+		if !foundExpectedErr {
+			t.Errorf("Expected to find %v warning", expectedErr)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			Charset:     "Big5",
+		}
+		test.ComparePart(t, p, wantp)
+	})
+
+	t.Run("iso-8859-1 data in us-ascii part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-success-iso-8859-1.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedErr := enmime.Error{
+			Name:   "Character Set Declaration Mismatch",
+			Detail: "declared charset \"us-ascii\", detected \"ISO-8859-1\", confidence 90",
+			Severe: false,
+		}
+		foundExpectedErr := false
+		if len(p.Errors) > 0 {
+			for _, v := range p.Errors {
+				if *v == expectedErr {
+					foundExpectedErr = true
+				} else {
+					t.Errorf("Error encountered while processing part: %v", v)
+				}
+			}
+		}
+		if !foundExpectedErr {
+			t.Errorf("Expected to find %v warning", expectedErr)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			Charset:     "ISO-8859-1",
+		}
+		test.ComparePart(t, p, wantp)
+	})
+}
