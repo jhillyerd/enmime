@@ -328,7 +328,7 @@ func TestMultiMixedParts(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -341,7 +341,7 @@ func TestMultiMixedParts(t *testing.T) {
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "2",
 	}
 	test.ComparePart(t, p, wantp)
@@ -379,7 +379,7 @@ func TestMultiOtherParts(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -392,7 +392,7 @@ func TestMultiOtherParts(t *testing.T) {
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "2",
 	}
 	test.ComparePart(t, p, wantp)
@@ -523,7 +523,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
