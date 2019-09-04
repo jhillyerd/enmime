@@ -90,5 +90,8 @@ func BenchmarkReadEnvelope(b *testing.B) {
 		env.GetHeader("Subject")
 		// reset reader for next run
 		_, err = reusedReader.Seek(0, io.SeekStart)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
