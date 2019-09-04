@@ -44,7 +44,7 @@ func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, erro
 		h := textproto.CanonicalMIMEHeaderKey(header)
 		res[h] = make([]string, 0, len(headers[h]))
 		for _, value := range headers[h] {
-			res[h] = append(res[h], rfc2047parts(value))
+			res[h] = append(res[h], rfc2047decode(value))
 		}
 	}
 
@@ -74,10 +74,10 @@ func ensureHeaderBoundary(b []byte) []byte {
 	return dest
 }
 
-// rfc2047parts checks if the value contains content encoded in RFC2047 format
+// rfc2047decode returns a decoded string if the input uses RFC2047 encoding, otherwise it will return the input
 // RFC2047 Example:
 //     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
-func rfc2047parts(s string) string {
+func rfc2047decode(s string) string {
 	s = strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\r' {
 			return ' '
