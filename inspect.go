@@ -12,8 +12,24 @@ import (
 	"github.com/pkg/errors"
 )
 
-func HumanHeadersOnly(b []byte) (map[string]string, error) {
-	b = clean(b)
+var defaultHeadersList = []string{
+	"From",
+	"To",
+	"Sender",
+	"CC",
+	"BCC",
+	"Subject",
+	"Date",
+}
+
+// DecodeHeaders returns a limited selection of mime headers for use by user agents
+// Default header list:
+//   "Date", "Subject", "Sender", "From", "To", "CC" and "BCC"
+//
+// Additional headers provided will be formatted canonically:
+//   h, err := enmime.DecodeHeaders(b, "content-type", "user-agent")
+func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, error) {
+	b = ensureHeaderBoundary(b)
 	tr := textproto.NewReader(bufio.NewReader(bytes.NewReader(b)))
 	headers, err := tr.ReadMIMEHeader()
 	switch errors.Cause(err) {
@@ -22,34 +38,21 @@ func HumanHeadersOnly(b []byte) (map[string]string, error) {
 	default:
 		return nil, err
 	}
-	bs := bufio.NewScanner(bufio.NewReader(bytes.NewReader(b)))
-	res := map[string]string{}
-	for bs.Scan() {
-		line := bs.Text()
-		if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
-			continue
+	headerList := append(defaultHeadersList, addtlHeaders...)
+	res := map[string][]string{}
+	for _, header := range headerList {
+		h := textproto.CanonicalMIMEHeaderKey(header)
+		res[h] = make([]string, 0, len(headers[h]))
+		for _, value := range headers[h] {
+			res[h] = append(res[h], rfc2047parts(value))
 		}
-		i := strings.Index(line, ":")
-		if i == -1 {
-			continue
-		}
-		header := textproto.CanonicalMIMEHeaderKey(line[:i])
-		if len(headers[header]) == 0 {
-			// somethings up, we should have already processed all of these, so why are we trying to fetch from an empty list, did we miscount?
-			continue
-		}
-		// pop
-		firstValue := headers[header][0]
-		// shift
-		headers[header] = headers[header][1:]
-
-		res[header] = rfc2047parts(firstValue)
 	}
 
 	return res, nil
 }
 
-func clean(b []byte) []byte {
+// ensureHeaderBoundary scans through an rfc822 document to ensure the boundary between headers and body exists
+func ensureHeaderBoundary(b []byte) []byte {
 	slice := bytes.SplitAfter(b, []byte{'\r', '\n'})
 	dest := make([]byte, 0, len(b)+2)
 	headers := true
