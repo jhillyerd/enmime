@@ -57,7 +57,7 @@ func ensureHeaderBoundary(b []byte) []byte {
 	dest := make([]byte, 0, len(b)+2)
 	headers := true
 	for _, v := range slice {
-		if (bytes.Index(v, []byte{':'}) > -1 || bytes.HasPrefix(v, []byte{' '}) || bytes.HasPrefix(v, []byte{'\t'})) && headers {
+		if headers && (bytes.Index(v, []byte{':'}) > -1 || bytes.HasPrefix(v, []byte{' '}) || bytes.HasPrefix(v, []byte{'\t'})) {
 			dest = append(dest, v...)
 			continue
 		}
