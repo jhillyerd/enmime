@@ -133,6 +133,8 @@ func decodeHeaderWithError(input string) (string, error) {
 	return header, nil
 }
 
+// fixRFC2047String removes the following characters from charset and encoding segments of an RFC2047 string:
+//  '\n', '\r' and ' '
 func fixRFC2047String(s string) string {
 	inString := false
 	eq := false
