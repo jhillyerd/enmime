@@ -153,7 +153,7 @@ func fixRFC2047String(s string) string {
 			if eq {
 				inString = true
 			} else {
-				q += 1
+				q++
 			}
 			eq = false
 			sb.WriteRune(v)
