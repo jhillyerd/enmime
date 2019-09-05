@@ -74,7 +74,7 @@ func ensureHeaderBoundary(b []byte) []byte {
 	return dest
 }
 
-// rfc2047decode returns a decoded string if the input uses RFC2047 encoding, otherwise it will return the input
+// rfc2047decode returns a decoded string if the input uses RFC2047 encoding, otherwise it will return the input.
 // RFC2047 Example:
 //     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
 func rfc2047decode(s string) string {
