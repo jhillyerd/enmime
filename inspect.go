@@ -138,33 +138,33 @@ func decodeHeaderWithError(input string) (string, error) {
 //  '\n', '\r' and ' '
 func fixRFC2047String(s string) string {
 	inString := false
-	eq := false
-	q := 0
+	isWithinTerminatingEqualSigns := false
+	questionMarkCount := 0
 	sb := &strings.Builder{}
 	for _, v := range s {
 		switch v {
 		case '=':
-			if q == 3 {
+			if questionMarkCount == 3 {
 				inString = false
 			} else {
-				eq = true
+				isWithinTerminatingEqualSigns = true
 			}
 			sb.WriteRune(v)
 		case '?':
-			if eq {
+			if isWithinTerminatingEqualSigns {
 				inString = true
 			} else {
-				q++
+				questionMarkCount++
 			}
-			eq = false
+			isWithinTerminatingEqualSigns = false
 			sb.WriteRune(v)
 		case '\n', '\r', ' ':
 			if !inString {
 				sb.WriteRune(v)
 			}
-			eq = false
+			isWithinTerminatingEqualSigns = false
 		default:
-			eq = false
+			isWithinTerminatingEqualSigns = false
 			sb.WriteRune(v)
 		}
 	}
