@@ -38,7 +38,8 @@ func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, erro
 	default:
 		return nil, err
 	}
-	headerList := append(defaultHeadersList, addtlHeaders...)
+	headerList := defaultHeadersList
+	headerList = append(headerList, addtlHeaders...)
 	res := map[string][]string{}
 	for _, header := range headerList {
 		h := textproto.CanonicalMIMEHeaderKey(header)
