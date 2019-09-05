@@ -96,7 +96,7 @@ func rfc2047decode(s string) string {
 	}
 }
 
-// rfc2047recurse is called for if the value contains content encoded in RFC2047 format and decodes it
+// rfc2047recurse is called for if the value contains content encoded in RFC2047 format and decodes it.
 // RFC2047 Example:
 //     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
 func rfc2047recurse(s string) (string, error) {
