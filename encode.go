@@ -219,12 +219,6 @@ func setParamValue(p map[string]string, k, v string) {
 
 func wrapContent(text []byte, b *bufio.Writer) error {
 	lineLen := lineWrapLength
-	//if len(text) < lineLen {
-	//	if _, err := b.Write(text); err != nil {
-	//		return err
-	//	}
-	//	return nil
-	//}
 	beginning := true
 	for len(text) > 0 {
 		if !beginning {
