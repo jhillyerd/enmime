@@ -77,7 +77,7 @@ func TestEncodePartBinaryHeader(t *testing.T) {
 		0xa2, 0xb2, 0xc0, 0x90, 0x59, 0xe3, 0x35, 0xf8, 0x60, 0xb7, 0xb1, 0x63, 0x77, 0xd7,
 		0x5f, 0x92, 0x58, 0xa8, 0x75,
 	}))
-	p.Content = []byte("This is a test of a plain text part.\r\n\r\nAnother line.\r\n")
+	p.Content = []byte("This is a test of a plain text part.\r\n\r\nAnother line.")
 
 	b := &bytes.Buffer{}
 	err := p.Encode(b)
@@ -101,7 +101,7 @@ func TestEncodePartContentOnly(t *testing.T) {
 
 func TestEncodePartPlain(t *testing.T) {
 	p := enmime.NewPart("text/plain")
-	p.Content = []byte("This is a test of a plain text part.\r\n\r\nAnother line.\r\n")
+	p.Content = []byte("This is a test of a plain text part.\r\n\r\nAnother line.")
 
 	b := &bytes.Buffer{}
 	err := p.Encode(b)
