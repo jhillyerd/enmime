@@ -222,7 +222,9 @@ func wrapContent(text []byte, b *bufio.Writer) error {
 	beginning := true
 	for len(text) > 0 {
 		if !beginning {
-			b.Write(crnl)
+			if _, err := b.Write(crnl); err != nil {
+				return err
+			}
 		}
 		if lineLen > len(text) {
 			lineLen = len(text)
