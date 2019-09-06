@@ -18,6 +18,9 @@ import (
 // from quoted-printable to base64 encoding.
 const b64Percent = 20
 
+// lineWrapLength is the length at which we wrap base64 and plain text content
+const lineWrapLength = 76
+
 type transferEncoding byte
 
 const (
@@ -159,17 +162,10 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 		text := make([]byte, enc.EncodedLen(len(p.Content)))
 		base64.StdEncoding.Encode(text, p.Content)
 		// Wrap lines.
-		lineLen := 76
-		for len(text) > 0 {
-			if lineLen > len(text) {
-				lineLen = len(text)
-			}
-			if _, err = b.Write(text[:lineLen]); err != nil {
-				return err
-			}
-			b.Write(crnl)
-			text = text[lineLen:]
+		if err := wrapContent(text, b); err != nil {
+			return err
 		}
+		//b.Write(crnl)
 	case teQuoted:
 		qp := quotedprintable.NewWriter(b)
 		if _, err = qp.Write(p.Content); err != nil {
@@ -177,7 +173,14 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 		}
 		err = qp.Close()
 	default:
-		_, err = b.Write(p.Content)
+		if p.ContentType == ctTextPlain {
+			// Wrap lines.
+			if err := wrapContent(p.Content, b); err != nil {
+				return err
+			}
+		} else {
+			_, err = b.Write(p.Content)
+		}
 	}
 	return err
 }
@@ -212,4 +215,29 @@ func setParamValue(p map[string]string, k, v string) {
 	if v != "" {
 		p[k] = v
 	}
+}
+
+func wrapContent(text []byte, b *bufio.Writer) error {
+	lineLen := lineWrapLength
+	//if len(text) < lineLen {
+	//	if _, err := b.Write(text); err != nil {
+	//		return err
+	//	}
+	//	return nil
+	//}
+	beginning := true
+	for len(text) > 0 {
+		if !beginning {
+			b.Write(crnl)
+		}
+		if lineLen > len(text) {
+			lineLen = len(text)
+		}
+		if _, err := b.Write(text[:lineLen]); err != nil {
+			return err
+		}
+		text = text[lineLen:]
+		beginning = false
+	}
+	return nil
 }
