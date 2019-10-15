@@ -295,7 +295,7 @@ func fixMangledMediaType(mtype, sep string) string {
 			}
 
 			// RFC-2047 encoded attribute name
-			p = rfc2047AttributeName(p)
+			p = rfc2047decode(p)
 
 			pair := strings.SplitAfter(p, "=")
 			if strings.Contains(mtype, pair[0]) {
@@ -605,56 +605,4 @@ func fixUnescapedQuotes(hvalue string) string {
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
-}
-
-// rfc2047AttributeName checks if the attribute name is encoded in RFC2047 format
-// RFC2047 Example:
-//     `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
-func rfc2047AttributeName(name string) string {
-	if !strings.Contains(name, "?=") {
-		return name
-	}
-	// copy the string so we can return the original if we encounter any issues
-	s := name
-
-	// handle n-number of RFC2047 chunk occurrences
-	count := strings.Count(name, "?=")
-	result := &strings.Builder{}
-	var beginning, ending int
-	for i := 0; i < count; i++ {
-		beginning = strings.Index(s, "=?")
-		ending = strings.Index(s, "?=")
-
-		if beginning == -1 || ending == -1 {
-			// the RFC2047 chunk is either malformed or is not an RFC2047 chunk
-			return name
-		}
-
-		_, err := result.WriteString(s[:beginning])
-		if err != nil {
-			return name
-		}
-		_, err = result.WriteString(decodeHeader(s[beginning : ending+2]))
-		if err != nil {
-			return name
-		}
-
-		s = s[ending+2:]
-	}
-	_, err := result.WriteString(s)
-	if err != nil {
-		return name
-	}
-	keyValuePair := strings.SplitAfter(result.String(), "=")
-	if len(keyValuePair) < 2 {
-		return result.String()
-	}
-	// Add quotes as needed
-	if !strings.HasPrefix(keyValuePair[1], "\"") {
-		keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
-	}
-	if !strings.HasSuffix(keyValuePair[1], "\"") {
-		keyValuePair[1] = fmt.Sprintf("%s\"", keyValuePair[1])
-	}
-	return strings.Join(keyValuePair, "")
 }
