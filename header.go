@@ -127,6 +127,15 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 				// New Header line, end the previous
 				buf.Write([]byte{'\r', '\n'})
 			}
+
+			// Behavior change in net/textproto package in Golang 1.12.10 and 1.13.1:
+			// A space preceding the first colon in a header line is no longer handled
+			// automatically due to CVE-2019-16276 which takes advantage of this
+			// particular violation of RFC-7230 to exploit HTTP/1.1
+			if bytes.Contains(s[:firstColon+1], []byte{' ', ':'}) {
+				s = bytes.Replace(s, []byte{' ', ':'}, []byte{':'}, 1)
+			}
+
 			s = textproto.TrimBytes(s)
 			buf.Write(s)
 			firstHeader = false
