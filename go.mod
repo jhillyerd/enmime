@@ -12,3 +12,5 @@ require (
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 	golang.org/x/text v0.3.2
 )
+
+go 1.13

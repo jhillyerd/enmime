@@ -3,6 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"mime"
 	"net/textproto"
@@ -86,12 +87,28 @@ func rfc2047decode(s string) string {
 		return r
 	}, s)
 	var err error
+	decoded := false
 	for {
 		s, err = rfc2047recurse(s)
 		switch err {
 		case nil:
+			decoded = true
 			continue
 		default:
+			if decoded {
+				keyValuePair := strings.SplitAfter(s, "=")
+				if len(keyValuePair) < 2 {
+					return s
+				}
+				// Add quotes as needed
+				if !strings.HasPrefix(keyValuePair[1], "\"") {
+					keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
+				}
+				if !strings.HasSuffix(keyValuePair[1], "\"") {
+					keyValuePair[1] = fmt.Sprintf("%s\"", keyValuePair[1])
+				}
+				return strings.Join(keyValuePair, "")
+			}
 			return s
 		}
 	}
