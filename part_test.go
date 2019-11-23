@@ -36,6 +36,30 @@ func TestPlainTextPart(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
+func TestAddChildInfiniteLoops(t *testing.T) {
+	// Part adds itself
+	parentPart := &enmime.Part{
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "0",
+	}
+	parentPart.AddChild(parentPart)
+
+	// Part adds its own FirstChild
+	childPart := &enmime.Part{
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "1",
+	}
+	parentPart.FirstChild = childPart
+	parentPart.AddChild(childPart)
+
+	parentPart.FirstChild = nil
+	// Part adds a child that is its own NextSibling
+	childPart.NextSibling = childPart
+	parentPart.AddChild(childPart)
+}
+
 func TestQuotedPrintablePart(t *testing.T) {
 	var want, got string
 	var wantp *enmime.Part
