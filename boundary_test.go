@@ -425,7 +425,7 @@ func TestBoundaryReaderBufferBoundaryCross(t *testing.T) {
 
 func TestBoundaryReaderReadErrors(t *testing.T) {
 	// Destination byte slice is shorter than buffer length
-	dest := make([]byte, 1, 1)
+	dest := make([]byte, 1)
 	br := &boundaryReader{
 		buffer: bytes.NewBuffer([]byte{'1', '2', '3'}),
 	}
@@ -439,7 +439,7 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 
 	// Using bufio.Reader with a 0 length buffer will cause
 	// Peek method to return a non io.EOF error.
-	dest = make([]byte, 10, 10)
+	dest = make([]byte, 10)
 	br.r = &bufio.Reader{}
 	n, err = br.Read(dest)
 	if n != 0 {
