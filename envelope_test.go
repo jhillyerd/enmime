@@ -1106,3 +1106,42 @@ func TestCloneEnvelope(t *testing.T) {
 	clone := e.Clone()
 	test.CompareEnvelope(t, clone, e)
 }
+
+func TestNilHeaderValues(t *testing.T) {
+	e := &enmime.Envelope{}
+	values := e.GetHeaderValues("")
+	if len(values) > 0 {
+		t.Fatal("No header values should be available, failed")
+	}
+}
+
+func TestSetHeaderEmptyName(t *testing.T) {
+	e := &enmime.Envelope{}
+	err := e.SetHeader("", nil)
+	if err == nil || err.Error() != "Provide non-empty header name" {
+		t.Fatal("Cannot set a header without a name, failed")
+	}
+}
+
+func TestAddHeaderEmptyName(t *testing.T) {
+	e := &enmime.Envelope{}
+	err := e.AddHeader("", "")
+	if err == nil || err.Error() != "Provide non-empty header name" {
+		t.Fatal("Cannot add a header without a name, failed")
+	}
+}
+
+func TestDeleteHeaderEmptyName(t *testing.T) {
+	e := &enmime.Envelope{}
+	err := e.DeleteHeader("")
+	if err == nil || err.Error() != "Provide non-empty header name" {
+		t.Fatal("Cannot add a header without a name, failed")
+	}
+}
+
+func TestNilEnvelopeClone(t *testing.T) {
+	var e *enmime.Envelope
+	if e.Clone() != nil {
+		t.Fatal("Clone of nil envelope is not nil, failed")
+	}
+}

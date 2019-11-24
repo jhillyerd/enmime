@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -10,28 +11,48 @@ import (
 	"github.com/jhillyerd/enmime/cmd"
 )
 
+type dumper struct {
+	errOut, stdOut io.Writer
+	exit           exitFunc
+}
+type exitFunc func(int)
+
+func newDefaultDumper() *dumper {
+	return &dumper{
+		errOut: os.Stderr,
+		stdOut: os.Stdout,
+		exit:   os.Exit,
+	}
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Missing filename argument")
-		os.Exit(1)
+	d := newDefaultDumper()
+	d.exit(d.dump(os.Args))
+}
+
+func (d *dumper) dump(args []string) int {
+	if len(args) < 2 {
+		fmt.Fprintln(d.errOut, "Missing filename argument")
+		return 1
 	}
 
-	reader, err := os.Open(os.Args[1])
+	reader, err := os.Open(args[1])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to open file:", err)
-		os.Exit(1)
+		fmt.Fprintln(d.errOut, "Failed to open file:", err)
+		return 1
 	}
 
 	// basename is used as the markdown title
-	basename := filepath.Base(os.Args[1])
+	basename := filepath.Base(args[1])
 	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "During enmime.ReadEnvelope:", err)
-		os.Exit(1)
+		fmt.Fprintln(d.errOut, "During enmime.ReadEnvelope:", err)
+		return 1
 	}
 
-	if err = cmd.EnvelopeToMarkdown(os.Stdout, e, basename); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if err = cmd.EnvelopeToMarkdown(d.stdOut, e, basename); err != nil {
+		fmt.Fprintln(d.errOut, err)
+		return 1
 	}
+	return 0
 }

@@ -36,6 +36,30 @@ func TestPlainTextPart(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
+func TestAddChildInfiniteLoops(t *testing.T) {
+	// Part adds itself
+	parentPart := &enmime.Part{
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "0",
+	}
+	parentPart.AddChild(parentPart)
+
+	// Part adds its own FirstChild
+	childPart := &enmime.Part{
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "1",
+	}
+	parentPart.FirstChild = childPart
+	parentPart.AddChild(childPart)
+
+	parentPart.FirstChild = nil
+	// Part adds a child that is its own NextSibling
+	childPart.NextSibling = childPart
+	parentPart.AddChild(childPart)
+}
+
 func TestQuotedPrintablePart(t *testing.T) {
 	var want, got string
 	var wantp *enmime.Part
@@ -328,7 +352,7 @@ func TestMultiMixedParts(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -341,7 +365,7 @@ func TestMultiMixedParts(t *testing.T) {
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "2",
 	}
 	test.ComparePart(t, p, wantp)
@@ -379,7 +403,7 @@ func TestMultiOtherParts(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -392,7 +416,7 @@ func TestMultiOtherParts(t *testing.T) {
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "2",
 	}
 	test.ComparePart(t, p, wantp)
@@ -523,7 +547,7 @@ func TestPartSimilarBoundary(t *testing.T) {
 		Parent:      test.PartExists,
 		NextSibling: test.PartExists,
 		ContentType: "text/plain",
-		Charset:     "ISO-8859-1",
+		Charset:     "us-ascii",
 		PartID:      "1",
 	}
 	test.ComparePart(t, p, wantp)
@@ -868,7 +892,6 @@ func TestNoClosingBoundary(t *testing.T) {
 		Charset:     "UTF-8",
 	}
 	test.ComparePart(t, p.FirstChild, wantp)
-	t.Log(string(p.FirstChild.Content))
 
 	expected := "Missing Boundary"
 	hasCorrectError := false
@@ -969,5 +992,90 @@ func TestChardetFailure(t *testing.T) {
 		}
 		test.ComparePart(t, p, wantp)
 		test.ContentEqualsString(t, p.Content, expectedContent)
+	})
+
+	t.Run("not enough characters part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-fail-not-long-enough.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(p.Errors) > 0 {
+			t.Errorf("Errors encountered while processing part: %v", p.Errors)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			Charset:     "UTF-8",
+		}
+		test.ComparePart(t, p, wantp)
+		test.ContentEqualsString(t, p.Content, "和弟弟\r\n")
+	})
+}
+
+func TestChardetSuccess(t *testing.T) {
+	// Testdata in these tests licensed under CC0: Public Domain
+	t.Run("big-5 data in us-ascii part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-success-big-5.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedErr := enmime.Error{
+			Name:   "Character Set Declaration Mismatch",
+			Detail: "declared charset \"us-ascii\", detected \"Big5\", confidence 100",
+			Severe: false,
+		}
+		foundExpectedErr := false
+		if len(p.Errors) > 0 {
+			for _, v := range p.Errors {
+				if *v == expectedErr {
+					foundExpectedErr = true
+				} else {
+					t.Errorf("Error encountered while processing part: %v", v)
+				}
+			}
+		}
+		if !foundExpectedErr {
+			t.Errorf("Expected to find %v warning", expectedErr)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			Charset:     "Big5",
+		}
+		test.ComparePart(t, p, wantp)
+	})
+
+	t.Run("iso-8859-1 data in us-ascii part", func(t *testing.T) {
+		r := test.OpenTestData("parts", "chardet-success-iso-8859-1.raw")
+		p, err := enmime.ReadParts(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedErr := enmime.Error{
+			Name:   "Character Set Declaration Mismatch",
+			Detail: "declared charset \"us-ascii\", detected \"ISO-8859-1\", confidence 90",
+			Severe: false,
+		}
+		foundExpectedErr := false
+		if len(p.Errors) > 0 {
+			for _, v := range p.Errors {
+				if *v == expectedErr {
+					foundExpectedErr = true
+				} else {
+					t.Errorf("Error encountered while processing part: %v", v)
+				}
+			}
+		}
+		if !foundExpectedErr {
+			t.Errorf("Expected to find %v warning", expectedErr)
+		}
+		wantp := &enmime.Part{
+			PartID:      "0",
+			ContentType: "text/plain",
+			Charset:     "ISO-8859-1",
+		}
+		test.ComparePart(t, p, wantp)
 	})
 }

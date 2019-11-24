@@ -4,6 +4,24 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.7.0] - 2019-11-24
+
+### Added
+- Public DecodeHeaders function for getting header data without processing the
+  body parts (thanks requaos.)
+- Test coverage over 90% (thanks requaos!)
+
+### Changed
+- Update dependencies
+
+### Fixed
+- Do not attempt to detect character set for short messages (#131, thanks
+  requaos.)
+- Possible slice out of bounds error (#134, thanks requaos.)
+- Tests on Go 1.13 no longer fail due to textproto change (#137, thanks to
+  requaos.)
+
+
 ## [0.6.0] - 2019-08-10
 
 ### Added
@@ -96,6 +114,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.6.0]:      https://github.com/jhillyerd/enmime/compare/v0.6.0...v0.7.0
 [0.6.0]:      https://github.com/jhillyerd/enmime/compare/v0.5.0...v0.6.0
 [0.5.0]:      https://github.com/jhillyerd/enmime/compare/v0.4.0...v0.5.0
 [0.4.0]:      https://github.com/jhillyerd/enmime/compare/v0.3.0...v0.4.0

@@ -3,9 +3,11 @@ package enmime_test
 import (
 	"bytes"
 	"net/mail"
+	"net/smtp"
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -922,4 +924,30 @@ func TestBuilderQPHeaders(t *testing.T) {
 	}
 
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "build-qp-addr-headers.golden")
+}
+
+func TestSend(t *testing.T) {
+	// Satisfy all block of the Send method and use
+	// an intentionally malformed From Address to
+	// elicit an expected error from smtp.SendMail,
+	// which can be type-checked and verified.
+	text := "test text body"
+	html := "test html body"
+	a := enmime.Builder().
+		Text([]byte(text)).
+		HTML([]byte(html)).
+		From("name", "foo\rbar").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		CCAddrs(addrSlice).
+		BCCAddrs(addrSlice)
+	// Dummy SMTP Authentication
+	auth := smtp.PlainAuth("", "user@example.com", "password", "mail.example.com")
+	err := a.Send("0.0.0.0", auth)
+	if err == nil {
+		t.Fatal("Send() did not return expected error, failed")
+	}
+	if !strings.Contains(err.Error(), "smtp: A line must not contain CR or LF") {
+		t.Fatalf("Send() did not return expected error, failed: %s", err.Error())
+	}
 }

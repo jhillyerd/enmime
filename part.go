@@ -18,7 +18,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const minCharsetConfidence = 85
+const (
+	minCharsetConfidence = 85
+	minCharsetRuneLength = 100
+)
 
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
@@ -192,8 +195,8 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 	// Restore r.
 	r = bytes.NewReader(buf)
 
-	if cs == nil || cs.Confidence < minCharsetConfidence {
-		// Low confidence, use declared character set.
+	if cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < minCharsetRuneLength {
+		// Low confidence or not enough characters, use declared character set.
 		return p.convertFromStatedCharset(r), nil
 	}
 

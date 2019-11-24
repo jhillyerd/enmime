@@ -31,6 +31,18 @@ func TestEncodePartHeaderOnly(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-header-only.golden")
 }
 
+func TestEncodePartHeaderOnlyDefaultTransferEncoding(t *testing.T) {
+	p := enmime.NewPart("text/plain")
+	p.Header.Add("X-Empty-Header", "")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-header-only-default-encoding.golden")
+}
+
 func TestEncodePartDefaultHeaders(t *testing.T) {
 	p := enmime.NewPart("application/zip")
 	p.Boundary = "enmime-abcdefg0123456789"
@@ -67,6 +79,25 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-headers.golden")
 }
 
+func TestEncodePartQuotedPrintableHeaders(t *testing.T) {
+	p := enmime.NewPart("application/zip")
+	p.Boundary = "enmime-abcdefg0123456789"
+	p.Charset = "binary"
+	p.ContentID = "mycontentid"
+	p.Disposition = "attachment"
+	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
+	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
+	p.Header.Add("X-QP-Header", "Just enough to need qp ☆")
+	p.Content = []byte("ZIPZIPZIP")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-printable-headers.golden")
+}
+
 func TestEncodePartBinaryHeader(t *testing.T) {
 	p := enmime.NewPart("text/plain")
 	p.Header.Set("Subject", "¡Hola, señor!")
@@ -97,6 +128,18 @@ func TestEncodePartContentOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-content-only.golden")
+}
+
+func TestEncodePartContentOnlyQP(t *testing.T) {
+	p := &enmime.Part{}
+	p.Content = []byte("☆ No header, only content.")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-content-only-qp.golden")
 }
 
 func TestEncodePartPlain(t *testing.T) {
