@@ -25,8 +25,9 @@ func TestErrorStringConversion(t *testing.T) {
 		Severe: true,
 	}
 
+	// Using deprecated String() method here for test coverage
 	want = "[E] ErrorName: Error Details"
-	got = e.Error()
+	got = e.String()
 	if got != want {
 		t.Error("got:", got, "want:", want)
 	}

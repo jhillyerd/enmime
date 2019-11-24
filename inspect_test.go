@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/mail"
+	"net/textproto"
 	"strings"
 	"testing"
 
@@ -25,6 +26,36 @@ func TestDecodeHeaders(t *testing.T) {
 		}
 		if !strings.Contains(h.Get("To"), "Mirosław Marczak") {
 			t.Errorf("Error decoding RFC2047 header value")
+		}
+	})
+
+	t.Run("no break between headers and content", func(t *testing.T) {
+		r := test.OpenTestData("mail", "qp-utf8-header-no-break.raw")
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			t.Errorf("%+v", err)
+		}
+		h, err := enmime.DecodeHeaders(b)
+		if err != nil {
+			t.Errorf("%+v", err)
+		}
+		if !strings.Contains(h.Get("To"), "Mirosław Marczak") {
+			t.Errorf("Error decoding RFC2047 header value")
+		}
+	})
+
+	t.Run("textproto header read error", func(t *testing.T) {
+		r := test.OpenTestData("low-quality", "bad-header-start.raw")
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			t.Errorf("%+v", err)
+		}
+		_, err = enmime.DecodeHeaders(b)
+		switch err.(type) {
+		case textproto.ProtocolError:
+			// carry on
+		default:
+			t.Fatalf("Did return expected error: %T:%+v", err, err)
 		}
 	})
 

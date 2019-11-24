@@ -8,33 +8,25 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+var latinSpecialMap = map[rune]rune{
+	'Đ': 'D',
+	'đ': 'd',
+	'Ħ': 'H',
+	'ħ': 'h',
+	'ĸ': 'K',
+	'Ŀ': 'L',
+	'Ł': 'L',
+	'ŉ': 'n',
+	'Ŋ': 'N',
+	'ŋ': 'n',
+	'Ŧ': 'T',
+	'ŧ': 't',
+}
+
 // mapLatinSpecial attempts to map non-accented latin extended runes to ASCII
 func mapLatinSpecial(r rune) rune {
-	switch r {
-	case 'Đ':
-		return 'D'
-	case 'đ':
-		return 'd'
-	case 'Ħ':
-		return 'H'
-	case 'ħ':
-		return 'h'
-	case 'ĸ':
-		return 'K'
-	case 'Ŀ':
-		return 'L'
-	case 'Ł':
-		return 'L'
-	case 'ŉ':
-		return 'n'
-	case 'Ŋ':
-		return 'N'
-	case 'ŋ':
-		return 'n'
-	case 'Ŧ':
-		return 'T'
-	case 'ŧ':
-		return 't'
+	if v, ok := latinSpecialMap[r]; ok {
+		return v
 	}
 	if r > 0x7e {
 		return '_'

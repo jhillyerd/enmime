@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestBoundaryReader(t *testing.T) {
@@ -418,5 +420,40 @@ func TestBoundaryReaderBufferBoundaryCross(t *testing.T) {
 	got := string(output)
 	if got != want {
 		t.Errorf("ReadAll() got: %q, want: %q", got, want)
+	}
+}
+
+func TestBoundaryReaderReadErrors(t *testing.T) {
+	// Destination byte slice is shorter than buffer length
+	dest := make([]byte, 1)
+	br := &boundaryReader{
+		buffer: bytes.NewBuffer([]byte{'1', '2', '3'}),
+	}
+	n, err := br.Read(dest)
+	if n != 1 {
+		t.Fatal("Read() did not read bytes equal to len(dest), failed")
+	}
+	if err != nil {
+		t.Fatal("Read() should not have returned an error, failed")
+	}
+
+	// Using bufio.Reader with a 0 length buffer will cause
+	// Peek method to return a non io.EOF error.
+	dest = make([]byte, 10)
+	br.r = &bufio.Reader{}
+	n, err = br.Read(dest)
+	if n != 0 {
+		t.Fatal("Read() should not have read any bytes, failed")
+	}
+	if errors.Cause(err) != bufio.ErrBufferFull {
+		t.Fatal("Read() should have returned bufio.ErrBufferFull error, failed")
+	}
+	// Next method to return a non io.EOF error.
+	next, err := br.Next()
+	if next {
+		t.Fatal("Next() should have returned false, failed")
+	}
+	if errors.Cause(err) != bufio.ErrBufferFull {
+		t.Fatal("Read() should have returned bufio.ErrBufferFull error, failed")
 	}
 }
