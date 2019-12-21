@@ -215,6 +215,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  ctPlaceholder + "; name=\"file.two\"",
 		},
 		{
+			input: "charset=binary; name=\"logoleft.jpg\"",
+			sep:   ";",
+			want:  "application/octet-stream; charset=binary; name=\"logoleft.jpg\"",
+		},
+		{
 			input: "one/two;iso-8859-1",
 			sep:   ";",
 			want:  "one/two;iso-8859-1=" + pvPlaceholder,

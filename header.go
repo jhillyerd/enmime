@@ -277,6 +277,11 @@ func fixMangledMediaType(mtype, sep string) string {
 	}
 	parts := strings.Split(mtype, sep)
 	mtype = ""
+	if strings.Contains(parts[0], "=") {
+		// A parameter pair at this position indicates we are missing a content-type.
+		parts[0] = fmt.Sprintf("%s%s %s", ctAppOctetStream, sep, parts[0])
+		parts = strings.Split(strings.Join(parts, sep), sep)
+	}
 	for i, p := range parts {
 		switch i {
 		case 0:
