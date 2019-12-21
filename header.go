@@ -383,6 +383,13 @@ findValueStart:
 
 			break findValueStart
 
+		case ';':
+			if value.Len() == 0 {
+				value.WriteString(`"";`)
+			}
+
+			break findValueStart
+
 		default:
 			valueQuotedOriginally = false
 			valueQuoteAdded = false

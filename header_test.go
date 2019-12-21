@@ -332,6 +332,10 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  `text/html;charset=""`,
 		},
 		{
+			input: `text/html; charset=; format=flowed`,
+			want:  `text/html; charset=""; format=flowed`,
+		},
+		{
 			input: `text/html;charset="`,
 			want:  `text/html;charset=""`,
 		},
