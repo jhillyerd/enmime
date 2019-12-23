@@ -200,11 +200,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 			p.Charset, cs.Charset, cs.Confidence)
 	}
 
-	reader, err := coding.NewCharsetReader(cs.Charset, r)
-	if err != nil {
-		// Failed to get a conversion reader.
-		p.addWarning(ErrorCharsetConversion, err.Error())
-	} else {
+	if reader, err := coding.NewCharsetReader(cs.Charset, r); err == nil {
 		r = reader
 		p.OrigCharset = p.Charset
 		p.Charset = cs.Charset
