@@ -181,10 +181,8 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 	switch err {
 	case nil:
 		// Carry on
-	case chardet.NotDetectedError:
-		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	default:
-		return nil, errors.WithStack(err)
+		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	}
 
 	// Restore r.
