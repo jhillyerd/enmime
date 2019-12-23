@@ -120,11 +120,6 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	if err != nil {
 		return err
 	}
-	if mtype == "" && len(mparams) > 0 {
-		p.addWarning(
-			ErrorMissingContentType,
-			"Content-Type header has parameters but no content type")
-	}
 	for i := range minvalidParams {
 		p.addWarning(
 			ErrorMalformedHeader,
