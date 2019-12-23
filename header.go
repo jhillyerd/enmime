@@ -383,6 +383,13 @@ findValueStart:
 
 			break findValueStart
 
+		case ';':
+			if value.Len() == 0 {
+				value.WriteString(`"";`)
+			}
+
+			break findValueStart
+
 		default:
 			valueQuotedOriginally = false
 			valueQuoteAdded = false
@@ -400,8 +407,6 @@ findValueStart:
 	} else {
 		// The beginning of the value is not at the end of the string
 
-		s = s[i+1:]
-
 		quoteIfUnquoted := func() {
 			if !valueQuoteNeeded {
 				if !valueQuoteAdded {
@@ -413,6 +418,14 @@ findValueStart:
 				valueQuoteNeeded = true
 			}
 		}
+
+		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='} {
+			if s[0] == v {
+				quoteIfUnquoted()
+			}
+		}
+
+		s = s[i+1:]
 
 	findValueEnd:
 		for len(s) > 0 {

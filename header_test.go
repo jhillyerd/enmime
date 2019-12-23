@@ -324,12 +324,20 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=\"value/1\"",
 		},
 		{
+			input: "multipart/alternative; boundary=?UOAwFjScLp1is-162467503201177404728935166502-",
+			want:  "multipart/alternative; boundary=\"?UOAwFjScLp1is-162467503201177404728935166502-\"",
+		},
+		{
 			input: `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com`,
 			want:  `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com"`,
 		},
 		{
 			input: `text/html;charset=`,
 			want:  `text/html;charset=""`,
+		},
+		{
+			input: `text/html; charset=; format=flowed`,
+			want:  `text/html; charset=""; format=flowed`,
 		},
 		{
 			input: `text/html;charset="`,
