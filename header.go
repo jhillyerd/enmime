@@ -3,9 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	stderrors "errors"
 	"fmt"
-	"io"
 	"mime"
 	"net/textproto"
 	"strings"
@@ -62,8 +60,6 @@ const (
 	utf8 = "utf-8"
 )
 
-var errEmptyHeaderBlock = stderrors.New("empty header block")
-
 // AddressHeaders is the set of SMTP headers that contain email addresses, used by
 // Envelope.AddressList().  Key characters must be all lowercase.
 var AddressHeaders = map[string]bool{
@@ -99,14 +95,8 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		// Pull out each line of the headers as a temporary slice s
 		s, err := tp.ReadLineBytes()
 		if err != nil {
-			cause := errors.Cause(err)
-			if cause == io.ErrUnexpectedEOF && buf.Len() == 0 {
-				return nil, errors.WithStack(errEmptyHeaderBlock)
-			} else if cause == io.EOF {
-				buf.Write([]byte{'\r', '\n'})
-				break
-			}
-			return nil, err
+			buf.Write([]byte{'\r', '\n'})
+			break
 		}
 		firstColon := bytes.IndexByte(s, ':')
 		firstSpace := bytes.IndexAny(s, " \t\n\r")

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/quotedprintable"
@@ -394,15 +393,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Look for part header.
 		bbr := bufio.NewReader(br)
 		err = p.setupHeaders(bbr, "")
-		if errors.Cause(err) == errEmptyHeaderBlock {
-			// Empty header probably means the part didn't use the correct trailing "--" syntax to
-			// close its boundary.
-			if _, err = br.Next(); err != nil {
-				// The error is already wrapped with a stack, so only adding a message here.
-				// TODO: Once `errors` releases a version > v0.8.0, change to use errors.WithMessagef()
-				return errors.WithMessage(err, fmt.Sprintf("error at boundary %v", parent.Boundary))
-			}
-		} else if err != nil {
+		if err != nil {
 			return err
 		}
 		// Insert this Part into the MIME tree.
