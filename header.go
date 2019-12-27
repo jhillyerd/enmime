@@ -234,15 +234,7 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 			// it is quoted and that any existing quotes are escaped.
 			mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
 			if err != nil {
-				// Some badly formed media types forget to send ; between fields.
-				mctype := fixMangledMediaType(ctype, " ")
-				if strings.Contains(mctype, `name=""`) {
-					mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-				}
-				mtype, params, err = mime.ParseMediaType(mctype)
-				if err != nil {
-					return "", nil, nil, errors.WithStack(err)
-				}
+				return "", nil, nil, errors.WithStack(err)
 			}
 		}
 	}
