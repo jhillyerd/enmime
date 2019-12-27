@@ -115,7 +115,8 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	// These statements are handy for debugging ParseAddressList errors
 	// fmt.Println("in:  ", m.header.Get(key))
 	// fmt.Println("out: ", str)
-	if ret, err := mail.ParseAddressList(str); err != nil {
+	ret, err := mail.ParseAddressList(str)
+	if err != nil {
 		switch err.Error() {
 		case "mail: expected comma":
 			return mail.ParseAddressList(ensureCommaDelimitedAddresses(str))
@@ -123,9 +124,8 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 			return nil, mail.ErrHeaderNotPresent
 		}
 		return nil, err
-	} else {
-		return ret, nil
 	}
+	return ret, nil
 }
 
 // Clone returns a clone of the current Envelope
