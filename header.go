@@ -221,22 +221,12 @@ func quotedDisplayName(s string) string {
 //   * Repeating media parameters
 //   * Unquoted values in media parameters containing 'tspecials' characters
 func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
-	mtype, params, err = mime.ParseMediaType(ctype)
+	mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ";"))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
 		}
-		// Small hack to remove harmless charset duplicate params.
-		mctype := fixMangledMediaType(ctype, ";")
-		mtype, params, err = mime.ParseMediaType(mctype)
-		if err != nil {
-			// If the media parameter has special characters, ensure that
-			// it is quoted and that any existing quotes are escaped.
-			mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
-			if err != nil {
-				return "", nil, nil, errors.WithStack(err)
-			}
-		}
+		return "", nil, nil, errors.WithStack(err)
 	}
 	if mtype == ctPlaceholder {
 		mtype = ""
