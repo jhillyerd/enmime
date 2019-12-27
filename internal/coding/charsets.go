@@ -270,9 +270,6 @@ func init() {
 // ConvertToUTF8String uses the provided charset to decode a slice of bytes into a normal
 // UTF-8 string.
 func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
-	if strings.ToLower(charset) == utf8 {
-		return string(textBytes), nil
-	}
 	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
 		return "", fmt.Errorf("Unsupported charset %q", charset)
