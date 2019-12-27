@@ -544,10 +544,13 @@ func fixUnescapedQuotes(hvalue string) string {
 		// Check if only one quote was found in the string.
 		if closingQuote == startingQuote {
 			// Append the next chunk of params here in case of a semicolon mid string.
-			param = fmt.Sprintf("%s%s", param, params[i+1])
+			if len(params) > i+1 {
+				param = fmt.Sprintf("%s%s", param, params[i+1])
+			}
 			closingQuote = strings.LastIndexByte(param, '"')
 			i++
 			if closingQuote == startingQuote {
+				sb.WriteString("=\"\"")
 				return sb.String()
 			}
 		}

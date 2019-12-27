@@ -180,6 +180,16 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "text/html;charset=",
 		},
 		{
+			input: "text/;charset=",
+			sep:   ";",
+			want:  "text/plain;charset=",
+		},
+		{
+			input: "multipart/;charset=",
+			sep:   ";",
+			want:  "multipart/mixed;charset=",
+		},
+		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
 			sep:   ";",
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
@@ -198,6 +208,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			input: "one/two; name=\"file.two\"; name=\"file.two\"",
 			sep:   ";",
 			want:  "one/two; name=\"file.two\"",
+		},
+		{
+			input: "one/; name=\"file.two\"; name=\"file.two\"",
+			sep:   ";",
+			want:  "application/octet-stream; name=\"file.two\"",
 		},
 		{
 			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
@@ -366,6 +381,14 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 		{
 			input: "application/rtf; charset=iso-8859-1; name=\"\"V047411.rtf\".rtf\"",
 			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"",
+			want:  "application/octet-stream; param1=\"\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"\\\"\"",
+			want:  "application/octet-stream; param1=\"\\\"\"",
 		},
 		{
 			input: "application/rtf; charset=iso-8859-1; name=b\"V047411.rtf\".rtf",
