@@ -121,7 +121,7 @@ func rfc2047recurse(s string) (string, error) {
 		return s, io.EOF
 	}
 
-	val := s
+	var val string
 	if val = decodeHeader(s); val == s {
 		if val = decodeHeader(fixRFC2047String(val)); val == s {
 			return val, io.EOF
