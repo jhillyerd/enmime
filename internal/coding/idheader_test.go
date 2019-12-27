@@ -12,6 +12,7 @@ func TestFromIDHeader(t *testing.T) {
 	}{
 		{"", ""},
 		{"<>", ""},
+		{"<%🤯>", "%🤯"},
 		{"<foo@inbucket.org>", "foo@inbucket.org"},
 		{"<foo%25bar>", "foo%bar"},
 		{"foo+bar", "foo bar"},
