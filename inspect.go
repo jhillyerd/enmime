@@ -5,11 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"mime"
 	"net/textproto"
 	"strings"
 
-	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/pkg/errors"
 )
 
@@ -123,32 +121,14 @@ func rfc2047recurse(s string) (string, error) {
 		return s, io.EOF
 	}
 
-	val, err := decodeHeaderWithError(s)
-	if err != nil {
-		return val, err
-	}
-	if val == s {
-		val, err = decodeHeaderWithError(fixRFC2047String(val))
-		if err != nil {
-			return val, err
-		}
-		if val == s {
+	val := s
+	if val = decodeHeader(s); val == s {
+		if val = decodeHeader(fixRFC2047String(val)); val == s {
 			return val, io.EOF
 		}
 	}
 
 	return val, nil
-}
-
-// decodeHeaderWithError decodes a single line (per RFC 2047) using Golang's mime.WordDecoder
-func decodeHeaderWithError(input string) (string, error) {
-	dec := new(mime.WordDecoder)
-	dec.CharsetReader = coding.NewCharsetReader
-	header, err := dec.DecodeHeader(input)
-	if err != nil {
-		return input, err
-	}
-	return header, nil
 }
 
 // fixRFC2047String removes the following characters from charset and encoding segments of an RFC2047 string:
