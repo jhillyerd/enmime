@@ -60,6 +60,7 @@ func TestFindCharsetInHTML(t *testing.T) {
 		{`<meta charset=big5 other=value>`, "big5"},
 		{`<meta charset=us-ascii>`, "us-ascii"},
 		{`<meta charset=windows-1250/>`, "windows-1250"},
+		{`<meta>`, ""},
 	}
 
 	for _, tt := range ttable {

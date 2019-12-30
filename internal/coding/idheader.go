@@ -13,11 +13,10 @@ func FromIDHeader(v string) string {
 	}
 	v = strings.TrimLeft(v, "<")
 	v = strings.TrimRight(v, ">")
-	r, err := url.QueryUnescape(v)
-	if err != nil {
-		return v
+	if r, err := url.QueryUnescape(v); err == nil {
+		v = r
 	}
-	return r
+	return v
 }
 
 // ToIDHeader encodes a Content-ID or Message-ID header value (RFC 2392) from a utf-8 string.

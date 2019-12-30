@@ -738,13 +738,18 @@ func TestEnvelopeAddressList(t *testing.T) {
 	e := &enmime.Envelope{}
 	_, err := e.AddressList("To")
 	if err == nil {
-		t.Error("AddressList(\"Subject\") should have returned err, got nil")
+		t.Error("AddressList(\"To\") should have returned err, got nil")
 	}
 
 	r := test.OpenTestData("mail", "qp-utf8-header.raw")
 	e, err = enmime.ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	_, err = e.AddressList("BCC")
+	if err == nil {
+		t.Error("AddressList(\"BCC\") should have returned err, got nil")
 	}
 
 	_, err = e.AddressList("Subject")

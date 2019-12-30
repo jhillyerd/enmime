@@ -111,23 +111,18 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	}
 
 	str := decodeToUTF8Base64Header(e.header.Get(key))
-	if str == "" {
-		return nil, mail.ErrHeaderNotPresent
-	}
 
 	// These statements are handy for debugging ParseAddressList errors
 	// fmt.Println("in:  ", m.header.Get(key))
 	// fmt.Println("out: ", str)
 	ret, err := mail.ParseAddressList(str)
-	switch {
-	case err == nil:
-		// carry on
-	case err.Error() == "mail: expected comma":
-		ret, err = mail.ParseAddressList(ensureCommaDelimitedAddresses(str))
-		if err != nil {
-			return nil, err
+	if err != nil {
+		switch err.Error() {
+		case "mail: expected comma":
+			return mail.ParseAddressList(ensureCommaDelimitedAddresses(str))
+		case "mail: no address":
+			return nil, mail.ErrHeaderNotPresent
 		}
-	default:
 		return nil, err
 	}
 	return ret, nil
@@ -203,13 +198,9 @@ func EnvelopeFromPart(root *Part) (*Envelope, error) {
 			"Message did not contain a text/plain part")
 		var err error
 		if e.Text, err = html2text.FromString(e.HTML); err != nil {
-			// Downcoversion shouldn't fail
-			e.Text = ""
+			e.Text = "" // Down-conversion shouldn't fail
 			p := e.Root.BreadthMatchFirst(matchHTMLBodyPart)
-			p.addError(
-				ErrorPlainTextFromHTML,
-				"Failed to downconvert HTML: %v",
-				err)
+			p.addError(ErrorPlainTextFromHTML, "Failed to downconvert HTML: %v", err)
 		}
 	}
 

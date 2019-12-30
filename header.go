@@ -3,9 +3,7 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	stderrors "errors"
 	"fmt"
-	"io"
 	"mime"
 	"net/textproto"
 	"strings"
@@ -62,8 +60,6 @@ const (
 	utf8 = "utf-8"
 )
 
-var errEmptyHeaderBlock = stderrors.New("empty header block")
-
 // AddressHeaders is the set of SMTP headers that contain email addresses, used by
 // Envelope.AddressList().  Key characters must be all lowercase.
 var AddressHeaders = map[string]bool{
@@ -99,14 +95,8 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		// Pull out each line of the headers as a temporary slice s
 		s, err := tp.ReadLineBytes()
 		if err != nil {
-			cause := errors.Cause(err)
-			if cause == io.ErrUnexpectedEOF && buf.Len() == 0 {
-				return nil, errors.WithStack(errEmptyHeaderBlock)
-			} else if cause == io.EOF {
-				buf.Write([]byte{'\r', '\n'})
-				break
-			}
-			return nil, err
+			buf.Write([]byte{'\r', '\n'})
+			break
 		}
 		firstColon := bytes.IndexByte(s, ':')
 		firstSpace := bytes.IndexAny(s, " \t\n\r")
@@ -231,30 +221,12 @@ func quotedDisplayName(s string) string {
 //   * Repeating media parameters
 //   * Unquoted values in media parameters containing 'tspecials' characters
 func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
-	mtype, params, err = mime.ParseMediaType(ctype)
+	mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ";"))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
 		}
-		// Small hack to remove harmless charset duplicate params.
-		mctype := fixMangledMediaType(ctype, ";")
-		mtype, params, err = mime.ParseMediaType(mctype)
-		if err != nil {
-			// If the media parameter has special characters, ensure that
-			// it is quoted and that any existing quotes are escaped.
-			mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(mctype)))
-			if err != nil {
-				// Some badly formed media types forget to send ; between fields.
-				mctype := fixMangledMediaType(ctype, " ")
-				if strings.Contains(mctype, `name=""`) {
-					mctype = strings.Replace(mctype, `name=""`, `name=" "`, -1)
-				}
-				mtype, params, err = mime.ParseMediaType(mctype)
-				if err != nil {
-					return "", nil, nil, errors.WithStack(err)
-				}
-			}
-		}
+		return "", nil, nil, errors.WithStack(err)
 	}
 	if mtype == ctPlaceholder {
 		mtype = ""
@@ -572,10 +544,13 @@ func fixUnescapedQuotes(hvalue string) string {
 		// Check if only one quote was found in the string.
 		if closingQuote == startingQuote {
 			// Append the next chunk of params here in case of a semicolon mid string.
-			param = fmt.Sprintf("%s%s", param, params[i+1])
+			if len(params) > i+1 {
+				param = fmt.Sprintf("%s%s", param, params[i+1])
+			}
 			closingQuote = strings.LastIndexByte(param, '"')
 			i++
 			if closingQuote == startingQuote {
+				sb.WriteString("=\"\"")
 				return sb.String()
 			}
 		}
