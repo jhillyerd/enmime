@@ -1,8 +1,8 @@
 # enmime
-[![GoDoc](https://godoc.org/github.com/jhillyerd/enmime?status.png)][GoDoc]
-[![Build Status](https://travis-ci.org/jhillyerd/enmime.png?branch=master)][Build Status]
+[![GoDoc](https://godoc.org/github.com/jhillyerd/enmime?status.svg)][GoDoc]
+[![Build Status](https://travis-ci.org/jhillyerd/enmime.svg?branch=master)][Build Status]
 [![Go Report Card](https://goreportcard.com/badge/github.com/jhillyerd/enmime)][Go Report Card]
-[![Coverage Status](https://coveralls.io/repos/github/jhillyerd/enmime/badge.svg)][Coverage Status]
+[![Coverage Status](https://coveralls.io/repos/github/jhillyerd/enmime/badge.svg?branch=master)][Coverage Status]
 
 enmime is a MIME encoding and decoding library for Go, focused on generating and
 parsing MIME encoded emails.  It is being developed in tandem with the
