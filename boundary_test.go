@@ -457,3 +457,47 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 		t.Fatal("Read() should have returned bufio.ErrBufferFull error, failed")
 	}
 }
+
+// TestReadLenNotCap checks that the `boundaryReader` `io.Reader` implementation fills the provided
+// slice based on its length (as per the `io.Reader` documentation), and not its capacity.
+func TestReadLenNotCap(t *testing.T) {
+	t.Parallel()
+
+	input := "--STOP\nabcdefghijklm\n--STOP\nnopqrstuvwxyz\n--STOP--\n"
+	boundary := "STOP"
+	parts := []string{"abcdefghijklm", "nopqrstuvwxyz"}
+
+	ir := bufio.NewReader(strings.NewReader(input))
+	br := newBoundaryReader(ir, boundary)
+
+	for i, want := range parts {
+		next, err := br.Next()
+		if err != nil {
+			t.Fatalf("Error %q on part %v, input %q", err, i, input)
+		}
+		if !next {
+			t.Fatal("Next() = false, want: true")
+		}
+
+		var out []byte
+		b := make([]byte, 6, 20) // Ensure the capacity is greater than the length.
+		max := len(b)
+		var c int
+		for err == nil {
+			c, err = br.Read(b)
+			if c > max {
+				t.Errorf("Per the docuemtation for io.Reader, should not have read more than %d bytes, but read %d", max, c)
+			}
+
+			out = append(out, b[0:c]...)
+		}
+
+		if err != io.EOF {
+			t.Errorf("Expected %v, but got: %+v", io.EOF, err)
+		}
+
+		if want != string(out) {
+			t.Errorf("Expected part to be read as %q, but got %q", want, out)
+		}
+	}
+}
