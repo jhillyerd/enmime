@@ -186,6 +186,21 @@ func TestBoundaryReaderParts(t *testing.T) {
 			boundary: "STOP",
 			parts:    []string{"part1", "part2"},
 		},
+		{
+			input:    "--STOP\npart1\n--STOP\n--STOP--\n",
+			boundary: "STOP",
+			parts:    []string{"part1", ""},
+		},
+		{
+			input:    "--STOP\n--STOP\npart2\n--STOP--\n",
+			boundary: "STOP",
+			parts:    []string{"", "part2"},
+		},
+		{
+			input:    "--STOP\n--STOP\n--STOP--\n",
+			boundary: "STOP",
+			parts:    []string{"", ""},
+		},
 	}
 
 	for _, tt := range ttable {
