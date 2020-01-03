@@ -442,7 +442,8 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	// Destination byte slice is shorter than buffer length
 	dest := make([]byte, 1)
 	br := &boundaryReader{
-		buffer: bytes.NewBuffer([]byte{'1', '2', '3'}),
+		buffer:      bytes.NewBuffer([]byte{'1', '2', '3'}),
+		atPartStart: true,
 	}
 	n, err := br.Read(dest)
 	if n != 1 {
@@ -450,6 +451,9 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	}
 	if err != nil {
 		t.Fatal("Read() should not have returned an error, failed")
+	}
+	if br.atPartStart {
+		t.Fatal("Read() of non-zero length should have unset atStartPart boolean")
 	}
 
 	// Using bufio.Reader with a 0 length buffer will cause
