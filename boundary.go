@@ -75,7 +75,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		return b.buffer.Read(dest)
 	}
 
-	for i := 0; i < cap(dest); i++ {
+	for i := 0; i < len(dest); i++ {
 		cs, err := b.r.Peek(1)
 		if err != nil && err != io.EOF {
 			return 0, errors.WithStack(err)
