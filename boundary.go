@@ -21,6 +21,7 @@ var errNoBoundaryTerminator = stderrors.New("expected boundary not present")
 type boundaryReader struct {
 	finished         bool          // No parts remain when finished
 	partsRead        int           // Number of parts read thus far
+	atPartStart      bool          // Whether the current part is at its beginning
 	r                *bufio.Reader // Source reader
 	nlPrefix         []byte        // NL + MIME boundary prefix
 	prefix           []byte        // MIME boundary prefix
@@ -72,7 +73,12 @@ func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
 func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	if b.buffer.Len() >= len(dest) {
 		// This read request can be satisfied entirely by the buffer.
-		return b.buffer.Read(dest)
+		n, err = b.buffer.Read(dest)
+		if b.atPartStart && n > 0 {
+			b.atPartStart = false
+		}
+
+		return n, err
 	}
 
 	for i := 0; i < len(dest); i++ {
@@ -93,6 +99,14 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			// Check for line feed as potential LF boundary prefix.
 			case '\n':
 				check = true
+
+			default:
+				if b.atPartStart {
+					// If we're at the very beginning of the part (even before the headers),
+					// check to see if there's a delimiter that immediately follows.
+					padding = 0
+					check = true
+				}
 			}
 
 			if check {
@@ -113,6 +127,9 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 						n, err = b.buffer.Read(dest)
 						switch err {
 						case nil, io.EOF:
+							if b.atPartStart && n > 0 {
+								b.atPartStart = false
+							}
 							return n, io.EOF
 						default:
 							return 0, errors.WithStack(err)
@@ -141,6 +158,9 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 
 	// Read the contents of the buffer into the destination slice.
 	n, err = b.buffer.Read(dest)
+	if b.atPartStart && n > 0 {
+		b.atPartStart = false
+	}
 	return n, err
 }
 
@@ -169,6 +189,7 @@ func (b *boundaryReader) Next() (bool, error) {
 		if err != io.EOF && b.isDelimiter(line) {
 			// Start of a new part.
 			b.partsRead++
+			b.atPartStart = true
 			return true, nil
 		}
 		if err == io.EOF {
