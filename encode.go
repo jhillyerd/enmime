@@ -100,6 +100,9 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	if p.ContentType != "" {
 		// Build content type header.
 		param := make(map[string]string)
+		for k, v := range p.ContentTypeParams {
+			param[k] = v
+		}
 		setParamValue(param, hpCharset, p.Charset)
 		setParamValue(param, hpName, stringutil.ToASCII(p.FileName))
 		setParamValue(param, hpBoundary, p.Boundary)
