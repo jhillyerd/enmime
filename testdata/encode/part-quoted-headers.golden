@@ -3,6 +3,7 @@ Content-Disposition: attachment; filename="arvizturo \"x\"
 Content-Id: <mycontentid>
 Content-Transfer-Encoding: base64
 Content-Type: application/zip; boundary=enmime-abcdefg0123456789;
- charset=binary; name="arvizturo \"x\" tukorfurogep.zip"
+ charset=binary; name="arvizturo \"x\" tukorfurogep.zip";
+ param1=myparameter1; param2=myparameter2
 
 WklQWklQWklQ

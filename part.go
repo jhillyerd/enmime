@@ -31,14 +31,15 @@ type Part struct {
 	NextSibling *Part                // NextSibling of this part.
 	Header      textproto.MIMEHeader // Header for this Part.
 
-	Boundary    string    // Boundary marker used within this part.
-	ContentID   string    // ContentID header for cid URL scheme.
-	ContentType string    // ContentType header without parameters.
-	Disposition string    // Content-Disposition header without parameters.
-	FileName    string    // The file-name from disposition or type header.
-	FileModDate time.Time // The modification date of the file.
-	Charset     string    // The content charset encoding, may differ from charset in header.
-	OrigCharset string    // The original content charset when a different charset was detected.
+	Boundary          string            // Boundary marker used within this part.
+	ContentID         string            // ContentID header for cid URL scheme.
+	ContentType       string            // ContentType header without parameters.
+	ContentTypeParams map[string]string // Params, added to ContentType header.
+	Disposition       string            // Content-Disposition header without parameters.
+	FileName          string            // The file-name from disposition or type header.
+	FileModDate       time.Time         // The modification date of the file.
+	Charset           string            // The content charset encoding, may differ from charset in header.
+	OrigCharset       string            // The original content charset when a different charset was detected.
 
 	Errors   []*Error // Errors encountered while parsing this part.
 	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
@@ -48,8 +49,9 @@ type Part struct {
 // NewPart creates a new Part object.
 func NewPart(contentType string) *Part {
 	return &Part{
-		Header:      make(textproto.MIMEHeader),
-		ContentType: contentType,
+		Header:            make(textproto.MIMEHeader),
+		ContentType:       contentType,
+		ContentTypeParams: make(map[string]string),
 	}
 }
 
