@@ -48,6 +48,8 @@ func TestEncodePartDefaultHeaders(t *testing.T) {
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
 	p.ContentID = "mycontentid"
+	p.ContentTypeParams["param1"] = "myparameter1"
+	p.ContentTypeParams["param2"] = "myparameter2"
 	p.Disposition = "attachment"
 	p.FileName = "stuff.zip"
 	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
@@ -66,6 +68,8 @@ func TestEncodePartQuotedHeaders(t *testing.T) {
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
 	p.ContentID = "mycontentid"
+	p.ContentTypeParams["param1"] = "myparameter1"
+	p.ContentTypeParams["param2"] = "myparameter2"
 	p.Disposition = "attachment"
 	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
 	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
@@ -84,6 +88,8 @@ func TestEncodePartQuotedPrintableHeaders(t *testing.T) {
 	p.Boundary = "enmime-abcdefg0123456789"
 	p.Charset = "binary"
 	p.ContentID = "mycontentid"
+	p.ContentTypeParams["param1"] = "myparameter1"
+	p.ContentTypeParams["param2"] = "myparameter2"
 	p.Disposition = "attachment"
 	p.FileName = `árvíztűrő "x" tükörfúrógép.zip`
 	p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
