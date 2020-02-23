@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/quotedprintable"
@@ -32,14 +31,15 @@ type Part struct {
 	NextSibling *Part                // NextSibling of this part.
 	Header      textproto.MIMEHeader // Header for this Part.
 
-	Boundary    string    // Boundary marker used within this part.
-	ContentID   string    // ContentID header for cid URL scheme.
-	ContentType string    // ContentType header without parameters.
-	Disposition string    // Content-Disposition header without parameters.
-	FileName    string    // The file-name from disposition or type header.
-	FileModDate time.Time // The modification date of the file.
-	Charset     string    // The content charset encoding, may differ from charset in header.
-	OrigCharset string    // The original content charset when a different charset was detected.
+	Boundary          string            // Boundary marker used within this part.
+	ContentID         string            // ContentID header for cid URL scheme.
+	ContentType       string            // ContentType header without parameters.
+	ContentTypeParams map[string]string // Params, added to ContentType header.
+	Disposition       string            // Content-Disposition header without parameters.
+	FileName          string            // The file-name from disposition or type header.
+	FileModDate       time.Time         // The modification date of the file.
+	Charset           string            // The content charset encoding, may differ from charset in header.
+	OrigCharset       string            // The original content charset when a different charset was detected.
 
 	Errors   []*Error // Errors encountered while parsing this part.
 	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
@@ -49,8 +49,9 @@ type Part struct {
 // NewPart creates a new Part object.
 func NewPart(contentType string) *Part {
 	return &Part{
-		Header:      make(textproto.MIMEHeader),
-		ContentType: contentType,
+		Header:            make(textproto.MIMEHeader),
+		ContentType:       contentType,
+		ContentTypeParams: make(map[string]string),
 	}
 }
 
@@ -120,11 +121,6 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	if err != nil {
 		return err
 	}
-	if mtype == "" && len(mparams) > 0 {
-		p.addWarning(
-			ErrorMissingContentType,
-			"Content-Type header has parameters but no content type")
-	}
 	for i := range minvalidParams {
 		p.addWarning(
 			ErrorMalformedHeader,
@@ -186,10 +182,8 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 	switch err {
 	case nil:
 		// Carry on
-	case chardet.NotDetectedError:
-		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	default:
-		return nil, errors.WithStack(err)
+		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	}
 
 	// Restore r.
@@ -207,11 +201,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 			p.Charset, cs.Charset, cs.Confidence)
 	}
 
-	reader, err := coding.NewCharsetReader(cs.Charset, r)
-	if err != nil {
-		// Failed to get a conversion reader.
-		p.addWarning(ErrorCharsetConversion, err.Error())
-	} else {
+	if reader, err := coding.NewCharsetReader(cs.Charset, r); err == nil {
 		r = reader
 		p.OrigCharset = p.Charset
 		p.Charset = cs.Charset
@@ -405,15 +395,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Look for part header.
 		bbr := bufio.NewReader(br)
 		err = p.setupHeaders(bbr, "")
-		if errors.Cause(err) == errEmptyHeaderBlock {
-			// Empty header probably means the part didn't use the correct trailing "--" syntax to
-			// close its boundary.
-			if _, err = br.Next(); err != nil {
-				// The error is already wrapped with a stack, so only adding a message here.
-				// TODO: Once `errors` releases a version > v0.8.0, change to use errors.WithMessagef()
-				return errors.WithMessage(err, fmt.Sprintf("error at boundary %v", parent.Boundary))
-			}
-		} else if err != nil {
+		if err != nil {
 			return err
 		}
 		// Insert this Part into the MIME tree.

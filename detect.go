@@ -10,12 +10,10 @@ func detectMultipartMessage(root *Part) bool {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
 	mediatype, _, _, err := ParseMediaType(ctype)
-	if err != nil {
-		return false
-	}
+
 	// According to rfc2046#section-5.1.7 all other multipart should
 	// be treated as multipart/mixed
-	return strings.HasPrefix(mediatype, ctMultipartPrefix)
+	return err == nil && strings.HasPrefix(mediatype, ctMultipartPrefix)
 }
 
 // detectAttachmentHeader returns true, if the given header defines an attachment. First it checks
@@ -48,13 +46,11 @@ func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) 
 		return true
 	}
 
-	mediatype, _, _, err := ParseMediaType(ctype)
-	if err != nil {
-		return false
-	}
-	switch mediatype {
-	case ctTextPlain, ctTextHTML:
-		return true
+	if mediatype, _, _, err := ParseMediaType(ctype); err == nil {
+		switch mediatype {
+		case ctTextPlain, ctTextHTML:
+			return true
+		}
 	}
 
 	return false

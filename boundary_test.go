@@ -186,6 +186,21 @@ func TestBoundaryReaderParts(t *testing.T) {
 			boundary: "STOP",
 			parts:    []string{"part1", "part2"},
 		},
+		{
+			input:    "--STOP\npart1\n--STOP\n--STOP--\n",
+			boundary: "STOP",
+			parts:    []string{"part1", ""},
+		},
+		{
+			input:    "--STOP\n--STOP\npart2\n--STOP--\n",
+			boundary: "STOP",
+			parts:    []string{"", "part2"},
+		},
+		{
+			input:    "--STOP\n--STOP\n--STOP--\n",
+			boundary: "STOP",
+			parts:    []string{"", ""},
+		},
 	}
 
 	for _, tt := range ttable {
@@ -427,7 +442,8 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	// Destination byte slice is shorter than buffer length
 	dest := make([]byte, 1)
 	br := &boundaryReader{
-		buffer: bytes.NewBuffer([]byte{'1', '2', '3'}),
+		buffer:      bytes.NewBuffer([]byte{'1', '2', '3'}),
+		atPartStart: true,
 	}
 	n, err := br.Read(dest)
 	if n != 1 {
@@ -435,6 +451,9 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	}
 	if err != nil {
 		t.Fatal("Read() should not have returned an error, failed")
+	}
+	if br.atPartStart {
+		t.Fatal("Read() of non-zero length should have unset atStartPart boolean")
 	}
 
 	// Using bufio.Reader with a 0 length buffer will cause
@@ -455,5 +474,49 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	}
 	if errors.Cause(err) != bufio.ErrBufferFull {
 		t.Fatal("Read() should have returned bufio.ErrBufferFull error, failed")
+	}
+}
+
+// TestReadLenNotCap checks that the `boundaryReader` `io.Reader` implementation fills the provided
+// slice based on its length (as per the `io.Reader` documentation), and not its capacity.
+func TestReadLenNotCap(t *testing.T) {
+	t.Parallel()
+
+	input := "--STOP\nabcdefghijklm\n--STOP\nnopqrstuvwxyz\n--STOP--\n"
+	boundary := "STOP"
+	parts := []string{"abcdefghijklm", "nopqrstuvwxyz"}
+
+	ir := bufio.NewReader(strings.NewReader(input))
+	br := newBoundaryReader(ir, boundary)
+
+	for i, want := range parts {
+		next, err := br.Next()
+		if err != nil {
+			t.Fatalf("Error %q on part %v, input %q", err, i, input)
+		}
+		if !next {
+			t.Fatal("Next() = false, want: true")
+		}
+
+		var out []byte
+		b := make([]byte, 6, 20) // Ensure the capacity is greater than the length.
+		max := len(b)
+		var c int
+		for err == nil {
+			c, err = br.Read(b)
+			if c > max {
+				t.Errorf("Per the docuemtation for io.Reader, should not have read more than %d bytes, but read %d", max, c)
+			}
+
+			out = append(out, b[0:c]...)
+		}
+
+		if err != io.EOF {
+			t.Errorf("Expected %v, but got: %+v", io.EOF, err)
+		}
+
+		if want != string(out) {
+			t.Errorf("Expected part to be read as %q, but got %q", want, out)
+		}
 	}
 }

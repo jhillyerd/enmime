@@ -180,6 +180,16 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "text/html;charset=",
 		},
 		{
+			input: "text/;charset=",
+			sep:   ";",
+			want:  "text/plain;charset=",
+		},
+		{
+			input: "multipart/;charset=",
+			sep:   ";",
+			want:  "multipart/mixed;charset=",
+		},
+		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
 			sep:   ";",
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
@@ -200,6 +210,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "one/two; name=\"file.two\"",
 		},
 		{
+			input: "one/; name=\"file.two\"; name=\"file.two\"",
+			sep:   ";",
+			want:  "application/octet-stream; name=\"file.two\"",
+		},
+		{
 			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
 			sep:   " ",
 			want:  "application/octet-stream;name=\"ð.msg\"",
@@ -213,6 +228,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			input: "; name=\"file.two\"",
 			sep:   ";",
 			want:  ctPlaceholder + "; name=\"file.two\"",
+		},
+		{
+			input: "charset=binary; name=\"logoleft.jpg\"",
+			sep:   ";",
+			want:  "application/octet-stream; charset=binary; name=\"logoleft.jpg\"",
 		},
 		{
 			input: "one/two;iso-8859-1",
@@ -324,12 +344,20 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=\"value/1\"",
 		},
 		{
+			input: "multipart/alternative; boundary=?UOAwFjScLp1is-162467503201177404728935166502-",
+			want:  "multipart/alternative; boundary=\"?UOAwFjScLp1is-162467503201177404728935166502-\"",
+		},
+		{
 			input: `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com`,
 			want:  `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com"`,
 		},
 		{
 			input: `text/html;charset=`,
 			want:  `text/html;charset=""`,
+		},
+		{
+			input: `text/html; charset=; format=flowed`,
+			want:  `text/html; charset=""; format=flowed`,
 		},
 		{
 			input: `text/html;charset="`,
@@ -353,6 +381,14 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 		{
 			input: "application/rtf; charset=iso-8859-1; name=\"\"V047411.rtf\".rtf\"",
 			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"",
+			want:  "application/octet-stream; param1=\"\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"\\\"\"",
+			want:  "application/octet-stream; param1=\"\\\"\"",
 		},
 		{
 			input: "application/rtf; charset=iso-8859-1; name=b\"V047411.rtf\".rtf",

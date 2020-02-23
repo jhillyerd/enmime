@@ -100,15 +100,16 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	if p.ContentType != "" {
 		// Build content type header.
 		param := make(map[string]string)
+		for k, v := range p.ContentTypeParams {
+			param[k] = v
+		}
 		setParamValue(param, hpCharset, p.Charset)
 		setParamValue(param, hpName, stringutil.ToASCII(p.FileName))
 		setParamValue(param, hpBoundary, p.Boundary)
-		mt := mime.FormatMediaType(p.ContentType, param)
-		if mt == "" {
-			// There was an error, FormatMediaType couldn't encode the params.
-			mt = p.ContentType
+		if mt := mime.FormatMediaType(p.ContentType, param); mt != "" {
+			p.ContentType = mt
 		}
-		p.Header.Set(hnContentType, mt)
+		p.Header.Set(hnContentType, p.ContentType)
 	}
 	if p.Disposition != "" {
 		// Build disposition header.
@@ -117,12 +118,10 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		if !p.FileModDate.IsZero() {
 			setParamValue(param, hpModDate, p.FileModDate.Format(time.RFC822))
 		}
-		mt := mime.FormatMediaType(p.Disposition, param)
-		if mt == "" {
-			// There was an error, FormatMediaType couldn't encode the params.
-			mt = p.Disposition
+		if mt := mime.FormatMediaType(p.Disposition, param); mt != "" {
+			p.Disposition = mt
 		}
-		p.Header.Set(hnContentDisposition, mt)
+		p.Header.Set(hnContentDisposition, p.Disposition)
 	}
 	return cte
 }

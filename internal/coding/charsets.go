@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/cention-sany/utf7"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -28,6 +29,8 @@ var encodings = map[string]struct {
 	"unicode-1-1-utf-8":   {encoding.Nop, utf8},
 	"utf-8":               {encoding.Nop, utf8},
 	"utf8":                {encoding.Nop, utf8},
+	"utf-7":               {utf7.UTF7, "utf-7"},
+	"utf7":                {utf7.UTF7, "utf-7"},
 	"866":                 {charmap.CodePage866, "ibm866"},
 	"cp866":               {charmap.CodePage866, "ibm866"},
 	"csibm866":            {charmap.CodePage866, "ibm866"},
@@ -270,9 +273,6 @@ func init() {
 // ConvertToUTF8String uses the provided charset to decode a slice of bytes into a normal
 // UTF-8 string.
 func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
-	if strings.ToLower(charset) == utf8 {
-		return string(textBytes), nil
-	}
 	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
 		return "", fmt.Errorf("Unsupported charset %q", charset)

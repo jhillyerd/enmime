@@ -68,10 +68,7 @@ func validHexByte(b byte) bool {
 }
 
 func validHexBytes(v []byte) bool {
-	if len(v) < 1 {
-		return false
-	}
-	if v[0] == '\n' {
+	if len(v) > 0 && v[0] == '\n' {
 		// Soft line break.
 		return true
 	}
