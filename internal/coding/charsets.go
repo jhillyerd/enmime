@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/cention-sany/utf7"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -28,6 +29,8 @@ var encodings = map[string]struct {
 	"unicode-1-1-utf-8":   {encoding.Nop, utf8},
 	"utf-8":               {encoding.Nop, utf8},
 	"utf8":                {encoding.Nop, utf8},
+	"utf-7":               {utf7.UTF7, "utf-7"},
+	"utf7":                {utf7.UTF7, "utf-7"},
 	"866":                 {charmap.CodePage866, "ibm866"},
 	"cp866":               {charmap.CodePage866, "ibm866"},
 	"csibm866":            {charmap.CodePage866, "ibm866"},

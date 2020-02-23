@@ -31,6 +31,7 @@ func TestCharsetReader(t *testing.T) {
 		{"utf-8", []byte("abcABC\u2014"), "abcABC\u2014"},
 		{"windows-1250", []byte{'a', 'Z', 0x96}, "aZ\u2013"},
 		{"big5", []byte{0xa1, 0x5d, 0xa1, 0x61, 0xa1, 0x71}, "\uff08\uff5b\u3008"},
+		{"utf-7", []byte("Hello, World+ACE- 1 +- 1 +AD0- 2"), "Hello, World! 1 + 1 = 2"},
 	}
 
 	for _, tt := range testTable {

@@ -1,6 +1,7 @@
 module github.com/jhillyerd/enmime
 
 require (
+	github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a
 	github.com/go-test/deep v1.0.2
 	github.com/gogs/chardet v0.0.0-20150115103509-2404f7772561
 	github.com/jaytaylor/html2text v0.0.0-20190408195923-01ec452cbe43

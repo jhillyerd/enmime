@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   present (#140, thanks requaos)
 - Add support for content-type params to part & encoding (#148, thanks
   pzeinlinger)
+- UTF-7 support (#17)
 
 ### Fixed
 - Handle missing parameter values in the middle of the media parameter list
