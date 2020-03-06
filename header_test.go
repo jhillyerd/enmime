@@ -511,6 +511,12 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
+			input:   "X-Not-Continuation: line1=foo;\n X-Next-Header: bar\n",
+			hname:   "X-Not-Continuation",
+			want:    "line1=foo;",
+			correct: true,
+		},
+		{
 			input: "Authentication-Results: mx.google.com;\n" +
 				"       spf=pass (google.com: sender)\n" +
 				"       dkim=pass header.i=@1;\n" +
