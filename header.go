@@ -287,6 +287,11 @@ func fixMangledMediaType(mtype, sep string) string {
 				}
 			}
 		default:
+			if len(p) == 0 {
+				// Ignore trailing separators.
+				continue
+			}
+
 			if !strings.Contains(p, "=") {
 				p = p + "=" + pvPlaceholder
 			}

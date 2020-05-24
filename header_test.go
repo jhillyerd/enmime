@@ -190,6 +190,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "multipart/mixed;charset=",
 		},
 		{
+			input: "text/plain;",
+			sep:   ";",
+			want:  "text/plain",
+		},
+		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
 			sep:   ";",
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
