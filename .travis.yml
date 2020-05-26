@@ -10,8 +10,8 @@ before_script:
   - go get golang.org/x/lint/golint
 
 after_success:
-  - if [[ "$TRAVIS_GO_VERSION" == 1.13.* ]]; then $HOME/gopath/bin/goveralls -service=travis-ci; fi
+  - if [[ "$TRAVIS_GO_VERSION" == 1.14.* ]]; then $HOME/gopath/bin/goveralls -service=travis-ci; fi
 
 go:
-  - "1.12.x"
   - "1.13.x"
+  - "1.14.x"
