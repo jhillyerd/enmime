@@ -4,6 +4,16 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.8.1] - 2020-05-25
+
+### Fixed
+- Handle incorrectly indented headers (#149, thanks requaos)
+- Handle trailing separator characters in header (#154, thanks joekamibeppu)
+
+### Changed
+- enmime no longer uses git-flow, and will now accept PRs against master
+
+
 ## [0.8.0] - 2020-02-23
 
 ### Added
@@ -19,6 +29,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Fix boundaryReader to respect length instead of capacity (#145, thanks
   dcormier)
 - Handle very empty mime parts (#144, thanks dcormier)
+
 
 ## [0.7.0] - 2019-11-24
 
@@ -130,6 +141,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.8.1]:      https://github.com/jhillyerd/enmime/compare/v0.8.0...v0.8.1
 [0.8.0]:      https://github.com/jhillyerd/enmime/compare/v0.7.0...v0.8.0
 [0.7.0]:      https://github.com/jhillyerd/enmime/compare/v0.6.0...v0.7.0
 [0.6.0]:      https://github.com/jhillyerd/enmime/compare/v0.5.0...v0.6.0

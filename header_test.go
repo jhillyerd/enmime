@@ -190,6 +190,11 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "multipart/mixed;charset=",
 		},
 		{
+			input: "text/plain;",
+			sep:   ";",
+			want:  "text/plain",
+		},
+		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
 			sep:   ";",
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
@@ -506,6 +511,12 @@ func TestReadHeader(t *testing.T) {
 		},
 		{
 			input:   "X-Not-Continuation: line1=foo;\nline2: bar\n",
+			hname:   "X-Not-Continuation",
+			want:    "line1=foo;",
+			correct: true,
+		},
+		{
+			input:   "X-Not-Continuation: line1=foo;\n X-Next-Header: bar\n",
 			hname:   "X-Not-Continuation",
 			want:    "line1=foo;",
 			correct: true,
