@@ -160,6 +160,20 @@ func TestParseMultiMixedText(t *testing.T) {
 	}
 }
 
+func TestParseMultiMixedRelatedHtml(t *testing.T) {
+	msg := test.OpenTestData("mail", "mime-mixed-related.raw")
+	e, err := enmime.ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "<p>html1</p>"
+	if e.HTML != want {
+		t.Error("Text parts should concatenate, got:", e.HTML, "want:", want)
+	}
+}
+
 func TestParseMultiSignedText(t *testing.T) {
 	msg := test.OpenTestData("mail", "mime-signed.raw")
 	e, err := enmime.ReadEnvelope(msg)
