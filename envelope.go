@@ -300,7 +300,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	}
 
 	// Locate HTML body
-	p := root.BreadthMatchFirst(matchHTMLBodyPart)
+	p := root.DepthMatchFirst(matchHTMLBodyPart)
 	if p != nil {
 		e.HTML += string(p.Content)
 	}
