@@ -300,7 +300,7 @@ func fixMangledMediaType(mtype, sep string) string {
 			p = rfc2047decode(p)
 
 			pair := strings.SplitAfter(p, "=")
-			if strings.Contains(mtype, pair[0]) {
+			if strings.Contains(mtype, strings.TrimSpace(pair[0])) {
 				// Ignore repeated parameters.
 				continue
 			}
