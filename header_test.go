@@ -407,6 +407,14 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf;\".rtf",
 			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf;\\\".rtf\"",
 		},
+		{
+			input: "application/rtf; charset=utf-8; name=\"žába.jpg\"",
+			want:  "application/rtf; charset=utf-8; name=\"žába.jpg\"",
+		},
+		{
+			input: "application/rtf; charset=utf-8; name=\"\"žába\".jpg\"",
+			want:  "application/rtf; charset=utf-8; name=\"\\\"žába\\\".jpg\"",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
