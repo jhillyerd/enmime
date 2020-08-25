@@ -583,7 +583,7 @@ func fixUnescapedQuotes(hvalue string) string {
 		}
 		param = param[startingQuote+1 : closingQuote]
 		escaped := false
-		for strIdx := range param {
+		for strIdx := range []byte(param) {
 			switch param[strIdx] {
 			case '"':
 				// We are inside of a quoted string, so lets escape this guy if it isn't already escaped.
