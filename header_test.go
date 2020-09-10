@@ -524,11 +524,9 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
-			// This test case was wrong, since the input is actually an unfolded header,
-			// not two separate ones
-			input:   "X-Continuation: line1=foo;\n X-Next-Header: bar\n",
+			input:   "X-Continuation: line1=foo;\n X-Same-Header: bar\n",
 			hname:   "X-Continuation",
-			want:    "line1=foo; X-Next-Header: bar",
+			want:    "line1=foo; X-Same-Header: bar",
 			correct: true,
 		},
 		{
