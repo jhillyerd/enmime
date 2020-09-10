@@ -101,21 +101,10 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		firstColon := bytes.IndexByte(s, ':')
 		firstSpace := bytes.IndexAny(s, " \t\n\r")
 		if firstSpace == 0 {
-			// If there is a single colon followed immediately by a space and there
-			// is no equal sign, or comes before any equal sign, then it should not
-			// be considered as a continuation.
-			colonSpaceIdx := bytes.Index(s, []byte{':', ' '})
-			equalIdx := bytes.IndexByte(s, '=')
-			if bytes.Count(s, []byte{':'}) == 1 && colonSpaceIdx != -1 &&
-				(equalIdx == -1 || equalIdx > colonSpaceIdx) {
-				s = textproto.TrimBytes(s)
-				firstColon = bytes.IndexByte(s, ':')
-			} else {
-				// Starts with space: continuation
-				buf.WriteByte(' ')
-				buf.Write(textproto.TrimBytes(s))
-				continue
-			}
+			// Starts with space: continuation
+			buf.WriteByte(' ')
+			buf.Write(textproto.TrimBytes(s))
+			continue
 		}
 		if firstColon == 0 {
 			// Can't parse line starting with colon: skip
