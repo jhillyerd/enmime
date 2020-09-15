@@ -524,9 +524,15 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
-			input:   "X-Continuation: line1=foo;\n X-Same-Header: bar\n",
+			input:   "X-Not-Continuation: line1=foo;\n X-Next-Header: bar\n",
+			hname:   "X-Not-Continuation",
+			want:    "line1=foo;",
+			correct: true,
+		},
+		{
+			input:   "X-Continuation: line1=foo;\n not-a-header 15 X-Not-Header: bar\n",
 			hname:   "X-Continuation",
-			want:    "line1=foo; X-Same-Header: bar",
+			want:    "line1=foo; not-a-header 15 X-Not-Header: bar",
 			correct: true,
 		},
 		{
