@@ -536,6 +536,12 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
+			input:   "X-Continuation-DKIM-like: line1=foo;\n h=Subject:From:Reply-To:To:Date:Message-ID: List-ID:List-Unsubscribe:\n Content-Type:MIME-Version;\n",
+			hname:   "X-Continuation-DKIM-like",
+			want:    "line1=foo; h=Subject:From:Reply-To:To:Date:Message-ID: List-ID:List-Unsubscribe: Content-Type:MIME-Version;",
+			correct: true,
+		},
+		{
 			input: "Authentication-Results: mx.google.com;\n" +
 				"       spf=pass (google.com: sender)\n" +
 				"       dkim=pass header.i=@1;\n" +

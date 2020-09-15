@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"mime"
 	"net/textproto"
-	"regexp"
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
@@ -92,11 +91,6 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 	buf := &bytes.Buffer{}
 	tp := textproto.NewReader(r)
 	firstHeader := true
-	headerDeclarationRegex, err := regexp.Compile("^[a-zA-Z0-9\\-]+\\: ")
-	if err != nil {
-		buf.Write([]byte{'\r', '\n'})
-		return nil, errors.WithStack(err)
-	}
 	for {
 		// Pull out each line of the headers as a temporary slice s
 		s, err := tp.ReadLineBytes()
@@ -107,13 +101,16 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 		firstColon := bytes.IndexByte(s, ':')
 		firstSpace := bytes.IndexAny(s, " \t\n\r")
 		if firstSpace == 0 {
-			// If the line begins with some space, followed by a header-like
-			// string (any combination of upper and lower case letters,
-			// numbers and dash sign), then it should not be considered
-			// as a continuation but as a new header.
+			// Do not consider as a continuation if the first whitespace
+			//  in the trimmed line comes right after a colon which,
+			//  in turn, follows at least one character.
 			sTrimmed := textproto.TrimBytes(s)
-			if firstSpace < firstColon && headerDeclarationRegex.Match(sTrimmed) {
-				firstColon = bytes.IndexByte(s, ':')
+			firstTrimmedColon := bytes.IndexByte(sTrimmed, ':')
+			firstTrimmedSpace := bytes.IndexAny(sTrimmed, " \t\n\r")
+			if firstTrimmedSpace > 0 && firstTrimmedColon > 0 &&
+				firstTrimmedSpace == firstTrimmedColon+1 {
+				s = sTrimmed
+				firstColon = firstTrimmedColon
 			} else {
 				// Starts with space: continuation
 				buf.WriteByte(' ')
