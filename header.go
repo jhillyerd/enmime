@@ -107,8 +107,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 			sTrimmed := textproto.TrimBytes(s)
 			firstTrimmedColon := bytes.IndexByte(sTrimmed, ':')
 			firstTrimmedSpace := bytes.IndexAny(sTrimmed, " \t\n\r")
-			if firstTrimmedSpace > 0 && firstTrimmedColon > 0 &&
-				firstTrimmedSpace == firstTrimmedColon+1 {
+			if firstTrimmedColon > 0 && firstTrimmedSpace == firstTrimmedColon+1 {
 				s = sTrimmed
 				firstColon = firstTrimmedColon
 			} else {
