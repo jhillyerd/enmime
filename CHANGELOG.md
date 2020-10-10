@@ -4,6 +4,17 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.8.2] - 2020-10-10
+
+### Fixed
+- Use DFS instead of BFS to locate HTML body to match behavior of popular
+  email clients (#157, thanks huaconghub)
+- Improvements to media type parsing
+- Improvements to unescaping quotes with higher codepoints (#165, thanks
+  pavelbazika)
+- Improvements to folded header parsing (#166, thanks pacellig)
+
+
 ## [0.8.1] - 2020-05-25
 
 ### Fixed
@@ -141,6 +152,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.8.2]:      https://github.com/jhillyerd/enmime/compare/v0.8.1...v0.8.2
 [0.8.1]:      https://github.com/jhillyerd/enmime/compare/v0.8.0...v0.8.1
 [0.8.0]:      https://github.com/jhillyerd/enmime/compare/v0.7.0...v0.8.0
 [0.7.0]:      https://github.com/jhillyerd/enmime/compare/v0.6.0...v0.7.0
