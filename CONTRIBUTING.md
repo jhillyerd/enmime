@@ -26,7 +26,7 @@ Create a topic branch based on our `master` branch.
 
 1. Make commits of logical units.
 2. Add unit tests to exercise your changes.
-3. Scrub personally identifying information from test case emails, and
+3. **Scrub personally identifying information** from test case emails, and
    keep attachments short.
 4. Ensure the code builds and tests with `make test`
 5. Run the updated code through `make lint`

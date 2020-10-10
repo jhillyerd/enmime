@@ -12,18 +12,16 @@ parsing MIME encoded emails.  It is being developed in tandem with the
 enmime includes a fluent interface builder for generating MIME encoded messages,
 see the wiki for example [Builder Usage].
 
-API documentation and examples can be found here:
-http://godoc.org/github.com/jhillyerd/enmime
+See our [Pkg Docs] for examples and API usage information.
 
 
 ## Development Status
 
-**Please base PRs off the `develop` branch**, enmime uses `master` for stable
-releases.  See [CONTRIBUTING.md] for more information.
+enmime is near production quality: it works but struggles to parse a small
+percentage of emails.  It's possible the API will evolve slightly before the 1.0
+release.
 
-enmime is approaching production quality: it works but has not been tested with
-a wide variety of source data.  It's possible the API will evolve slightly
-before an official release.
+See [CONTRIBUTING.md] for more information.
 
 
 ## About
@@ -33,10 +31,11 @@ enmime is written in [Go][Golang].
 enmime is open source software released under the MIT License.  The latest
 version can be found at https://github.com/jhillyerd/enmime
 
+
 [Build Status]:    https://travis-ci.org/jhillyerd/enmime
 [Builder Usage]:   https://github.com/jhillyerd/enmime/wiki/Builder-Usage 
 [Coverage Status]: https://coveralls.io/github/jhillyerd/enmime
-[CONTRIBUTING.md]: https://github.com/jhillyerd/enmime/blob/develop/CONTRIBUTING.md
+[CONTRIBUTING.md]: https://github.com/jhillyerd/enmime/blob/master/CONTRIBUTING.md
 [Inbucket]:        http://www.inbucket.org/
 [Golang]:          http://golang.org/
 [Go Report Card]:  https://goreportcard.com/report/github.com/jhillyerd/enmime
