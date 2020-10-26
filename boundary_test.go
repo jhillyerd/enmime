@@ -520,3 +520,20 @@ func TestReadLenNotCap(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkBoundaryReader(b *testing.B) {
+	const (
+		input    = "content\r\n--BOUNDARY\r\n"
+		boundary = "BOUNDARY"
+	)
+
+	var err error
+	for i := 0; i < b.N; i++ {
+		ir := bufio.NewReader(strings.NewReader(input))
+		br := newBoundaryReader(ir, boundary)
+		_, err = io.Copy(ioutil.Discard, br)
+		if err != nil {
+			b.Fatalf("Failed to read content: %+v", err)
+		}
+	}
+}
