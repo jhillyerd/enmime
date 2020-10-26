@@ -146,13 +146,19 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			}
 		}
 
-		_, err = io.CopyN(b.buffer, b.r, 1)
+		next, err := b.r.ReadByte()
 		if err != nil {
 			// EOF is not fatal, it just means that we have drained the reader.
-			if errors.Cause(err) == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			return 0, err
+
+			return 0, errors.WithStack(err)
+		}
+
+		err = b.buffer.WriteByte(next)
+		if err != nil {
+			return 0, errors.WithStack(err)
 		}
 	}
 
