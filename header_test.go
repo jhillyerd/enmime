@@ -582,6 +582,17 @@ func TestReadHeader(t *testing.T) {
 				" dkim=pass header.i=@2",
 			correct: true,
 		},
+		{
+			label: "continuation containing early name-colon",
+			input: "DKIM-Signature: a=rsa-sha256; v=1; q=dns/txt;\r\n" +
+				"  s=krs; t=1603674005; h=Content-Transfer-Encoding: Mime-Version:\r\n" +
+				"  Content-Type: Subject: From: To: Message-Id: Sender: Date;\r\n",
+			hname: "DKIM-Signature",
+			want: "a=rsa-sha256; v=1; q=dns/txt;" +
+				" s=krs; t=1603674005; h=Content-Transfer-Encoding: Mime-Version:" +
+				" Content-Type: Subject: From: To: Message-Id: Sender: Date;",
+			correct: true,
+		},
 	}
 
 	for _, tt := range ttable {
