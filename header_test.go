@@ -544,14 +544,6 @@ func TestReadHeader(t *testing.T) {
 			extras:  []string{"line2"},
 		},
 		{
-			label:   "correctable accidental continuation",
-			input:   "X-Not-Continuation: line1=foo;\n X-Next-Header: bar\n",
-			hname:   "X-Not-Continuation",
-			want:    "line1=foo;",
-			correct: true,
-			extras:  []string{"X-Next-Header"},
-		},
-		{
 			label:   "continuation with header style",
 			input:   "X-Continuation: line1=foo;\n not-a-header 15 X-Not-Header: bar\n",
 			hname:   "X-Continuation",
