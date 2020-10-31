@@ -544,14 +544,6 @@ func TestReadHeader(t *testing.T) {
 			extras:  []string{"line2"},
 		},
 		{
-			label:   "correctable accidental continuation",
-			input:   "X-Not-Continuation: line1=foo;\n X-Next-Header: bar\n",
-			hname:   "X-Not-Continuation",
-			want:    "line1=foo;",
-			correct: true,
-			extras:  []string{"X-Next-Header"},
-		},
-		{
 			label:   "continuation with header style",
 			input:   "X-Continuation: line1=foo;\n not-a-header 15 X-Not-Header: bar\n",
 			hname:   "X-Continuation",
@@ -580,6 +572,17 @@ func TestReadHeader(t *testing.T) {
 				" spf=pass (google.com: sender)" +
 				" dkim=pass header.i=@1;" +
 				" dkim=pass header.i=@2",
+			correct: true,
+		},
+		{
+			label: "continuation containing early name-colon",
+			input: "DKIM-Signature: a=rsa-sha256; v=1; q=dns/txt;\r\n" +
+				"  s=krs; t=1603674005; h=Content-Transfer-Encoding: Mime-Version:\r\n" +
+				"  Content-Type: Subject: From: To: Message-Id: Sender: Date;\r\n",
+			hname: "DKIM-Signature",
+			want: "a=rsa-sha256; v=1; q=dns/txt;" +
+				" s=krs; t=1603674005; h=Content-Transfer-Encoding: Mime-Version:" +
+				" Content-Type: Subject: From: To: Message-Id: Sender: Date;",
 			correct: true,
 		},
 	}
