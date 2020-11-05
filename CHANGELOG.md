@@ -4,6 +4,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.8.3] - 2020-11-05
+
+### Fixed
+- Reverted folded header parsing changes due to compatibility problems (#172)
+- Improved performance and memory consumption of boundary reader (#170, thanks
+  bttrfl and dcormier)
+
+
 ## [0.8.2] - 2020-10-10
 
 ### Fixed
@@ -152,6 +160,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/master...develop
+[0.8.3]:      https://github.com/jhillyerd/enmime/compare/v0.8.2...v0.8.3
 [0.8.2]:      https://github.com/jhillyerd/enmime/compare/v0.8.1...v0.8.2
 [0.8.1]:      https://github.com/jhillyerd/enmime/compare/v0.8.0...v0.8.1
 [0.8.0]:      https://github.com/jhillyerd/enmime/compare/v0.7.0...v0.8.0
@@ -166,13 +175,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Release Checklist
 
-1.  Create release branch: `git flow release start 1.x.0`
-2.  Update CHANGELOG.md:
-    - Ensure *Unreleased* section is up to date.
-    - Rename *Unreleased* section to release name and date.
-    - Add new GitHub `/compare` link.
-3.  Run tests
-4.  Commit changes and merge release: `git flow release finish`
+1.  Update CHANGELOG.md:
+    - Ensure *Unreleased* section is up to date
+    - Rename *Unreleased* section to release name and date
+    - Add new GitHub `/compare` link
+2.  Run tests
+3.  Tag release with `v` prefix
 
 See http://keep change log.com/ for additional instructions on how to update this
 file.
