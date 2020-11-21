@@ -1,6 +1,5 @@
 name: Pull Request Checks
 on:
-  push:
   pull_request:
 jobs:
   checks:
@@ -40,3 +39,12 @@ jobs:
         with:
           run: vet
           token: ${{ secrets.GITHUB_TOKEN }}
+  coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: shogo82148/actions-goveralls@v1
+
