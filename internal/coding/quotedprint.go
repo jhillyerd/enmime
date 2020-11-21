@@ -28,14 +28,16 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 	destLen := len(dest) - 3
 	// Loop over bytes in qp.in ByteReader.
 	for n < destLen {
-		b, err := qp.in.ReadByte()
+		var b byte
+		b, err = qp.in.ReadByte()
 		if err != nil {
 			return n, err
 		}
 		switch {
 		case b == '=':
 			// Pass valid hex bytes through.
-			hexBytes, err := qp.in.Peek(2)
+			var hexBytes []byte
+			hexBytes, err = qp.in.Peek(2)
 			if err != nil && err != io.EOF {
 				return 0, err
 			}
