@@ -150,7 +150,7 @@ func TestBoundaryReaderEOF(t *testing.T) {
 	if err != io.EOF {
 		t.Error("got:", err, "want: EOF")
 	}
-	if 0 != n {
+	if n != 0 {
 		t.Error("read ", n, "bytes, want: 0")
 	}
 }

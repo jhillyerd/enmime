@@ -197,7 +197,7 @@ func ExampleEnvelope_GetHeaderKeys() {
 
 	// A list of headers is retrieved via Envelope.GetHeaderKeys().
 	headers := env.GetHeaderKeys()
-	sort.Sort(sort.StringSlice(headers))
+	sort.Strings(headers)
 
 	// Print each header, key and value.
 	for _, header := range headers {

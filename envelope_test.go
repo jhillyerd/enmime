@@ -635,7 +635,7 @@ func TestEnvelopeGetHeaderKeys(t *testing.T) {
 
 	want := []string{"Date", "From", "Subject", "To", "X-Mailer"}
 	got = e.GetHeaderKeys()
-	sort.Sort(sort.StringSlice(got))
+	sort.Strings(got)
 	test.DiffStrings(t, got, want)
 
 	// Test UTF-8 subject line
@@ -647,7 +647,7 @@ func TestEnvelopeGetHeaderKeys(t *testing.T) {
 
 	want = []string{"Content-Type", "Date", "From", "Message-Id", "Mime-Version", "Sender", "Subject", "To", "User-Agent"}
 	got = e.GetHeaderKeys()
-	sort.Sort(sort.StringSlice(got))
+	sort.Strings(got)
 	test.DiffStrings(t, got, want)
 }
 
