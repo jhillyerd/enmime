@@ -394,15 +394,14 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		}
 		// Look for part header.
 		bbr := bufio.NewReader(br)
-		err = p.setupHeaders(bbr, "")
-		if err != nil {
+		if err = p.setupHeaders(bbr, ""); err != nil {
 			return err
 		}
 		// Insert this Part into the MIME tree.
 		parent.AddChild(p)
 		if p.Boundary == "" {
 			// Content is text or data, decode it.
-			if err := p.decodeContent(bbr); err != nil {
+			if err = p.decodeContent(bbr); err != nil {
 				return err
 			}
 		} else {

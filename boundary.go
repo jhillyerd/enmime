@@ -82,7 +82,8 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	}
 
 	for i := 0; i < len(dest); i++ {
-		cs, err := b.r.Peek(1)
+		var cs []byte
+		cs, err = b.r.Peek(1)
 		if err != nil && err != io.EOF {
 			return 0, errors.WithStack(err)
 		}
@@ -110,7 +111,8 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			}
 
 			if check {
-				peek, err := b.r.Peek(len(b.nlPrefix) + padding + 1)
+				var peek []byte
+				peek, err = b.r.Peek(len(b.nlPrefix) + padding + 1)
 				switch err {
 				case nil:
 					// Check the whitespace at the head of the peek to avoid checking for a boundary early.
@@ -146,7 +148,8 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			}
 		}
 
-		next, err := b.r.ReadByte()
+		var next byte
+		next, err = b.r.ReadByte()
 		if err != nil {
 			// EOF is not fatal, it just means that we have drained the reader.
 			if errors.Is(err, io.EOF) {
@@ -156,8 +159,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 			return 0, errors.WithStack(err)
 		}
 
-		err = b.buffer.WriteByte(next)
-		if err != nil {
+		if err = b.buffer.WriteByte(next); err != nil {
 			return 0, errors.WithStack(err)
 		}
 	}
