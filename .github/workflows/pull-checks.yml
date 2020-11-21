@@ -1,0 +1,17 @@
+name: Pull Request Checks
+on:
+  push:
+  pull_request:
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Imports
+        uses: grandcolline/golang-github-actions@v1.1.0
+        with:
+          run: imports
+          token: ${{ secrets.GITHUB_TOKEN }}
