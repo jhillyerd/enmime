@@ -318,6 +318,10 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=\"value1;\"",
 		},
 		{
+			input: "application/octet-stream; param1=\"value1;2.txt\"",
+			want:  "application/octet-stream; param1=\"value1;2.txt\"",
+		},
+		{
 			input: "application/octet-stream; param1=\"value 1\"",
 			want:  "application/octet-stream; param1=\"value 1\"",
 		},
@@ -726,5 +730,58 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 		if testData[i].want != v {
 			t.Fatalf("Expected %s, but got %s", testData[i].want, v)
 		}
+	}
+}
+
+func TestParseMediaType(t *testing.T) {
+	testCases := []struct {
+		label  string            // Test case label.
+		input  string            // Content type to parse.
+		mtype  string            // Expected media type returned.
+		params map[string]string // Expected params returned.
+	}{
+		{
+			label:  "basic filename",
+			input:  "text/html; name=index.html",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename",
+			input:  "text/html; name=\"index.html\"",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename with semicolon",
+			input:  "text/html; name=\"index;a.html\"",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index;a.html"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.label, func(t *testing.T) {
+			mtype, params, _, err := ParseMediaType(tc.input)
+
+			if err != nil {
+				t.Errorf("got err %v, want nil", err)
+				return
+			}
+
+			if mtype != tc.mtype {
+				t.Errorf("mtype got %q, want %q", mtype, tc.mtype)
+			}
+
+			for k, v := range tc.params {
+				if params[k] != v {
+					t.Errorf("params[%q] got %q, want %q", k, params[k], v)
+				}
+				// Delete param to allow check for unexpected below.
+				delete(params, k)
+			}
+			for pname := range params {
+				t.Errorf("Found unexpected param: %q=%q", pname, params[pname])
+			}
+		})
 	}
 }
