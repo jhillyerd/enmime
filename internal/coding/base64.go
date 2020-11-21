@@ -54,7 +54,7 @@ func (bc *Base64Cleaner) Read(p []byte) (n int, err error) {
 			// Strip these silently: tab, \n, \r, space, equals sign.
 		case -1:
 			// Strip these, but warn the client.
-			bc.Errors = append(bc.Errors, fmt.Errorf("Unexpected %q in Base64 stream", buf[i]))
+			bc.Errors = append(bc.Errors, fmt.Errorf("unexpected %q in base64 stream", buf[i]))
 		default:
 			p[n] = buf[i]
 			n++

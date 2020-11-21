@@ -1137,7 +1137,7 @@ func TestNilHeaderValues(t *testing.T) {
 func TestSetHeaderEmptyName(t *testing.T) {
 	e := &enmime.Envelope{}
 	err := e.SetHeader("", nil)
-	if err == nil || err.Error() != "Provide non-empty header name" {
+	if err == nil || err.Error() != "provide non-empty header name" {
 		t.Fatal("Cannot set a header without a name, failed")
 	}
 }
@@ -1145,7 +1145,7 @@ func TestSetHeaderEmptyName(t *testing.T) {
 func TestAddHeaderEmptyName(t *testing.T) {
 	e := &enmime.Envelope{}
 	err := e.AddHeader("", "")
-	if err == nil || err.Error() != "Provide non-empty header name" {
+	if err == nil || err.Error() != "provide non-empty header name" {
 		t.Fatal("Cannot add a header without a name, failed")
 	}
 }
@@ -1153,7 +1153,7 @@ func TestAddHeaderEmptyName(t *testing.T) {
 func TestDeleteHeaderEmptyName(t *testing.T) {
 	e := &enmime.Envelope{}
 	err := e.DeleteHeader("")
-	if err == nil || err.Error() != "Provide non-empty header name" {
+	if err == nil || err.Error() != "provide non-empty header name" {
 		t.Fatal("Cannot add a header without a name, failed")
 	}
 }
