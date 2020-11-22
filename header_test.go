@@ -784,6 +784,12 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "text/html",
 			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
 		},
+		{
+			label:  "quoted separator with escaped quote mid-string",
+			input:  "text/html; name=\"index\\\";a.html\"; hash=8675309",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index\";a.html", "hash": "8675309"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {

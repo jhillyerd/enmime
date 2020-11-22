@@ -9,6 +9,7 @@ func TestSplitQuoted(t *testing.T) {
 		input string
 		want  []string
 	}{
+		// All tests split on ; and treat ' as quoting character.
 		{
 			input: "",
 			want:  []string{""},
@@ -30,12 +31,24 @@ func TestSplitQuoted(t *testing.T) {
 			want:  []string{"a", "b", ""},
 		},
 		{
+			input: "a;b;c",
+			want:  []string{"a", "b", "c"},
+		},
+		{
 			input: "a;'b;c';d",
 			want:  []string{"a", "'b;c'", "d"},
 		},
 		{
 			input: "a;'b;c;d",
 			want:  []string{"a", "'b;c;d"},
+		},
+		{
+			input: "a;'b\\';c';d",
+			want:  []string{"a", "'b\\';c'", "d"},
+		},
+		{
+			input: "a;b\\;c",
+			want:  []string{"a", "b\\", "c"},
 		},
 	}
 	for _, tc := range testCases {
