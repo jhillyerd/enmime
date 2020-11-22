@@ -163,91 +163,93 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 
 func TestFixMangledMediaType(t *testing.T) {
 	testCases := []struct {
-		input, sep, want string
+		input string
+		sep   rune
+		want  string
 	}{
 		{
 			input: "",
-			sep:   "",
+			sep:   ';',
 			want:  "",
 		},
 		{
 			input: `text/HTML; charset=UTF-8; format=flowed; content-transfer-encoding: 7bit=`,
-			sep:   ";",
+			sep:   ';',
 			want:  "text/HTML; charset=UTF-8; format=flowed",
 		},
 		{
 			input: "text/html;charset=",
-			sep:   ";",
+			sep:   ';',
 			want:  "text/html;charset=",
 		},
 		{
 			input: "text/;charset=",
-			sep:   ";",
+			sep:   ';',
 			want:  "text/plain;charset=",
 		},
 		{
 			input: "multipart/;charset=",
-			sep:   ";",
+			sep:   ';',
 			want:  "multipart/mixed;charset=",
 		},
 		{
 			input: "text/plain;",
-			sep:   ";",
+			sep:   ';',
 			want:  "text/plain",
 		},
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
-			sep:   ";",
+			sep:   ';',
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
 		},
 		{
 			input: "application/; name=\"Voice message from =?UTF-8?B?4piOICsxIDI1MS0yNDUtODA0NC5tc2c=?=\";",
-			sep:   ";",
+			sep:   ';',
 			want:  "application/octet-stream; name=\"Voice message from ☎ +1 251-245-8044.msg\"",
 		},
 		{
 			input: "application/pdf name=\"file.pdf\"",
-			sep:   " ",
+			sep:   ' ',
 			want:  "application/pdf;name=\"file.pdf\"",
 		},
 		{
 			input: "one/two; name=\"file.two\"; name=\"file.two\"",
-			sep:   ";",
+			sep:   ';',
 			want:  "one/two; name=\"file.two\"",
 		},
 		{
 			input: "one/; name=\"file.two\"; name=\"file.two\"",
-			sep:   ";",
+			sep:   ';',
 			want:  "application/octet-stream; name=\"file.two\"",
 		},
 		{
 			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
-			sep:   " ",
+			sep:   ' ',
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008a.msg\"",
 		},
 		{
 			input: "one/two name=\"file.two\" name=\"file.two\"",
-			sep:   " ",
+			sep:   ' ',
 			want:  "one/two;name=\"file.two\"",
 		},
 		{
 			input: "; name=\"file.two\"",
-			sep:   ";",
+			sep:   ';',
 			want:  ctPlaceholder + "; name=\"file.two\"",
 		},
 		{
 			input: "charset=binary; name=\"logoleft.jpg\"",
-			sep:   ";",
+			sep:   ';',
 			want:  "application/octet-stream; charset=binary; name=\"logoleft.jpg\"",
 		},
 		{
 			input: "one/two;iso-8859-1",
-			sep:   ";",
+			sep:   ';',
 			want:  "one/two;iso-8859-1=" + pvPlaceholder,
 		},
 		{
 			input: "one/two; name=\"file.two\"; iso-8859-1",
-			sep:   ";",
+			sep:   ';',
 			want:  "one/two; name=\"file.two\"; iso-8859-1=" + pvPlaceholder,
 		},
 	}
