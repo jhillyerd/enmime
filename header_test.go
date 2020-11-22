@@ -755,10 +755,34 @@ func TestParseMediaType(t *testing.T) {
 			params: map[string]string{"name": "index.html"},
 		},
 		{
-			label:  "quoted filename with semicolon",
+			label:  "basic filename trailing separator",
+			input:  "text/html; name=index.html;",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename trailing separator",
+			input:  "text/html; name=\"index.html\";",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "unclosed quoted filename",
+			input:  "text/html; name=\"index.html",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename with separator",
 			input:  "text/html; name=\"index;a.html\"",
 			mtype:  "text/html",
 			params: map[string]string{"name": "index;a.html"},
+		},
+		{
+			label:  "quoted separator mid-string",
+			input:  "text/html; name=\"index;a.html\"; hash=8675309",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
 		},
 	}
 	for _, tc := range testCases {
