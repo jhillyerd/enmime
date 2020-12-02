@@ -17,7 +17,7 @@ func SplitQuoted(s string, sep rune, quote rune) []string {
 			escaped = !escaped
 			continue
 		}
-		if c == quote && !escaped {
+		if c == quote {
 			quoted = !quoted
 			continue
 		}

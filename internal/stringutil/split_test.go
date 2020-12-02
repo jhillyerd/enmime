@@ -35,6 +35,7 @@ func TestSplitQuoted(t *testing.T) {
 			want:  []string{`a`, `b`, `c`},
 		},
 		{
+			// Separators are ignored within quoted-runs.
 			input: `a;"b;c";d`,
 			want:  []string{`a`, `"b;c"`, `d`},
 		},
@@ -43,8 +44,9 @@ func TestSplitQuoted(t *testing.T) {
 			want:  []string{`a`, `"b;c;d`},
 		},
 		{
+			// Quotes must be escaped via RFC2047 encoding, not just a backslash.
 			input: `a;"b\";c";d`,
-			want:  []string{`a`, `"b\";c"`, `d`},
+			want:  []string{`a`, `"b\"`, `c";d`},
 		},
 		{
 			input: `a;b\;c`,
