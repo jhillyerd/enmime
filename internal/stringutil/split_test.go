@@ -9,51 +9,51 @@ func TestSplitQuoted(t *testing.T) {
 		input string
 		want  []string
 	}{
-		// All tests split on ; and treat ' as quoting character.
+		// All tests split on ; and treat " as quoting character.
 		{
-			input: "",
-			want:  []string{""},
+			input: ``,
+			want:  []string{``},
 		},
 		{
-			input: ";",
-			want:  []string{"", ""},
+			input: `;`,
+			want:  []string{``, ``},
 		},
 		{
-			input: "'",
-			want:  []string{"'"},
+			input: `"`,
+			want:  []string{`"`},
 		},
 		{
-			input: "a;b",
-			want:  []string{"a", "b"},
+			input: `a;b`,
+			want:  []string{`a`, `b`},
 		},
 		{
-			input: "a;b;",
-			want:  []string{"a", "b", ""},
+			input: `a;b;`,
+			want:  []string{`a`, `b`, ``},
 		},
 		{
-			input: "a;b;c",
-			want:  []string{"a", "b", "c"},
+			input: `a;b;c`,
+			want:  []string{`a`, `b`, `c`},
 		},
 		{
-			input: "a;'b;c';d",
-			want:  []string{"a", "'b;c'", "d"},
+			input: `a;"b;c";d`,
+			want:  []string{`a`, `"b;c"`, `d`},
 		},
 		{
-			input: "a;'b;c;d",
-			want:  []string{"a", "'b;c;d"},
+			input: `a;"b;c;d`,
+			want:  []string{`a`, `"b;c;d`},
 		},
 		{
-			input: "a;'b\\';c';d",
-			want:  []string{"a", "'b\\';c'", "d"},
+			input: `a;"b\";c";d`,
+			want:  []string{`a`, `"b\";c"`, `d`},
 		},
 		{
-			input: "a;b\\;c",
-			want:  []string{"a", "b\\", "c"},
+			input: `a;b\;c`,
+			want:  []string{`a`, `b\`, `c`},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := SplitQuoted(tc.input, ';', '\'')
+			got := SplitQuoted(tc.input, ';', '"')
 
 			t.Logf("\ngot : %q\nwant: %q\n", got, tc.want)
 
