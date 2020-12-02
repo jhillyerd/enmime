@@ -27,5 +27,11 @@ func SplitQuoted(s string, sep rune, quote rune) []string {
 			p = i + 1
 		}
 	}
+
+	if quoted {
+		// s contained an unterminated quoted-run, re-split without quoting.
+		return SplitQuoted(s, sep, rune(0))
+	}
+
 	return append(a, s[p:])
 }

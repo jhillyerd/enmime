@@ -40,19 +40,27 @@ func TestSplitQuoted(t *testing.T) {
 			want:  []string{`a`, `"b;c"`, `d`},
 		},
 		{
-			input: `a;"b;c;d`,
-			want:  []string{`a`, `"b;c;d`},
+			// Unterminated quoted-run will cause quotes to be ignored from the start of the string.
+			input: `"a;b;c;d`,
+			want:  []string{`"a`, `b`, `c`, `d`},
+		},
+		{
+			// Unterminated quoted-run will cause quotes to be ignored from the start of the string.
+			input: `"a;b";"c;d`,
+			want:  []string{`"a`, `b"`, `"c`, `d`},
 		},
 		{
 			// Quotes must be escaped via RFC2047 encoding, not just a backslash.
-			input: `a;"b\";c";d`,
-			want:  []string{`a`, `"b\"`, `c";d`},
+			// b through c below must not be treated as a single quoted-run.
+			input: `a;"b\";\"c";d`,
+			want:  []string{`a`, `"b\"`, `\"c"`, `d`},
 		},
 		{
 			input: `a;b\;c`,
 			want:  []string{`a`, `b\`, `c`},
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
 			got := SplitQuoted(tc.input, ';', '"')
