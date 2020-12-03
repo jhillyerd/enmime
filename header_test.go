@@ -163,92 +163,94 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 
 func TestFixMangledMediaType(t *testing.T) {
 	testCases := []struct {
-		input, sep, want string
+		input string
+		sep   rune
+		want  string
 	}{
 		{
 			input: "",
-			sep:   "",
+			sep:   ';',
 			want:  "",
 		},
 		{
 			input: `text/HTML; charset=UTF-8; format=flowed; content-transfer-encoding: 7bit=`,
-			sep:   ";",
+			sep:   ';',
 			want:  "text/HTML; charset=UTF-8; format=flowed",
 		},
 		{
 			input: "text/html;charset=",
-			sep:   ";",
+			sep:   ';',
 			want:  "text/html;charset=",
 		},
 		{
 			input: "text/;charset=",
-			sep:   ";",
+			sep:   ';',
 			want:  "text/plain;charset=",
 		},
 		{
 			input: "multipart/;charset=",
-			sep:   ";",
+			sep:   ';',
 			want:  "multipart/mixed;charset=",
 		},
 		{
 			input: "text/plain;",
-			sep:   ";",
+			sep:   ';',
 			want:  "text/plain",
 		},
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
-			sep:   ";",
+			sep:   ';',
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008aYou've got a new voice miss call.msg\"",
 		},
 		{
-			input: "application/; name=\"Voice message from =?UTF-8?B?4piOICsxIDI1MS0yNDUtODA0NC5tc2c=?=\";",
-			sep:   ";",
-			want:  "application/octet-stream; name=\"Voice message from ☎ +1 251-245-8044.msg\"",
+			input: `application/; name="Voice message from =?UTF-8?B?4piOICsxIDI1MS0yNDUtODA0NC5tc2c=?=";`,
+			sep:   ';',
+			want:  `application/octet-stream; name="Voice message from ☎ +1 251-245-8044.msg"`,
 		},
 		{
-			input: "application/pdf name=\"file.pdf\"",
-			sep:   " ",
-			want:  "application/pdf;name=\"file.pdf\"",
+			input: `application/pdf name="file.pdf"`,
+			sep:   ' ',
+			want:  `application/pdf;name="file.pdf"`,
 		},
 		{
-			input: "one/two; name=\"file.two\"; name=\"file.two\"",
-			sep:   ";",
-			want:  "one/two; name=\"file.two\"",
+			input: `one/two; name="file.two"; name="file.two"`,
+			sep:   ';',
+			want:  `one/two; name="file.two"`,
 		},
 		{
-			input: "one/; name=\"file.two\"; name=\"file.two\"",
-			sep:   ";",
-			want:  "application/octet-stream; name=\"file.two\"",
+			input: `one/; name="file.two"; name="file.two"`,
+			sep:   ';',
+			want:  `application/octet-stream; name="file.two"`,
 		},
 		{
-			input: "application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=",
-			sep:   " ",
+			input: `application/octet-stream; =?UTF-8?B?bmFtZT3DsMKfwpTCii5tc2c=?=`,
+			sep:   ' ',
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008a.msg\"",
 		},
 		{
-			input: "one/two name=\"file.two\" name=\"file.two\"",
-			sep:   " ",
-			want:  "one/two;name=\"file.two\"",
+			input: `one/two name="file.two" name="file.two"`,
+			sep:   ' ',
+			want:  `one/two;name="file.two"`,
 		},
 		{
-			input: "; name=\"file.two\"",
-			sep:   ";",
-			want:  ctPlaceholder + "; name=\"file.two\"",
+			input: `; name="file.two"`,
+			sep:   ';',
+			want:  ctPlaceholder + `; name="file.two"`,
 		},
 		{
-			input: "charset=binary; name=\"logoleft.jpg\"",
-			sep:   ";",
-			want:  "application/octet-stream; charset=binary; name=\"logoleft.jpg\"",
+			input: `charset=binary; name="logoleft.jpg"`,
+			sep:   ';',
+			want:  `application/octet-stream; charset=binary; name="logoleft.jpg"`,
 		},
 		{
-			input: "one/two;iso-8859-1",
-			sep:   ";",
-			want:  "one/two;iso-8859-1=" + pvPlaceholder,
+			input: `one/two;iso-8859-1`,
+			sep:   ';',
+			want:  `one/two;iso-8859-1=` + pvPlaceholder,
 		},
 		{
-			input: "one/two; name=\"file.two\"; iso-8859-1",
-			sep:   ";",
-			want:  "one/two; name=\"file.two\"; iso-8859-1=" + pvPlaceholder,
+			input: `one/two; name="file.two"; iso-8859-1`,
+			sep:   ';',
+			want:  `one/two; name="file.two"; iso-8859-1=` + pvPlaceholder,
 		},
 	}
 	for _, tc := range testCases {
@@ -316,6 +318,10 @@ func TestFixUnquotedSpecials(t *testing.T) {
 		{
 			input: "application/octet-stream; param1=\"value1;\"",
 			want:  "application/octet-stream; param1=\"value1;\"",
+		},
+		{
+			input: "application/octet-stream; param1=\"value1;2.txt\"",
+			want:  "application/octet-stream; param1=\"value1;2.txt\"",
 		},
 		{
 			input: "application/octet-stream; param1=\"value 1\"",
@@ -726,5 +732,82 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 		if testData[i].want != v {
 			t.Fatalf("Expected %s, but got %s", testData[i].want, v)
 		}
+	}
+}
+
+func TestParseMediaType(t *testing.T) {
+	testCases := []struct {
+		label  string            // Test case label.
+		input  string            // Content type to parse.
+		mtype  string            // Expected media type returned.
+		params map[string]string // Expected params returned.
+	}{
+		{
+			label:  "basic filename",
+			input:  "text/html; name=index.html",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename",
+			input:  "text/html; name=\"index.html\"",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "basic filename trailing separator",
+			input:  "text/html; name=index.html;",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename trailing separator",
+			input:  "text/html; name=\"index.html\";",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "unclosed quoted filename",
+			input:  "text/html; name=\"index.html",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index.html"},
+		},
+		{
+			label:  "quoted filename with separator",
+			input:  "text/html; name=\"index;a.html\"",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index;a.html"},
+		},
+		{
+			label:  "quoted separator mid-string",
+			input:  "text/html; name=\"index;a.html\"; hash=8675309",
+			mtype:  "text/html",
+			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.label, func(t *testing.T) {
+			mtype, params, _, err := ParseMediaType(tc.input)
+
+			if err != nil {
+				t.Errorf("got err %v, want nil", err)
+				return
+			}
+
+			if mtype != tc.mtype {
+				t.Errorf("mtype got %q, want %q", mtype, tc.mtype)
+			}
+
+			for k, v := range tc.params {
+				if params[k] != v {
+					t.Errorf("params[%q] got %q, want %q", k, params[k], v)
+				}
+				// Delete param to allow check for unexpected below.
+				delete(params, k)
+			}
+			for pname := range params {
+				t.Errorf("Found unexpected param: %q=%q", pname, params[pname])
+			}
+		})
 	}
 }

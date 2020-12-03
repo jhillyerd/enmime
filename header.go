@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/stringutil"
 	"github.com/pkg/errors"
 )
 
@@ -221,7 +222,8 @@ func quotedDisplayName(s string) string {
 //   * Repeating media parameters
 //   * Unquoted values in media parameters containing 'tspecials' characters
 func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
-	mtype, params, err = mime.ParseMediaType(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ";"))))
+	mtype, params, err = mime.ParseMediaType(
+		fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ';'))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
@@ -243,16 +245,17 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 
 // fixMangledMediaType is used to insert ; separators into media type strings that lack them, and
 // remove repeated parameters.
-func fixMangledMediaType(mtype, sep string) string {
+func fixMangledMediaType(mtype string, sep rune) string {
+	strsep := string([]rune{sep})
 	if mtype == "" {
 		return ""
 	}
-	parts := strings.Split(mtype, sep)
+	parts := stringutil.SplitQuoted(mtype, sep, '"')
 	mtype = ""
 	if strings.Contains(parts[0], "=") {
 		// A parameter pair at this position indicates we are missing a content-type.
-		parts[0] = fmt.Sprintf("%s%s %s", ctAppOctetStream, sep, parts[0])
-		parts = strings.Split(strings.Join(parts, sep), sep)
+		parts[0] = fmt.Sprintf("%s%s %s", ctAppOctetStream, strsep, parts[0])
+		parts = strings.Split(strings.Join(parts, strsep), strsep)
 	}
 	for i, p := range parts {
 		switch i {
@@ -261,7 +264,7 @@ func fixMangledMediaType(mtype, sep string) string {
 				// The content type is completely missing. Put in a placeholder.
 				p = ctPlaceholder
 			}
-			// Check for missing token after slash
+			// Check for missing token after slash.
 			if strings.HasSuffix(p, "/") {
 				switch p {
 				case ctTextPrefix:
@@ -285,7 +288,7 @@ func fixMangledMediaType(mtype, sep string) string {
 				p = p + "=" + pvPlaceholder
 			}
 
-			// RFC-2047 encoded attribute name
+			// RFC-2047 encoded attribute name.
 			p = rfc2047decode(p)
 
 			pair := strings.SplitAfter(p, "=")
@@ -295,10 +298,9 @@ func fixMangledMediaType(mtype, sep string) string {
 			}
 
 			if strings.ContainsAny(pair[0], "()<>@,;:\"\\/[]?") {
-				// attribute is a strict token and cannot be a quoted-string
-				// if any of the above characters are present in a token it
-				// must be quoted and is therefor an invalid attribute.
-				// Discard the pair.
+				// Attribute is a strict token and cannot be a quoted-string.  If any of the above
+				// characters are present in a token it must be quoted and is therefor an invalid
+				// attribute.  Discard the pair.
 				continue
 			}
 		}
