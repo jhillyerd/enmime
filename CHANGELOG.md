@@ -4,7 +4,8 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+
+## [0.8.4] - 2020-12-18
 
 ### Fixed
 - Attachment file names containing semicolons are no longer truncated (#174)
@@ -165,7 +166,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
-[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.8.3...master
+[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.8.4...master
+[0.8.4]:      https://github.com/jhillyerd/enmime/compare/v0.8.3...v0.8.4
 [0.8.3]:      https://github.com/jhillyerd/enmime/compare/v0.8.2...v0.8.3
 [0.8.2]:      https://github.com/jhillyerd/enmime/compare/v0.8.1...v0.8.2
 [0.8.1]:      https://github.com/jhillyerd/enmime/compare/v0.8.0...v0.8.1
