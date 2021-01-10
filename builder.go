@@ -307,9 +307,9 @@ func (p MailBuilder) Build() (*Part, error) {
 	return root, nil
 }
 
-// Send encodes the message and sends it via the SMTP server specified by addr.  Send uses
-// net/smtp.SendMail, and accepts the same authentication parameters.
-func (p MailBuilder) Send(addr string, a smtp.Auth) error {
+// SendWithReturnAddress encodes the message and sends it via the SMTP server specified by addr
+// and from. Send uses net/smtp.SendMail, and accepts the same authentication parameters.
+func (p MailBuilder) SendWithReturnAddress(addr, from string, a smtp.Auth) error {
 	buf := &bytes.Buffer{}
 	root, err := p.Build()
 	if err != nil {
@@ -329,7 +329,13 @@ func (p MailBuilder) Send(addr string, a smtp.Auth) error {
 	for _, a := range p.bcc {
 		recips = append(recips, a.Address)
 	}
-	return smtp.SendMail(addr, a, p.from.Address, recips, buf.Bytes())
+	return smtp.SendMail(addr, a, from, recips, buf.Bytes())
+}
+
+// Send encodes the message and sends it via the SMTP server specified by addr. Send uses
+// net/smtp.SendMail, and accepts the same authentication parameters.
+func (p MailBuilder) Send(addr string, a smtp.Auth) error {
+	return p.SendWithReturnAddress(addr, p.from.Address, a)
 }
 
 // Equals uses the reflect package to test two MailBuilder structs for equality, primarily for unit
