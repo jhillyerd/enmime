@@ -213,11 +213,19 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  `application/pdf;name="file.pdf"`,
 		},
 		{
+			// Removes duplicate parameters.
 			input: `one/two; name="file.two"; name="file.two"`,
 			sep:   ';',
 			want:  `one/two; name="file.two"`,
 		},
 		{
+			// Removes duplicate parameters.
+			input: `one/nosp;name="file.two"; name="file.two"`,
+			sep:   ';',
+			want:  `one/nosp;name="file.two"`,
+		},
+		{
+			// Removes duplicate parameters.
 			input: `one/; name="file.two"; name="file.two"`,
 			sep:   ';',
 			want:  `application/octet-stream; name="file.two"`,
@@ -228,6 +236,7 @@ func TestFixMangledMediaType(t *testing.T) {
 			want:  "application/octet-stream;name=\"ð\u009f\u0094\u008a.msg\"",
 		},
 		{
+			// Removes duplicate parameters.
 			input: `one/two name="file.two" name="file.two"`,
 			sep:   ' ',
 			want:  `one/two;name="file.two"`,
