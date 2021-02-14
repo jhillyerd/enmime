@@ -943,11 +943,11 @@ func TestSend(t *testing.T) {
 	tos := []string{"to0@example.com", "to1@example.com"}
 	ccs := []string{"cc0@example.com", "cc1@example.com"}
 	bccs := []string{"bcc0@example.com", "bcc1@example.com"}
-	text := "test text body"
-	html := "test html body"
+	text := []byte("test text body")
+	html := []byte("test html body")
 	a := enmime.Builder().
-		Text([]byte(text)).
-		HTML([]byte(html)).
+		Text(text).
+		HTML(html).
 		From("name", from).
 		Subject("foo").
 		To("to 0", tos[0]).
@@ -969,4 +969,10 @@ func TestSend(t *testing.T) {
 	addrs = append(addrs, ccs...)
 	addrs = append(addrs, bccs...)
 	test.DiffStrings(t, sender.to, addrs)
+	if !bytes.Contains(sender.msg, text) {
+		t.Errorf("msg bytes did not contain text body %q", text)
+	}
+	if !bytes.Contains(sender.msg, html) {
+		t.Errorf("msg bytes did not contain html body %q", html)
+	}
 }
