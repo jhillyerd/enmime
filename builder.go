@@ -330,7 +330,8 @@ func (p MailBuilder) SendWithReturnAddress(sender Sender, from string) error {
 	return sender.Send(from, recips, buf.Bytes())
 }
 
-// Send encodes the message and sends it via the specified Sender.
+// Send encodes the message and sends it via the specified Sender, using the address provided to
+// `From()` as the return address.
 func (p MailBuilder) Send(sender Sender) error {
 	return p.SendWithReturnAddress(sender, p.from.Address)
 }
