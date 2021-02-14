@@ -976,3 +976,30 @@ func TestSend(t *testing.T) {
 		t.Errorf("msg bytes did not contain html body %q", html)
 	}
 }
+
+func TestSendWithReturnAddress(t *testing.T) {
+	sender := &mockSender{}
+	ret := "return@example.com"
+	from := "from@example.com"
+	to := "t0@example.com"
+	text := []byte("test text body")
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		To("to 0", to)
+
+	err := a.SendWithReturnAddress(sender, ret)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sender.from != ret {
+		// Builder's .From() should not be provided to Sender.Send().
+		t.Errorf("Got from %q, wanted %q", sender.from, ret)
+	}
+	test.DiffStrings(t, sender.to, []string{to})
+	if !bytes.Contains(sender.msg, text) {
+		t.Errorf("msg bytes did not contain text body %q", text)
+	}
+}
