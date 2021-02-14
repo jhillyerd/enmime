@@ -12,8 +12,11 @@ import (
 
 // ExampleBuilder illustrates how to build and send a MIME encoded message.
 func ExampleBuilder() {
+	// Create an SMTP Sender which relies on Go's built-in net/smtp package.  Advanced users
+	// may provide their own Sender, or mock it in unit tests.
 	smtpHost := "smtp.relay.host:25"
 	smtpAuth := smtp.PlainAuth("", "user", "pw", "host")
+	sender := enmime.NewSMTP(smtpHost, smtpAuth)
 
 	// MailBuilder is (mostly) immutable, each method below returns a new MailBuilder without
 	// modifying the original.
@@ -25,10 +28,10 @@ func ExampleBuilder() {
 
 	// master is immutable, causing each msg below to have a single recipient.
 	msg := master.To("Esteemed Customer", "user1@inbucket.org")
-	msg.Send(smtpHost, smtpAuth)
+	msg.Send(sender)
 
 	msg = master.To("Another Customer", "user2@inbucket.org")
-	msg.Send(smtpHost, smtpAuth)
+	msg.Send(sender)
 }
 
 func ExampleReadEnvelope() {

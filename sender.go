@@ -15,7 +15,8 @@ type SMTPSender struct {
 
 var _ Sender = &SMTPSender{}
 
-// NewSMTP creates a new SMTPSender.  If no authentication is required, `auth` may be nil.
+// NewSMTP creates a new SMTPSender, which uses net/smtp.SendMail, and accepts the same
+// authentication parameters.  If no authentication is required, `auth` may be nil.
 func NewSMTP(addr string, auth smtp.Auth) *SMTPSender {
 	return &SMTPSender{addr, auth}
 }
