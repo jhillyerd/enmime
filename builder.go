@@ -329,7 +329,8 @@ func (p MailBuilder) SendWithReturnAddress(addr, from string, a smtp.Auth) error
 	for _, a := range p.bcc {
 		recips = append(recips, a.Address)
 	}
-	return smtp.SendMail(addr, a, from, recips, buf.Bytes())
+	sender := NewSMTP(addr, a)
+	return sender.Send(from, recips, buf.Bytes())
 }
 
 // Send encodes the message and sends it via the SMTP server specified by addr. Send uses
