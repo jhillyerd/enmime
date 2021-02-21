@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [Unreleased]
+
+### Added
+- `SendWithReversePath` method to builder, allows specifying a reverse-path
+  that differs from the from address (#179, thanks cgroschupp)
+- A `Sender` interface that allows our users to provide their own mail
+  sending routines, or mock them in tests. #182
+
+
 ## [0.8.4] - 2020-12-18
 
 ### Fixed

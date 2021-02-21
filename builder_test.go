@@ -3,17 +3,28 @@ package enmime_test
 import (
 	"bytes"
 	"net/mail"
-	"net/smtp"
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
 )
+
+type mockSender struct {
+	from string
+	to   []string
+	msg  []byte
+}
+
+func (s *mockSender) Send(from string, to []string, msg []byte) error {
+	s.from = from
+	s.to = to
+	s.msg = msg
+	return nil
+}
 
 var addrSlice = []mail.Address{{Name: "name", Address: "addr"}}
 
@@ -927,27 +938,68 @@ func TestBuilderQPHeaders(t *testing.T) {
 }
 
 func TestSend(t *testing.T) {
-	// Satisfy all block of the Send method and use
-	// an intentionally malformed From Address to
-	// elicit an expected error from smtp.SendMail,
-	// which can be type-checked and verified.
-	text := "test text body"
-	html := "test html body"
+	sender := &mockSender{}
+	from := "from@example.com"
+	tos := []string{"to0@example.com", "to1@example.com"}
+	ccs := []string{"cc0@example.com", "cc1@example.com"}
+	bccs := []string{"bcc0@example.com", "bcc1@example.com"}
+	text := []byte("test text body")
+	html := []byte("test html body")
 	a := enmime.Builder().
-		Text([]byte(text)).
-		HTML([]byte(html)).
-		From("name", "foo\rbar").
+		Text(text).
+		HTML(html).
+		From("name", from).
 		Subject("foo").
-		ToAddrs(addrSlice).
-		CCAddrs(addrSlice).
-		BCCAddrs(addrSlice)
-	// Dummy SMTP Authentication
-	auth := smtp.PlainAuth("", "user@example.com", "password", "mail.example.com")
-	err := a.Send("0.0.0.0", auth)
-	if err == nil {
-		t.Fatal("Send() did not return expected error, failed")
+		To("to 0", tos[0]).
+		To("to 1", tos[1]).
+		CC("cc 0", ccs[0]).
+		CC("cc 1", ccs[1]).
+		BCC("bcc 0", bccs[0]).
+		BCC("bcc 1", bccs[1])
+
+	err := a.Send(sender)
+
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(err.Error(), "smtp: A line must not contain CR or LF") {
-		t.Fatalf("Send() did not return expected error, failed: %s", err.Error())
+	if sender.from != from {
+		t.Errorf("Got from %q, wanted %q", sender.from, from)
+	}
+	addrs := append([]string{}, tos...)
+	addrs = append(addrs, ccs...)
+	addrs = append(addrs, bccs...)
+	test.DiffStrings(t, sender.to, addrs)
+	if !bytes.Contains(sender.msg, text) {
+		t.Errorf("msg bytes did not contain text body %q", text)
+	}
+	if !bytes.Contains(sender.msg, html) {
+		t.Errorf("msg bytes did not contain html body %q", html)
+	}
+}
+
+func TestSendWithReversePath(t *testing.T) {
+	sender := &mockSender{}
+	ret := "return@example.com"
+	from := "from@example.com"
+	to := "t0@example.com"
+	text := []byte("test text body")
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		To("to 0", to)
+
+	err := a.SendWithReversePath(sender, ret)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sender.from != ret {
+		// Builder's .From() should not be provided to Sender.Send().
+		t.Errorf("Got from %q, wanted %q", sender.from, ret)
+	}
+	test.DiffStrings(t, sender.to, []string{to})
+	if !bytes.Contains(sender.msg, text) {
+		t.Errorf("msg bytes did not contain text body %q", text)
 	}
 }
