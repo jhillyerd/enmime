@@ -306,8 +306,8 @@ func (p MailBuilder) Build() (*Part, error) {
 	return root, nil
 }
 
-// SendWithReturnAddress encodes the message and sends it via the specified Sender.
-func (p MailBuilder) SendWithReturnAddress(sender Sender, from string) error {
+// SendWithReversePath encodes the message and sends it via the specified Sender.
+func (p MailBuilder) SendWithReversePath(sender Sender, from string) error {
 	buf := &bytes.Buffer{}
 	root, err := p.Build()
 	if err != nil {
@@ -331,9 +331,9 @@ func (p MailBuilder) SendWithReturnAddress(sender Sender, from string) error {
 }
 
 // Send encodes the message and sends it via the specified Sender, using the address provided to
-// `From()` as the return address.
+// `From()` as the reverse-path.
 func (p MailBuilder) Send(sender Sender) error {
-	return p.SendWithReturnAddress(sender, p.from.Address)
+	return p.SendWithReversePath(sender, p.from.Address)
 }
 
 // Equals uses the reflect package to test two MailBuilder structs for equality, primarily for unit

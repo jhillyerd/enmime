@@ -977,7 +977,7 @@ func TestSend(t *testing.T) {
 	}
 }
 
-func TestSendWithReturnAddress(t *testing.T) {
+func TestSendWithReversePath(t *testing.T) {
 	sender := &mockSender{}
 	ret := "return@example.com"
 	from := "from@example.com"
@@ -989,7 +989,7 @@ func TestSendWithReturnAddress(t *testing.T) {
 		Subject("foo").
 		To("to 0", to)
 
-	err := a.SendWithReturnAddress(sender, ret)
+	err := a.SendWithReversePath(sender, ret)
 
 	if err != nil {
 		t.Fatal(err)
