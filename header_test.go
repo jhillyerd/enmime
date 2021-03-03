@@ -800,7 +800,7 @@ func TestParseMediaType(t *testing.T) {
 			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
 		},
 		{
-			label:  "unquoted with new lint",
+			label:  "unquoted with spaces",
 			input:  "application/pdf; x-unix-mode=0644; name=File name with spaces.pdf",
 			mtype:  "application/pdf",
 			params: map[string]string{"x-unix-mode": "0644", "name": "File name with spaces.pdf"},
