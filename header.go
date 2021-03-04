@@ -629,73 +629,60 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 
 	clean := strings.Builder{}
 
+	mode := "attr"
+	attr := strings.Builder{}
+	value := strings.Builder{}
+	insideQuotes := false
+	spaceEncountered := false
 	for len(s) > 0 {
-		var currParam string
-		currParamEnd := strings.IndexByte(s, sep)
-		if currParamEnd < 0 {
-			currParam = s
-			s = ""
-		} else {
-			currParam = s[:currParamEnd]
-			s = s[currParamEnd+1:]
-		}
-		fmt.Printf("***currParamEnd %d\n", currParamEnd)
-		fmt.Printf("***currParam %s\n", currParam)
-		fmt.Printf("***Remaining string %s\n", s)
-
-		// Get attr name and value
-		eq := strings.IndexByte(currParam, '=')
-		if eq < 0 {
-			clean.WriteString(currParam)
+		fmt.Printf("\ns -> %s\nmode -> %s\n attr-> %s\n value-> %s\n insideQuotes->%t\n spaceEncountered-> %t\n\n==========\n\n", s, mode, attr.String(), value.String(), insideQuotes, spaceEncountered)
+		switch mode {
+		case "attr":
+			if s[0] == '=' {
+				mode = "value"
+			}
+			attr.WriteByte(s[0])
+			s = s[1:]
 			break
-		}
-		attr := currParam[:eq]
-		clean.WriteString(attr)
-		clean.WriteString("=")
-		value := currParam[eq+1:]
-		isValueAlreadyQuoted := value[0] == '"'
-		if value[0] == '"' {
-			// val is already quoted
-			valEndQuoteIdx := strings.IndexByte(s, '"')
-			clean.WriteString(value + s[:valEndQuoteIdx])
-			s = s[valEndQuoteIdx:]
-			continue
-		}
-
-		needsQuotes := false
-		valEndIdx := len(value) - 1
-		for i := 0; i < len(value); i++ {
-			if isValueAlreadyQuoted {
-				continue
-			}
-			if value[i] == ' ' {
-				needsQuotes = true
-				continue
-			}
-			if value[i] == '\n' || value[i] == '\t' {
-				valEndIdx = i - 1
+		default:
+			// If we encounter an end, reset the state
+			if len(s) == 1 || s[0] == '\n' || s[0] == '\t' || (s[0] == ';' && !insideQuotes) || (s[0] == '"' && insideQuotes) || (s[0] == '\n' || s[0] == '\t') && !insideQuotes {
+				if len(s) == 1 {
+					value.WriteString(s)
+				}
+				clean.WriteString(attr.String())
+				if spaceEncountered {
+					clean.WriteByte('"')
+				}
+				clean.WriteString(value.String())
+				if spaceEncountered {
+					clean.WriteByte('"')
+				}
+				clean.WriteByte(s[0])
+				s = s[1:]
+				attr.Reset()
+				value.Reset()
+				insideQuotes = false
+				spaceEncountered = false
+				mode = "attr"
 				break
 			}
+
+			if s[0] == '"' {
+				insideQuotes = true
+			}
+
+			if s[0] == ' ' && !insideQuotes {
+				spaceEncountered = true
+			}
+
+			value.WriteByte(s[0])
+			s = s[1:]
 		}
 
-		if needsQuotes {
-			clean.WriteString("\"")
-		}
-		clean.WriteString(value[:valEndIdx+1])
-		if needsQuotes {
-			clean.WriteString("\"")
-		}
-
-		// If there was a semi-colon at the end
-		if currParamEnd > 0 {
-			clean.WriteString(";")
-		}
-
-		clean.WriteString(value[valEndIdx+1:])
-
-		fmt.Printf("^^^attr %s\n", attr)
-		fmt.Printf("^^^value %s\n\n", value)
 	}
-
+	if attr.Len() > 0 {
+		clean.WriteString(attr.String())
+	}
 	return clean.String()
 }
