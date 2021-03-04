@@ -403,7 +403,7 @@ findValueStart:
 			}
 		}
 
-		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=', ' '} {
+		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='} {
 			if s[0] == v {
 				quoteIfUnquoted()
 			}
@@ -414,7 +414,7 @@ findValueStart:
 	findValueEnd:
 		for len(s) > 0 {
 			switch s[0] {
-			case ';', '\t':
+			case ';', ' ', '\t':
 				if valueQuotedOriginally {
 					// We're in a quoted string, so whitespace is allowed.
 					value.WriteByte(s[0])
@@ -467,7 +467,7 @@ findValueStart:
 				// Else there is no next char to consume.
 				s = s[1:]
 
-			case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=', ' ':
+			case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
 				quoteIfUnquoted()
 
 				fallthrough
@@ -506,7 +506,7 @@ func fixUnquotedSpecials(s string) string {
 
 	clean := strings.Builder{}
 	clean.WriteString(s[:idx+1])
-	s = s[idx+1:]
+	s = fixUnquotedValueWithSpaces(s[idx+1:], ';')
 
 	for len(s) > 0 {
 		var consumed string
@@ -614,4 +614,88 @@ func fixUnescapedQuotes(hvalue string) string {
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
+}
+
+// gets a string like: x-unix-mode=0644; name=File name with spaces.pdf; some-param=da da da
+// returns a string like: x-unix-mode=0644; name="File name with spaces.pdf"
+func fixUnquotedValueWithSpaces(s string, sep byte) string {
+
+	// start reading the string
+	// find the attribute name
+	// find start of value
+	// find end of value
+	// check if includes spaces
+	// if includes spaces, quote it
+
+	clean := strings.Builder{}
+
+	for len(s) > 0 {
+		var currParam string
+		currParamEnd := strings.IndexByte(s, sep)
+		if currParamEnd < 0 {
+			currParam = s
+			s = ""
+		} else {
+			currParam = s[:currParamEnd]
+			s = s[currParamEnd+1:]
+		}
+		fmt.Printf("***currParamEnd %d\n", currParamEnd)
+		fmt.Printf("***currParam %s\n", currParam)
+		fmt.Printf("***Remaining string %s\n", s)
+
+		// Get attr name and value
+		eq := strings.IndexByte(currParam, '=')
+		if eq < 0 {
+			clean.WriteString(currParam)
+			break
+		}
+		attr := currParam[:eq]
+		clean.WriteString(attr)
+		clean.WriteString("=")
+		value := currParam[eq+1:]
+		isValueAlreadyQuoted := value[0] == '"'
+		if value[0] == '"' {
+			// val is already quoted
+			valEndQuoteIdx := strings.IndexByte(s, '"')
+			clean.WriteString(value + s[:valEndQuoteIdx])
+			s = s[valEndQuoteIdx:]
+			continue
+		}
+
+		needsQuotes := false
+		valEndIdx := len(value) - 1
+		for i := 0; i < len(value); i++ {
+			if isValueAlreadyQuoted {
+				continue
+			}
+			if value[i] == ' ' {
+				needsQuotes = true
+				continue
+			}
+			if value[i] == '\n' || value[i] == '\t' {
+				valEndIdx = i - 1
+				break
+			}
+		}
+
+		if needsQuotes {
+			clean.WriteString("\"")
+		}
+		clean.WriteString(value[:valEndIdx+1])
+		if needsQuotes {
+			clean.WriteString("\"")
+		}
+
+		// If there was a semi-colon at the end
+		if currParamEnd > 0 {
+			clean.WriteString(";")
+		}
+
+		clean.WriteString(value[valEndIdx+1:])
+
+		fmt.Printf("^^^attr %s\n", attr)
+		fmt.Printf("^^^value %s\n\n", value)
+	}
+
+	return clean.String()
 }

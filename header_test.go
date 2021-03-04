@@ -832,3 +832,51 @@ func TestParseMediaType(t *testing.T) {
 		})
 	}
 }
+
+func TestFixUnquotedValueWithSpaces(t *testing.T) {
+	testCases := []struct {
+		label string // Test case label.
+		input string // Content type to parse.
+		want  string // Expected media type returned.
+	}{
+		{
+			label: "base case",
+			input: "x-unix-mode=0644; name=File name with spaces.pdf",
+			want:  "x-unix-mode=0644; name=\"File name with spaces.pdf\"",
+		},
+		{
+			label: "semi-colon at the end",
+			input: "x-unix-mode=0644; name=File name with spaces.pdf;",
+			want:  "x-unix-mode=0644; name=\"File name with spaces.pdf\";",
+		},
+		{
+			label: "Non param ending",
+			input: "x-unix-mode=0644; name=File name with spaces.pdf; some-random string",
+			want:  "x-unix-mode=0644; name=\"File name with spaces.pdf\"; some-random string",
+		},
+		{
+			label: "Other white space chars",
+			input: "x-unix-mode=0644;\n\tname=File name with spaces.pdf;\n\tanother=some param\n\t",
+			want:  "x-unix-mode=0644;\n\tname=\"File name with spaces.pdf\";\n\tanother=\"some param\"\n\t",
+		}, {
+			label: "Don't touch already quoted values",
+			input: "x-unix-mode=0644;\n\tname=\"File name with spaces.pdf\";\n\tanother=some param\n\t",
+			want:  "x-unix-mode=0644;\n\tname=\"File name with spaces.pdf\";\n\tanother=\"some param\"\n\t",
+		},
+
+		{
+			label: "Quoted separator mid string",
+			input: "x-unix-mode=0644;\n\tname=\"File name;with quoted separator.pdf\";\n\tanother=some param\n\t",
+			want:  "x-unix-mode=0644;\n\tname=\"File name;with quoted separator.pdf\";\n\tanother=\"some param\"\n\t",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.label, func(t *testing.T) {
+			got := fixUnquotedValueWithSpaces(tc.input, ';')
+			if got != tc.want {
+				t.Errorf("\nWanted:\t%q\nGot:\t%q", tc.want, got)
+			}
+		})
+	}
+
+}
