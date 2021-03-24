@@ -640,6 +640,17 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 		spaceEncountered = false
 	}
 
+	writeCleanParam := func() {
+		clean.WriteString(attr.String())
+		if spaceEncountered {
+			clean.WriteByte('"')
+		}
+		clean.WriteString(value.String())
+		if spaceEncountered {
+			clean.WriteByte('"')
+		}
+	}
+
 	for len(s) > 0 {
 		// fmt.Printf("\ns -> %s\nmode -> %s\n attr-> %s\n value-> %s\n insideQuotes->%t\n spaceEncountered-> %t\n\n==========\n\n", s, mode, attr.String(), value.String(), insideQuotes, spaceEncountered)
 		switch mode {
@@ -649,20 +660,13 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 			}
 			attr.WriteByte(s[0])
 			s = s[1:]
-		default:
+		case "value":
 			// If we encounter an end, reset the state
 			if len(s) == 1 || s[0] == '\n' || s[0] == '\t' || ((s[0] == '"' || s[0] == ';') && !insideQuotes) {
 				if len(s) == 1 && s[0] != ';' {
 					value.WriteString(s)
 				}
-				clean.WriteString(attr.String())
-				if spaceEncountered {
-					clean.WriteByte('"')
-				}
-				clean.WriteString(value.String())
-				if spaceEncountered {
-					clean.WriteByte('"')
-				}
+				writeCleanParam()
 				if len(s) > 1 || s[0] == ';' {
 					clean.WriteByte(s[0])
 				}
