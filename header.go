@@ -618,22 +618,28 @@ func whiteSpaceRune(r rune) bool {
 
 // gets a string like: x-unix-mode=0644; name=File name with spaces.pdf; some-param=da da da
 // returns a string like: x-unix-mode=0644; name="File name with spaces.pdf"
+// A Bit of explanation on terminology
+// attr is the key
+// value is the value
+// param refers to the combination of "attr=value" separated by a separator
 func fixUnquotedValueWithSpaces(s string, sep byte) string {
-
-	// start reading the string
-	// find the attribute name
-	// find start of value
-	// find end of value
-	// check if includes spaces
-	// if includes spaces, quote it
-
+	// The clean string that we will return
 	clean := strings.Builder{}
-
+	// This is either attr or value sepending on where we are at in a
+	// Content-Type string
 	mode := "attr"
 	attr := strings.Builder{}
 	value := strings.Builder{}
 	insideQuotes := false
 	spaceEncountered := false
+
+	resetForNextParam := func() {
+		attr.Reset()
+		value.Reset()
+		insideQuotes = false
+		spaceEncountered = false
+	}
+
 	for len(s) > 0 {
 		// fmt.Printf("\ns -> %s\nmode -> %s\n attr-> %s\n value-> %s\n insideQuotes->%t\n spaceEncountered-> %t\n\n==========\n\n", s, mode, attr.String(), value.String(), insideQuotes, spaceEncountered)
 		switch mode {
@@ -645,7 +651,7 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 			s = s[1:]
 		default:
 			// If we encounter an end, reset the state
-			if len(s) == 1 || s[0] == '\n' || s[0] == '\t' || (s[0] == ';' && !insideQuotes) || (s[0] == '"' && insideQuotes) || (s[0] == '\n' || s[0] == '\t') && !insideQuotes {
+			if len(s) == 1 || s[0] == '\n' || s[0] == '\t' || (s[0] == ';' && !insideQuotes) || (s[0] == '"' && insideQuotes) {
 				if len(s) == 1 && s[0] != ';' {
 					value.WriteString(s)
 				}
@@ -661,10 +667,7 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 					clean.WriteByte(s[0])
 				}
 				s = s[1:]
-				attr.Reset()
-				value.Reset()
-				insideQuotes = false
-				spaceEncountered = false
+				resetForNextParam()
 				mode = "attr"
 				break
 			}
