@@ -658,7 +658,9 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 				if spaceEncountered {
 					clean.WriteByte('"')
 				}
-				clean.WriteByte(s[0])
+				if len(s) > 1 {
+					clean.WriteByte(s[0])
+				}
 				s = s[1:]
 				attr.Reset()
 				value.Reset()
