@@ -839,11 +839,13 @@ func TestFixUnquotedValueWithSpaces(t *testing.T) {
 		input string // Content type to parse.
 		want  string // Expected media type returned.
 	}{
-		// {
-		// 	label: "base case",
-		// 	input: "x-unix-mode=0644; name=File name with spaces.pdf",
-		// 	want:  "x-unix-mode=0644; name=\"File name with spaces.pdf\"",
-		// },
+		{
+			label: "base case",
+			input: "x-unix-mode=0644; name=File name with spaces.pdf",
+			want:  "x-unix-mode=0644; name=\"File name with spaces.pdf\"",
+		},
+		// We are making a conscious choice here to assume that if there is an unquoted string
+		// then the semicolon at the end is the param separator and not part of the value
 		{
 			label: "semi-colon at the end",
 			input: "x-unix-mode=0644; name=File name with spaces.pdf;",
