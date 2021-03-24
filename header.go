@@ -643,7 +643,6 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 			}
 			attr.WriteByte(s[0])
 			s = s[1:]
-			break
 		default:
 			// If we encounter an end, reset the state
 			if len(s) == 1 || s[0] == '\n' || s[0] == '\t' || (s[0] == ';' && !insideQuotes) || (s[0] == '"' && insideQuotes) || (s[0] == '\n' || s[0] == '\t') && !insideQuotes {
