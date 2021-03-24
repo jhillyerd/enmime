@@ -324,7 +324,7 @@ func TestFixUnquotedSpecials(t *testing.T) {
 		},
 		{
 			input: "application/octet-stream; param1= value1",
-			want:  "application/octet-stream; param1= value1",
+			want:  "application/octet-stream; param1=\" value1\"",
 		},
 		{
 			input: "application/octet-stream; param1=\tvalue1",
