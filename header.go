@@ -628,10 +628,10 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 	// This is either attr or value depending on where we are at in a
 	// Content-Type param list
 	const (
-		ATTR_MODE = iota
-		VALUE_MODE
+		attrMode = iota
+		valueMode
 	)
-	mode := ATTR_MODE
+	mode := attrMode
 	attr := strings.Builder{}
 	value := strings.Builder{}
 	insideQuotes := false
@@ -642,7 +642,7 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 		value.Reset()
 		insideQuotes = false
 		spaceEncountered = false
-		mode = ATTR_MODE
+		mode = attrMode
 	}
 
 	writeCleanParam := func() {
@@ -659,13 +659,13 @@ func fixUnquotedValueWithSpaces(s string, sep byte) string {
 	for len(s) > 0 {
 		// fmt.Printf("\ns -> %s\nmode -> %s\n attr-> %s\n value-> %s\n insideQuotes->%t\n spaceEncountered-> %t\n\n==========\n\n", s, mode, attr.String(), value.String(), insideQuotes, spaceEncountered)
 		switch mode {
-		case ATTR_MODE:
+		case attrMode:
 			if s[0] == '=' {
-				mode = VALUE_MODE
+				mode = valueMode
 			}
 			attr.WriteByte(s[0])
 			s = s[1:]
-		case VALUE_MODE:
+		case valueMode:
 			// If we encounter an end, reset the state
 			if len(s) == 1 || s[0] == '\n' || s[0] == '\t' || ((s[0] == '"' || s[0] == ';') && !insideQuotes) {
 				if len(s) == 1 && s[0] != ';' {
