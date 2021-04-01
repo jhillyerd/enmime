@@ -62,7 +62,9 @@ func (p MailBuilder) Subject(subject string) MailBuilder {
 // To returns a copy of MailBuilder with this name & address appended to the To header.  name may be
 // empty.
 func (p MailBuilder) To(name, addr string) MailBuilder {
-	p.to = append(p.to, mail.Address{Name: name, Address: addr})
+	if len(addr) > 0 {
+		p.to = append(p.to, mail.Address{Name: name, Address: addr})
+	}
 	return p
 }
 
@@ -75,7 +77,9 @@ func (p MailBuilder) ToAddrs(to []mail.Address) MailBuilder {
 // CC returns a copy of MailBuilder with this name & address appended to the CC header.  name may be
 // empty.
 func (p MailBuilder) CC(name, addr string) MailBuilder {
-	p.cc = append(p.cc, mail.Address{Name: name, Address: addr})
+	if len(addr) > 0 {
+		p.cc = append(p.cc, mail.Address{Name: name, Address: addr})
+	}
 	return p
 }
 
@@ -89,7 +93,9 @@ func (p MailBuilder) CCAddrs(cc []mail.Address) MailBuilder {
 // empty.  This method only has an effect if the Send method is used to transmit the message, there
 // is no effect on the parts returned by Build().
 func (p MailBuilder) BCC(name, addr string) MailBuilder {
-	p.bcc = append(p.bcc, mail.Address{Name: name, Address: addr})
+	if len(addr) > 0 {
+		p.bcc = append(p.bcc, mail.Address{Name: name, Address: addr})
+	}
 	return p
 }
 

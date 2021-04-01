@@ -1003,3 +1003,66 @@ func TestSendWithReversePath(t *testing.T) {
 		t.Errorf("msg bytes did not contain text body %q", text)
 	}
 }
+
+func TestEmptyTo(t *testing.T) {
+	sender := &mockSender{}
+	from := "from@example.com"
+	text := []byte("test text body")
+	ret := "return@example.com"
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		To("", "")
+
+	err := a.SendWithReversePath(sender, ret)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if err.Error() != "no recipients (to, cc, bcc) set" {
+		t.Fatalf("Unexpected error, wanted 'no recipients (to, cc, bcc) set' got %s", err)
+	}
+}
+
+func TestEmptyBCC(t *testing.T) {
+	sender := &mockSender{}
+	from := "from@example.com"
+	text := []byte("test text body")
+	ret := "return@example.com"
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		BCC("", "")
+
+	err := a.SendWithReversePath(sender, ret)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if err.Error() != "no recipients (to, cc, bcc) set" {
+		t.Fatalf("Unexpected error, wanted 'no recipients (to, cc, bcc) set' got %s", err)
+	}
+}
+
+func TestEmptyCC(t *testing.T) {
+	sender := &mockSender{}
+	from := "from@example.com"
+	text := []byte("test text body")
+	ret := "return@example.com"
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		CC("", "")
+
+	err := a.SendWithReversePath(sender, ret)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if err.Error() != "no recipients (to, cc, bcc) set" {
+		t.Fatalf("Unexpected error, wanted 'no recipients (to, cc, bcc) set' got %s", err)
+	}
+}
