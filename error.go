@@ -21,7 +21,7 @@ const (
 	ErrorPlainTextFromHTML = "Plain Text from HTML"
 	// ErrorCharsetDeclaration name.
 	ErrorCharsetDeclaration = "Character Set Declaration Mismatch"
-	// ErrorMissingRecipient
+	// ErrorMissingRecipient name.
 	ErrorMissingRecipient = "no recipients (to, cc, bcc) set"
 )
 
