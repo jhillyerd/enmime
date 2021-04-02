@@ -1005,64 +1005,61 @@ func TestSendWithReversePath(t *testing.T) {
 }
 
 func TestEmptyTo(t *testing.T) {
-	sender := &mockSender{}
 	from := "from@example.com"
 	text := []byte("test text body")
-	ret := "return@example.com"
+	rcpt := "rcpt@example.com"
 	a := enmime.Builder().
 		Text(text).
 		From("name", from).
 		Subject("foo").
-		To("", "")
+		To(rcpt, "")
 
-	err := a.SendWithReversePath(sender, ret)
+	_, err := a.Build()
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
 
-	if err.Error() != "no recipients (to, cc, bcc) set" {
-		t.Fatalf("Unexpected error, wanted 'no recipients (to, cc, bcc) set' got %s", err)
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
 	}
 }
 
 func TestEmptyBCC(t *testing.T) {
-	sender := &mockSender{}
 	from := "from@example.com"
 	text := []byte("test text body")
-	ret := "return@example.com"
+	rcpt := "rcpt@example.com"
 	a := enmime.Builder().
 		Text(text).
 		From("name", from).
 		Subject("foo").
-		BCC("", "")
+		BCC(rcpt, "")
 
-	err := a.SendWithReversePath(sender, ret)
+	_, err := a.Build()
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
 
-	if err.Error() != "no recipients (to, cc, bcc) set" {
-		t.Fatalf("Unexpected error, wanted 'no recipients (to, cc, bcc) set' got %s", err)
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
 	}
 }
 
 func TestEmptyCC(t *testing.T) {
-	sender := &mockSender{}
 	from := "from@example.com"
 	text := []byte("test text body")
-	ret := "return@example.com"
+	rcpt := "rcpt@example.com"
 	a := enmime.Builder().
 		Text(text).
 		From("name", from).
 		Subject("foo").
-		CC("", "")
+		CC(rcpt, "")
 
-	err := a.SendWithReversePath(sender, ret)
+	_, err := a.Build()
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
 
-	if err.Error() != "no recipients (to, cc, bcc) set" {
-		t.Fatalf("Unexpected error, wanted 'no recipients (to, cc, bcc) set' got %s", err)
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
 	}
 }

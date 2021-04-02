@@ -225,7 +225,7 @@ func (p MailBuilder) Build() (*Part, error) {
 		return nil, errors.New("subject not set")
 	}
 	if len(p.to)+len(p.cc)+len(p.bcc) == 0 {
-		return nil, errors.New("no recipients (to, cc, bcc) set")
+		return nil, errors.New(ErrorMissingRecipient)
 	}
 	// Fully loaded structure; the presence of text, html, inlines, and attachments will determine
 	// how much is necessary:
