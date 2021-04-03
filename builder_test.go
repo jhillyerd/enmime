@@ -1003,3 +1003,63 @@ func TestSendWithReversePath(t *testing.T) {
 		t.Errorf("msg bytes did not contain text body %q", text)
 	}
 }
+
+func TestEmptyTo(t *testing.T) {
+	from := "from@example.com"
+	text := []byte("test text body")
+	rcpt := "rcpt name"
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		To(rcpt, "")
+
+	_, err := a.Build()
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
+	}
+}
+
+func TestEmptyBCC(t *testing.T) {
+	from := "from@example.com"
+	text := []byte("test text body")
+	rcpt := "rcpt name"
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		BCC(rcpt, "")
+
+	_, err := a.Build()
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
+	}
+}
+
+func TestEmptyCC(t *testing.T) {
+	from := "from@example.com"
+	text := []byte("test text body")
+	rcpt := "rcpt name"
+	a := enmime.Builder().
+		Text(text).
+		From("name", from).
+		Subject("foo").
+		CC(rcpt, "")
+
+	_, err := a.Build()
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
+	}
+}
