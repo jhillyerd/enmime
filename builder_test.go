@@ -1007,7 +1007,7 @@ func TestSendWithReversePath(t *testing.T) {
 func TestEmptyTo(t *testing.T) {
 	from := "from@example.com"
 	text := []byte("test text body")
-	rcpt := "rcpt@example.com"
+	rcpt := "rcpt name"
 	a := enmime.Builder().
 		Text(text).
 		From("name", from).
@@ -1027,7 +1027,7 @@ func TestEmptyTo(t *testing.T) {
 func TestEmptyBCC(t *testing.T) {
 	from := "from@example.com"
 	text := []byte("test text body")
-	rcpt := "rcpt@example.com"
+	rcpt := "rcpt name"
 	a := enmime.Builder().
 		Text(text).
 		From("name", from).
@@ -1047,7 +1047,7 @@ func TestEmptyBCC(t *testing.T) {
 func TestEmptyCC(t *testing.T) {
 	from := "from@example.com"
 	text := []byte("test text body")
-	rcpt := "rcpt@example.com"
+	rcpt := "rcpt name"
 	a := enmime.Builder().
 		Text(text).
 		From("name", from).
