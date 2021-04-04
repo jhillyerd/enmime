@@ -19,4 +19,18 @@ jobs:
       - name: Build and Test
         run: |
           go build
-          go test -race ./...
+          go test -race -coverprofile=profile.cov ./...
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: profile.cov
+          flag-name: Go-${{ matrix.go }}
+          parallel: true
+  coverage:
+    needs: build
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
