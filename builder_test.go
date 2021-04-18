@@ -833,14 +833,6 @@ func TestValidation(t *testing.T) {
 	if err == nil {
 		t.Error("error nil, expected value")
 	}
-
-	_, err = enmime.Builder().
-		To("name", "address").
-		From("name", "address").
-		Build()
-	if err == nil {
-		t.Error("error nil, expected value")
-	}
 }
 
 func TestBuilderFullStructure(t *testing.T) {
