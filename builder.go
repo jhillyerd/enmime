@@ -221,9 +221,6 @@ func (p MailBuilder) Build() (*Part, error) {
 	if p.from.Address == "" {
 		return nil, errors.New("from not set")
 	}
-	if p.subject == "" {
-		return nil, errors.New("subject not set")
-	}
 	if len(p.to)+len(p.cc)+len(p.bcc) == 0 {
 		return nil, errors.New(ErrorMissingRecipient)
 	}
