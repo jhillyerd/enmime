@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - A `Sender` interface that allows our users to provide their own mail
   sending routines, or mock them in tests. #182
 
+### Changed
+- Updated dependencies
 
 ## [0.8.4] - 2020-12-18
 
