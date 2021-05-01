@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [Unreleased]
+## [0.9.0] - 2021-05-01
 
 ### Added
 - `SendWithReversePath` method to builder, allows specifying a reverse-path
@@ -13,8 +13,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - A `Sender` interface that allows our users to provide their own mail
   sending routines, or mock them in tests. #182
 
+### Fixed
+- Reject empty addresses during builder validation (#187, thanks jawr)
+- Allow unset subject line during builder validation (#191, thanks psanford)
+
 ### Changed
 - Updated dependencies
+
 
 ## [0.8.4] - 2020-12-18
 
@@ -177,7 +182,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
-[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.8.4...master
+[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.0...master
+[0.9.0]:      https://github.com/jhillyerd/enmime/compare/v0.8.4...v0.9.0
 [0.8.4]:      https://github.com/jhillyerd/enmime/compare/v0.8.3...v0.8.4
 [0.8.3]:      https://github.com/jhillyerd/enmime/compare/v0.8.2...v0.8.3
 [0.8.2]:      https://github.com/jhillyerd/enmime/compare/v0.8.1...v0.8.2
