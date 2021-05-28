@@ -59,6 +59,10 @@ func TestSplitQuoted(t *testing.T) {
 			input: `a;b\;c`,
 			want:  []string{`a`, `b\`, `c`},
 		},
+		{
+			input: `a ; b ;c; d`,
+			want:  []string{`a`, `b`, `c`, `d`},
+		},
 	}
 
 	for _, tc := range testCases {

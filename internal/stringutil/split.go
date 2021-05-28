@@ -1,5 +1,7 @@
 package stringutil
 
+import "strings"
+
 const escape = '\\'
 
 // SplitQuoted splits a string, ignoring separators present inside of quoted runs.  Separators
@@ -23,7 +25,7 @@ func SplitQuoted(s string, sep rune, quote rune) []string {
 		}
 		escaped = false
 		if !quoted && c == sep {
-			a = append(a, s[p:i])
+			a = append(a, strings.TrimSpace(s[p:i]))
 			p = i + 1
 		}
 	}
@@ -33,5 +35,5 @@ func SplitQuoted(s string, sep rune, quote rune) []string {
 		return SplitQuoted(s, sep, rune(0))
 	}
 
-	return append(a, s[p:])
+	return append(a, strings.TrimSpace(s[p:]))
 }
