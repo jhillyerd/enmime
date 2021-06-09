@@ -308,6 +308,8 @@ func fixMangledMediaType(mtype string, sep rune) string {
 		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
 		// semicolon.
 		if i != len(parts)-1 && !strings.HasSuffix(mtype, ";") {
+			// Remove whitespace between parameter=value and ;
+			mtype = strings.TrimRight(mtype, " \t")
 			mtype += ";"
 		}
 	}

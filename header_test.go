@@ -799,6 +799,48 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "text/html",
 			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
 		},
+		{
+			label:  "with whitespace",
+			input:  "text/plain; charset=\"UTF-8\" ; format=flowed",
+			mtype:  "text/plain",
+			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
+		},
+		{
+			label:  "with whitespace tab",
+			input:  "text/plain; charset=\"UTF-8\"\t; format=flowed",
+			mtype:  "text/plain",
+			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
+		},
+		{
+			label:  "with newline and tab",
+			input:  "text/plain; charset=\"UTF-8\"\n\t; format=flowed",
+			mtype:  "text/plain",
+			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
+		},
+		{
+			label:  "with newline and space",
+			input:  "application/pdf; name=foo\n ; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
+		{
+			label:  "with more spaces",
+			input:  "application/pdf; name=foo      ; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
+		{
+			label:  "with more tabs",
+			input:  "application/pdf; name=foo \t\t; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
+		{
+			label:  "with more newlines",
+			input:  "application/pdf; name=foo \n\n; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
