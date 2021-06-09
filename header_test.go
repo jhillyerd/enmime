@@ -836,7 +836,7 @@ func TestParseMediaType(t *testing.T) {
 			params: map[string]string{"name": "foo", "format": "flowed"},
 		},
 		{
-			label:  "with more tabs",
+			label:  "with more newlines",
 			input:  "application/pdf; name=foo \n\n; format=flowed",
 			mtype:  "application/pdf",
 			params: map[string]string{"name": "foo", "format": "flowed"},
