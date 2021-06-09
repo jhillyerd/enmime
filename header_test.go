@@ -823,6 +823,24 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "application/pdf",
 			params: map[string]string{"name": "foo", "format": "flowed"},
 		},
+		{
+			label:  "with more spaces",
+			input:  "application/pdf; name=foo      ; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
+		{
+			label:  "with more tabs",
+			input:  "application/pdf; name=foo \t\t; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
+		{
+			label:  "with more tabs",
+			input:  "application/pdf; name=foo \n\n; format=flowed",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
