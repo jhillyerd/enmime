@@ -313,9 +313,8 @@ func fixMangledMediaType(mtype string, sep rune) string {
 			mtype += ";"
 		}
 	}
-	if strings.HasSuffix(mtype, ";") {
-		mtype = mtype[:len(mtype)-1]
-	}
+	mtype = strings.TrimSuffix(mtype, ";")
+
 	return mtype
 }
 
