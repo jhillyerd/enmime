@@ -284,6 +284,11 @@ func fixMangledMediaType(mtype string, sep rune) string {
 				continue
 			}
 
+			if len(strings.TrimSpace(p)) == 0 {
+				// Ignore empty parameters.
+				continue
+			}
+
 			if !strings.Contains(p, "=") {
 				p = p + "=" + pvPlaceholder
 			}
