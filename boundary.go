@@ -181,13 +181,18 @@ func (b *boundaryReader) Next() (bool, error) {
 		_, _ = io.Copy(ioutil.Discard, b)
 	}
 	for {
-		var line []byte
+		var line []byte = nil
 		var err error
 		for {
 			// Read whole line, handle extra long lines in cycle
 			var segment []byte
 			segment, err = b.r.ReadSlice('\n')
-			line = append(line, segment...)
+			if line == nil {
+				line = segment
+			} else {
+				line = append(line, segment...)
+			}
+
 			if err == nil || err == io.EOF {
 				break
 			} else if err != bufio.ErrBufferFull || len(segment) == 0 {
