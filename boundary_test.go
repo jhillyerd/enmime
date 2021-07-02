@@ -477,8 +477,8 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	}
 }
 
+// TestBoundaryReaderLongLine checks that boundaryReader can read lines longer than the `peekBufferSize`.
 func TestBoundaryReaderLongLine(t *testing.T) {
-	//dest := make([]byte, 8 *1024)
 	data := bytes.Repeat([]byte{1}, 7*1024)
 	data[6*1024] = '\n'
 
