@@ -477,6 +477,24 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	}
 }
 
+// TestBoundaryReaderLongLine checks that boundaryReader can read lines longer than the `peekBufferSize`.
+func TestBoundaryReaderLongLine(t *testing.T) {
+	data := bytes.Repeat([]byte{1}, 7*1024)
+	data[6*1024] = '\n'
+
+	br := &boundaryReader{
+		r: bufio.NewReader(bytes.NewReader(data)),
+	}
+
+	next, err := br.Next()
+	if next {
+		t.Fatal("Next() should have returned false, failed")
+	}
+	if err != nil {
+		t.Fatal("Next() should have returned no error, failed")
+	}
+}
+
 // TestReadLenNotCap checks that the `boundaryReader` `io.Reader` implementation fills the provided
 // slice based on its length (as per the `io.Reader` documentation), and not its capacity.
 func TestReadLenNotCap(t *testing.T) {
