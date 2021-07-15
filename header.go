@@ -407,8 +407,6 @@ findValueStart:
 		}
 	}
 
-	hasRest := false
-
 	if len(s)-i < 1 {
 		// parameter value starts at the end of the string, make empty
 		// quoted string to play nice with mime.ParseMediaType
@@ -444,15 +442,13 @@ findValueStart:
 				}
 
 				// Otherwise, we've reached the end of an unquoted value.
-				hasRest = true
-				s = s[i:]
+				rest = s[i:]
 				break findValueEnd
 
 			case '"':
 				if valueQuotedOriginally {
 					// We're in a quoted value. This is the end of that value.
-					hasRest = true
-					s = s[i:]
+					rest = s[i:]
 					break findValueEnd
 				}
 
@@ -483,11 +479,6 @@ findValueStart:
 		}
 	}
 
-	if !hasRest {
-		// Whole string was processed
-		s = ""
-	}
-
 	if value.Len() > 0 {
 		// Convert whole value to RFC2047 if it contains forbidden characters (ASCII > 127)
 		val := value.String()
@@ -507,18 +498,18 @@ findValueStart:
 	}
 
 	// Write last parsed char if any
-	if s != "" {
-		if s[0] != '"' {
+	if rest != "" {
+		if rest[0] != '"' {
 			// When last char is quote, valueQuotedOriginally is surely true and the quote was already written.
 			// Otherwise output the character (; for example)
-			param.WriteByte(s[0])
+			param.WriteByte(rest[0])
 		}
 
 		// Focus the rest of the string
-		s = s[1:]
+		rest = rest[1:]
 	}
 
-	return param.String(), s
+	return param.String(), rest
 }
 
 // fixUnquotedSpecials as defined in RFC 2045, section 5.1:
