@@ -1,0 +1,26 @@
+Date: Wed, 22 Feb 2021 13:29:24 +0800
+From: "Pavel Bazika" <pavel.bazika@some.domain>
+To: <test@dome.domain>,
+Subject: Malformed test
+Mime-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="=====003_Dragon323481247347_====="
+
+This is a multi-part message in MIME format.
+
+--=====003_Dragon323481247347_=====
+Content-Type: text/plain;
+	charset=us-ascii
+
+Text part
+
+--=====003_Dragon323481247347_=====
+Content-Type: application/msword;
+	name=管理.doc
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename=管理.doc
+
+PGh0bWw+Cg==
+
+--=====003_Dragon323481247347_=====--
