@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/textproto"
 	"strings"
+	_utf8 "unicode/utf8"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
@@ -422,7 +423,8 @@ findValueStart:
 			}
 		}
 
-		s = s[i+1:]
+		_, runeLength := _utf8.DecodeRuneInString(s[i:])
+		s = s[i+runeLength:]
 		escaped := false
 
 	findValueEnd:

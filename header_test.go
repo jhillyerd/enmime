@@ -398,7 +398,7 @@ func TestFixUnquotedSpecials(t *testing.T) {
 		{
 			// Check unquoted 8bit is encoded
 			input: `application/msword;name=管理.doc`,
-			want:  `application/msword;name="=?UTF-8?b?566h77+977+955CGLmRvYw==?="`,
+			want:  `application/msword;name="=?utf-8?b?566h55CGLmRvYw==?="`,
 		},
 		{
 			// Check mix of ascii and unquoted 8bit is encoded
