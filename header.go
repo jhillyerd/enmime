@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/textproto"
 	"strings"
+	_utf8 "unicode/utf8"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
@@ -358,6 +359,7 @@ func consumeParam(s string) (consumed, rest string) {
 	valueQuotedOriginally := false
 	valueQuoteAdded := false
 	valueQuoteNeeded := false
+	rfc2047Needed := false
 
 	var r rune
 findValueStart:
@@ -369,7 +371,8 @@ findValueStart:
 		case '"':
 			valueQuotedOriginally = true
 			valueQuoteAdded = true
-			value.WriteRune(r)
+			valueQuoteNeeded = true
+			param.WriteRune(r)
 
 			break findValueStart
 
@@ -381,11 +384,27 @@ findValueStart:
 			break findValueStart
 
 		default:
+			if r > 127 {
+				rfc2047Needed = true
+			}
+
 			valueQuotedOriginally = false
 			valueQuoteAdded = false
 			value.WriteRune(r)
 
 			break findValueStart
+		}
+	}
+
+	quoteIfUnquoted := func() {
+		if !valueQuoteNeeded {
+			if !valueQuoteAdded {
+				param.WriteByte('"')
+
+				valueQuoteAdded = true
+			}
+
+			valueQuoteNeeded = true
 		}
 	}
 
@@ -397,81 +416,56 @@ findValueStart:
 	} else {
 		// The beginning of the value is not at the end of the string
 
-		quoteIfUnquoted := func() {
-			if !valueQuoteNeeded {
-				if !valueQuoteAdded {
-					param.WriteByte('"')
-
-					valueQuoteAdded = true
-				}
-
-				valueQuoteNeeded = true
-			}
-		}
-
 		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='} {
 			if s[0] == v {
 				quoteIfUnquoted()
+				break
 			}
 		}
 
-		s = s[i+1:]
+		_, runeLength := _utf8.DecodeRuneInString(s[i:])
+		s = s[i+runeLength:]
+		escaped := false
 
 	findValueEnd:
-		for len(s) > 0 {
-			switch s[0] {
+		for i, r = range s {
+			if escaped {
+				value.WriteRune(r)
+				escaped = false
+				continue
+			}
+
+			switch r {
 			case ';', ' ', '\t':
 				if valueQuotedOriginally {
 					// We're in a quoted string, so whitespace is allowed.
-					value.WriteByte(s[0])
-					s = s[1:]
+					value.WriteRune(r)
 					break
 				}
 
 				// Otherwise, we've reached the end of an unquoted value.
-
-				param.WriteString(value.String())
-				value.Reset()
-
-				if valueQuoteNeeded {
-					param.WriteByte('"')
-				}
-
-				param.WriteByte(s[0])
-				s = s[1:]
-
+				rest = s[i:]
 				break findValueEnd
 
 			case '"':
 				if valueQuotedOriginally {
 					// We're in a quoted value. This is the end of that value.
-					param.WriteString(value.String())
-					value.Reset()
-
-					param.WriteByte(s[0])
-					s = s[1:]
-
+					rest = s[i:]
 					break findValueEnd
 				}
 
 				quoteIfUnquoted()
 
 				value.WriteByte('\\')
-				value.WriteByte(s[0])
-				s = s[1:]
+				value.WriteRune(r)
 
 			case '\\':
-				if len(s) > 1 {
-					value.WriteByte(s[0])
-					s = s[1:]
-
-					// Backslash escapes the next char. Consume that next char.
-					value.WriteByte(s[0])
-
+				if i < len(s)-1 {
+					// If next char is present, escape it with backslash
+					value.WriteRune(r)
+					escaped = true
 					quoteIfUnquoted()
 				}
-				// Else there is no next char to consume.
-				s = s[1:]
 
 			case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
 				quoteIfUnquoted()
@@ -479,26 +473,45 @@ findValueStart:
 				fallthrough
 
 			default:
-				value.WriteByte(s[0])
-				s = s[1:]
+				if r > 127 {
+					rfc2047Needed = true
+				}
+				value.WriteRune(r)
 			}
 		}
 	}
 
 	if value.Len() > 0 {
-		// There is a value that ends with the string. Capture it.
-		param.WriteString(value.String())
-
-		if valueQuotedOriginally || valueQuoteNeeded {
-			// If valueQuotedOriginally is true and we got here,
-			// that means there was no closing quote. So we'll add one.
-			// Otherwise, we're here because it was an unquoted value
-			// with a special char in it, and we had to quote it.
-			param.WriteByte('"')
+		// Convert whole value to RFC2047 if it contains forbidden characters (ASCII > 127)
+		val := value.String()
+		if rfc2047Needed {
+			val = mime.BEncoding.Encode(utf8, val)
+			// RFC 2047 must be quoted
+			quoteIfUnquoted()
 		}
+
+		// Write the value
+		param.WriteString(val)
 	}
 
-	return param.String(), s
+	// Add final quote if required
+	if valueQuoteNeeded {
+		param.WriteByte('"')
+	}
+
+	// Write last parsed char if any
+	if rest != "" {
+		if rest[0] != '"' {
+			// When last char is quote, valueQuotedOriginally is surely true and the quote was already written.
+			// Otherwise output the character (; for example)
+			param.WriteByte(rest[0])
+		}
+
+		// Focus the rest of the string
+		rest = rest[1:]
+	}
+
+	return param.String(), rest
 }
 
 // fixUnquotedSpecials as defined in RFC 2045, section 5.1:

@@ -938,6 +938,24 @@ func TestBadContentTransferEncodingInMime(t *testing.T) {
 	}
 }
 
+func TestBadMime8bitFilename(t *testing.T) {
+	msg := test.OpenTestData("mail", "mime-bad-8bit-filename.raw")
+	e, err := enmime.ReadEnvelope(msg)
+
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	if strings.TrimSpace(e.Text) != "Text part" {
+		t.Fatal("Text part not parsed correctly")
+	}
+	if len(e.Attachments) != 1 {
+		t.Fatal("Wrong number of attachments")
+	}
+	if e.Attachments[0].FileName != "管理.doc" {
+		t.Fatal("Wrong attachment name")
+	}
+}
+
 func TestBlankMediaName(t *testing.T) {
 	msg := test.OpenTestData("mail", "mime-blank-media-name.raw")
 	e, err := enmime.ReadEnvelope(msg)
