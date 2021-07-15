@@ -403,27 +403,27 @@ func TestFixUnquotedSpecials(t *testing.T) {
 		{
 			// Check mix of ascii and unquoted 8bit is encoded
 			input: `application/msword;name=15管理.doc`,
-			want:  `application/msword;name="=?UTF-8?b?MTXnrqHnkIYuZG9j?="`,
+			want:  `application/msword;name="=?utf-8?b?MTXnrqHnkIYuZG9j?="`,
 		},
 		{
 			// Check quoted 8bit is encoded
 			input: `application/msword;name="15管理.doc"`,
-			want:  `application/msword;name="=?UTF-8?b?MTXnrqHnkIYuZG9j?="`,
+			want:  `application/msword;name="=?utf-8?b?MTXnrqHnkIYuZG9j?="`,
 		},
 		{
 			// Check quoted 8bit with missing closing quote is encoded
 			input: `application/msword;name="15管理.doc`,
-			want:  `application/msword;name="=?UTF-8?b?MTXnrqHnkIYuZG9j?="`,
+			want:  `application/msword;name="=?utf-8?b?MTXnrqHnkIYuZG9j?="`,
 		},
 		{
 			// Trailing quote without starting quote is considered as part of param text for simplicity
 			input: `application/msword;name=15管理.doc"`,
-			want:  `application/msword;name="=?UTF-8?b?MTXnrqHnkIYuZG9jXCI=?="`,
+			want:  `application/msword;name="=?utf-8?b?MTXnrqHnkIYuZG9jXCI=?="`,
 		},
 		{
 			// Invalid UTF-8 sequence does not cause any fatal error
 			input: "application/msword;name=\xe2\x28\xa1.doc",
-			want:  `application/msword;name="=?UTF-8?b?77+9KO+/vS5kb2M=?="`,
+			want:  `application/msword;name="=?utf-8?b?77+9KO+/vS5kb2M=?="`,
 		},
 	}
 	for _, tc := range testCases {

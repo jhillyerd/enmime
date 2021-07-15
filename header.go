@@ -483,7 +483,7 @@ findValueStart:
 		// Convert whole value to RFC2047 if it contains forbidden characters (ASCII > 127)
 		val := value.String()
 		if rfc2047Needed {
-			val = mime.BEncoding.Encode("UTF-8", val)
+			val = mime.BEncoding.Encode(utf8, val)
 			// RFC 2047 must be quoted
 			quoteIfUnquoted()
 		}
