@@ -21,7 +21,7 @@ const MaxQPLineLen = 1024
 var (
 	_ io.Reader = &QPCleaner{} // Assert QPCleaner implements io.Reader.
 
-	escapedEquals = []byte("=3D") // escapedEquals is the QP encoded value of an equals sign.
+	escapedEquals = []byte("=3D") // QP encoded value of an equals sign.
 	lineBreak     = []byte("=\r\n")
 )
 
@@ -44,8 +44,8 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		qp.overflow = qp.overflow[n:]
 	}
 
-	// writeByte outputs a single byte, space for which has already been ensured by the loop
-	// condition. Updates counters. Updates counters.
+	// writeByte outputs a single byte, space for which will have already been ensured by the loop
+	// condition. Updates counters.
 	writeByte := func(in byte) {
 		dest[n] = in
 		n++
@@ -86,8 +86,8 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		}
 
 		switch {
+		// Pass valid hex bytes through, otherwise escapes the equals symbol.
 		case b == '=':
-			// Pass valid hex bytes through, otherwise escapes the equals symbol.
 			ensureLineLen(2)
 
 			var hexBytes []byte
@@ -102,22 +102,22 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 				writeBytes(escapedEquals)
 			}
 
+		// Valid special character.
 		case b == '\t':
-			// Valid special character.
 			writeByte(b)
 
+		// Valid special characters that reset line length.
 		case b == '\r' || b == '\n':
-			// Valid special character, resets line length.
 			writeByte(b)
 			qp.lineLen = 0
 
+		// Invalid characters, render as quoted-printable.
 		case b < ' ' || '~' < b:
-			// Invalid character, render as quoted-printable.
 			ensureLineLen(2)
 			writeBytes([]byte(fmt.Sprintf("=%02X", b)))
 
+		// Acceptable characters.
 		default:
-			// Acceptable character.
 			writeByte(b)
 		}
 	}
