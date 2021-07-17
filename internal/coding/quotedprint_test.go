@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -94,6 +95,39 @@ func TestQPCleanerSmallDest(t *testing.T) {
 		if err == io.EOF {
 			break
 		}
+	}
+}
+
+// TestQPCleanerLineBreak verifies QPCleaner breaks long lines correctly.
+func TestQPCleanerLineBreak(t *testing.T) {
+	input := bytes.Repeat([]byte("pédagogues =z "), 10000)
+	inbuf := bytes.NewBuffer(input)
+	qp := coding.NewQPCleaner(inbuf)
+
+	output, err := ioutil.ReadAll(qp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := 1024 // Desired wrapping point.
+	tolerance := 3
+
+	if len(output) < want {
+		t.Fatalf("wanted minimum output len %v, got %v", want, len(output))
+	}
+
+	// Examine each line of output long enough to wrap.
+	for i := 0; len(output) > want; i++ {
+		got := bytes.Index(output, []byte("=\r\n"))
+		// Wrapping a few characters early is OK, but not late.
+		if got > want || want-got > tolerance {
+			t.Errorf("iteration %v: got line break at %v, wanted %v +/- %v",
+				i, got, want, tolerance)
+		}
+		if got == 0 {
+			break
+		}
+		output = output[got+3:] // Extend past =\r\n
 	}
 }
 

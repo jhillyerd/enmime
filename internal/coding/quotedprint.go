@@ -11,19 +11,26 @@ import (
 type QPCleaner struct {
 	in       *bufio.Reader
 	overflow []byte
+	lineLen  int
 }
 
-// Assert QPCleaner implements io.Reader.
-var _ io.Reader = &QPCleaner{}
+// MaxQPLineLen is the maximum line length we allow before inserting `=\r\n`.  Prevents buffer
+// overflows in mime/quotedprintable.Reader.
+const MaxQPLineLen = 1024
 
-// escapedEquals is the QP encoded value of an equals sign.
-var escapedEquals = []byte("=3D")
+var (
+	_ io.Reader = &QPCleaner{} // Assert QPCleaner implements io.Reader.
+
+	escapedEquals = []byte("=3D") // escapedEquals is the QP encoded value of an equals sign.
+	lineBreak     = []byte("=\r\n")
+)
 
 // NewQPCleaner returns a QPCleaner for the specified reader.
 func NewQPCleaner(r io.Reader) *QPCleaner {
 	return &QPCleaner{
 		in:       bufio.NewReader(r),
 		overflow: nil,
+		lineLen:  0,
 	}
 }
 
@@ -37,17 +44,35 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		qp.overflow = qp.overflow[n:]
 	}
 
-	// writeBytes outputs multiple bytes, storing overflow for next read.
+	// writeByte outputs a single byte, space for which has already been ensured by the loop
+	// condition. Updates counters. Updates counters.
+	writeByte := func(in byte) {
+		dest[n] = in
+		n++
+		qp.lineLen++
+	}
+
+	// writeBytes outputs multiple bytes, storing overflow for next read. Updates counters.
 	writeBytes := func(in []byte) {
 		nc := copy(dest[n:], in)
 		if nc < len(in) {
 			// Stash unwritten bytes into overflow.
-			qp.overflow = []byte(in[nc:])
+			qp.overflow = append(qp.overflow, []byte(in[nc:])...)
 		}
 		n += nc
+		qp.lineLen += len(in)
 	}
 
-	// Loop over bytes in qp.in ByteReader.
+	// ensureLineLen ensures there is room to write `requested` bytes, preventing a line break being
+	// inserted in the middle of the escaped string.
+	ensureLineLen := func(requested int) {
+		if qp.lineLen+requested >= MaxQPLineLen {
+			writeBytes(lineBreak)
+			qp.lineLen = 0
+		}
+	}
+
+	// Loop over bytes in qp.in ByteReader while there is space in dest.
 	for n < destLen {
 		var b byte
 		b, err = qp.in.ReadByte()
@@ -55,9 +80,16 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 			return n, err
 		}
 
+		if qp.lineLen >= MaxQPLineLen {
+			writeBytes(lineBreak)
+			qp.lineLen = 0
+		}
+
 		switch {
 		case b == '=':
-			// Pass valid hex bytes through.
+			// Pass valid hex bytes through, otherwise escapes the equals symbol.
+			ensureLineLen(2)
+
 			var hexBytes []byte
 			hexBytes, err = qp.in.Peek(2)
 			if err != nil && err != io.EOF {
@@ -70,20 +102,23 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 				writeBytes(escapedEquals)
 			}
 
-		case b == '\t' || b == '\r' || b == '\n':
+		case b == '\t':
 			// Valid special character.
-			dest[n] = b
-			n++
+			writeByte(b)
+
+		case b == '\r' || b == '\n':
+			// Valid special character, resets line length.
+			writeByte(b)
+			qp.lineLen = 0
 
 		case b < ' ' || '~' < b:
-			// Invalid character, render quoted-printable into buffer.
-			s := fmt.Sprintf("=%02X", b)
-			writeBytes([]byte(s))
+			// Invalid character, render as quoted-printable.
+			ensureLineLen(2)
+			writeBytes([]byte(fmt.Sprintf("=%02X", b)))
 
 		default:
 			// Acceptable character.
-			dest[n] = b
-			n++
+			writeByte(b)
 		}
 	}
 
