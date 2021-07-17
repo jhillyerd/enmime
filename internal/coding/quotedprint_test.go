@@ -91,7 +91,7 @@ var result int
 
 func BenchmarkQPCleaner(b *testing.B) {
 	b.StopTimer()
-	input := bytes.Repeat([]byte("pédagogues =\r\n"), b.N)
+	input := bytes.Repeat([]byte("pédagogues\t =zz =\r\n"), b.N)
 	b.SetBytes(int64(len(input)))
 	inbuf := bytes.NewBuffer(input)
 	qp := coding.NewQPCleaner(inbuf)
