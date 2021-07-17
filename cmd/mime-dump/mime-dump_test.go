@@ -50,8 +50,8 @@ func TestFailedToParseFile(t *testing.T) {
 	if exitCode != 1 {
 		t.Fatal("Should have returned an exit code of 1, failed")
 	}
-	if !strings.HasPrefix(b.String(), "During enmime.ReadEnvelope") {
-		t.Fatal("Should have failed to parse file, failed")
+	if !strings.HasPrefix(b.String(), "Failed to read envelope") {
+		t.Fatal("Should have failed to parse file, but couldn't find error message")
 	}
 }
 
