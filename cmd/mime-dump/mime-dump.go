@@ -46,12 +46,12 @@ func (d *dumper) dump(args []string) int {
 	basename := filepath.Base(args[1])
 	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
-		fmt.Fprintf(d.errOut, "Failed to read envelope:\n%+v", err)
+		fmt.Fprintf(d.errOut, "Failed to read envelope:\n%+v\n", err)
 		return 1
 	}
 
 	if err = cmd.EnvelopeToMarkdown(d.stdOut, e, basename); err != nil {
-		fmt.Fprintf(d.errOut, "Failed to render markdown:\n%+v", err)
+		fmt.Fprintf(d.errOut, "Failed to render markdown:\n%+v\n", err)
 		return 1
 	}
 	return 0
