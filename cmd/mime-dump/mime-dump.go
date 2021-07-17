@@ -42,16 +42,16 @@ func (d *dumper) dump(args []string) int {
 		return 1
 	}
 
-	// basename is used as the markdown title
+	// basename is used as the markdown title.
 	basename := filepath.Base(args[1])
 	e, err := enmime.ReadEnvelope(reader)
 	if err != nil {
-		fmt.Fprintln(d.errOut, "During enmime.ReadEnvelope:", err)
+		fmt.Fprintf(d.errOut, "Failed to read envelope:\n%+v", err)
 		return 1
 	}
 
 	if err = cmd.EnvelopeToMarkdown(d.stdOut, e, basename); err != nil {
-		fmt.Fprintln(d.errOut, err)
+		fmt.Fprintf(d.errOut, "Failed to render markdown:\n%+v", err)
 		return 1
 	}
 	return 0
