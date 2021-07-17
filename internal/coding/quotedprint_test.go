@@ -42,7 +42,7 @@ func TestQPCleaner(t *testing.T) {
 	}
 }
 
-// TestQPCleanerOverflow attempts to confuse the cleaner by issuing a smaller subsequent read
+// TestQPCleanerOverflow attempts to confuse the cleaner by issuing smaller subsequent reads.
 func TestQPCleanerOverflow(t *testing.T) {
 	input := bytes.Repeat([]byte("pédagogues =\r\n"), 1000)
 	want := bytes.Repeat([]byte("p=C3=A9dagogues =\r\n"), 1000)
@@ -57,13 +57,42 @@ func TestQPCleanerOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		if n < 1 {
-			t.Fatalf("Read(p) = %v, wanted >0", n)
+			t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
 		}
 		for i := 0; i < n; i++ {
 			if p[i] != want[offset] {
 				t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
 			}
 			offset++
+		}
+	}
+}
+
+// TestQPCleanerSmallDest repeatedly calls Read with a small destination buffer.
+func TestQPCleanerSmallDest(t *testing.T) {
+	input := bytes.Repeat([]byte("pédagogues =z =\r\n"), 100)
+	want := bytes.Repeat([]byte("p=C3=A9dagogues =3Dz =\r\n"), 100)
+	inbuf := bytes.NewBuffer(input)
+	qp := coding.NewQPCleaner(inbuf)
+
+	offset := 0
+	p := make([]byte, 2)
+	for {
+		n, err := qp.Read(p)
+		if err != nil && err != io.EOF {
+			t.Fatal(err)
+		}
+		if n < 1 && offset < len(want) {
+			t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
+		}
+		for i := 0; i < n; i++ {
+			if p[i] != want[offset] {
+				t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
+			}
+			offset++
+		}
+		if err == io.EOF {
+			break
 		}
 	}
 }
