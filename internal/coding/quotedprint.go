@@ -17,7 +17,7 @@ type QPCleaner struct {
 var _ io.Reader = &QPCleaner{}
 
 // escapedEquals is the QP encoded value of an equals sign.
-var escapedEquals = "=3D"
+var escapedEquals = []byte("=3D")
 
 // NewQPCleaner returns a QPCleaner for the specified reader.
 func NewQPCleaner(r io.Reader) *QPCleaner {
@@ -35,6 +35,16 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		// Copy bytes that didn't fit into dest buffer during previous read.
 		n = copy(dest, qp.overflow)
 		qp.overflow = qp.overflow[n:]
+	}
+
+	// writeBytes outputs multiple bytes, storing overflow for next read.
+	writeBytes := func(in []byte) {
+		nc := copy(dest[n:], in)
+		if nc < len(in) {
+			// Stash unwritten bytes into overflow.
+			qp.overflow = []byte(in[nc:])
+		}
+		n += nc
 	}
 
 	// Loop over bytes in qp.in ByteReader.
@@ -57,12 +67,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 				dest[n] = b
 				n++
 			} else {
-				nc := copy(dest[n:], escapedEquals)
-				if nc < len(escapedEquals) {
-					// Stash unwritten bytes into overflow.
-					qp.overflow = []byte(escapedEquals[nc:])
-				}
-				n += nc
+				writeBytes(escapedEquals)
 			}
 
 		case b == '\t' || b == '\r' || b == '\n':
@@ -73,12 +78,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		case b < ' ' || '~' < b:
 			// Invalid character, render quoted-printable into buffer.
 			s := fmt.Sprintf("=%02X", b)
-			nc := copy(dest[n:], s)
-			if nc < len(s) {
-				// Stash unwritten bytes into overflow.
-				qp.overflow = []byte(s[nc:])
-			}
-			n += nc
+			writeBytes([]byte(s))
 
 		default:
 			// Acceptable character.
