@@ -3,6 +3,7 @@ package coding_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -73,28 +74,33 @@ func TestQPCleanerOverflow(t *testing.T) {
 func TestQPCleanerSmallDest(t *testing.T) {
 	input := bytes.Repeat([]byte("pédagogues =z =\r\n"), 100)
 	want := bytes.Repeat([]byte("p=C3=A9dagogues =3Dz =\r\n"), 100)
-	inbuf := bytes.NewBuffer(input)
-	qp := coding.NewQPCleaner(inbuf)
 
-	offset := 0
-	p := make([]byte, 2)
-	for {
-		n, err := qp.Read(p)
-		if err != nil && err != io.EOF {
-			t.Fatal(err)
-		}
-		if n < 1 && offset < len(want) {
-			t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
-		}
-		for i := 0; i < n; i++ {
-			if p[i] != want[offset] {
-				t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
+	for bufSize := 5; bufSize > 0; bufSize-- {
+		t.Run(fmt.Sprintf("%v byte buffer", bufSize), func(t *testing.T) {
+			inbuf := bytes.NewBuffer(input)
+			qp := coding.NewQPCleaner(inbuf)
+
+			offset := 0
+			p := make([]byte, bufSize)
+			for {
+				n, err := qp.Read(p)
+				if err != nil && err != io.EOF {
+					t.Fatal(err)
+				}
+				if n < 1 && offset < len(want) {
+					t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
+				}
+				for i := 0; i < n; i++ {
+					if p[i] != want[offset] {
+						t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
+					}
+					offset++
+				}
+				if err == io.EOF {
+					break
+				}
 			}
-			offset++
-		}
-		if err == io.EOF {
-			break
-		}
+		})
 	}
 }
 
