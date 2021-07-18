@@ -1,9 +1,11 @@
-Content-Disposition: attachment; filename="arvizturo \"x\"
- tukorfurogep.zip"; modification-date="01 Feb 03 04:05 GMT"
+Content-Disposition: attachment;
+ filename="=?utf-8?b?w6FydsOtenTFsXLFkSAieCIgdMO8a8O2cmbDunLDs2fDqXAuemlw?=";
+ modification-date="01 Feb 03 04:05 GMT"
 Content-Id: <mycontentid>
 Content-Transfer-Encoding: base64
 Content-Type: application/zip; boundary=enmime-abcdefg0123456789;
- charset=binary; name="arvizturo \"x\" tukorfurogep.zip";
+ charset=binary;
+ name="=?utf-8?b?w6FydsOtenTFsXLFkSAieCIgdMO8a8O2cmbDunLDs2fDqXAuemlw?=";
  param1=myparameter1; param2=myparameter2
 X-Qp-Header: =?utf-8?q?Just_enough_to_need_qp_=E2=98=86?=
 
