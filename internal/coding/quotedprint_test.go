@@ -3,7 +3,9 @@ package coding_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -42,7 +44,7 @@ func TestQPCleaner(t *testing.T) {
 	}
 }
 
-// TestQPCleanerOverflow attempts to confuse the cleaner by issuing a smaller subsequent read
+// TestQPCleanerOverflow attempts to confuse the cleaner by issuing smaller subsequent reads.
 func TestQPCleanerOverflow(t *testing.T) {
 	input := bytes.Repeat([]byte("pédagogues =\r\n"), 1000)
 	want := bytes.Repeat([]byte("p=C3=A9dagogues =\r\n"), 1000)
@@ -57,7 +59,7 @@ func TestQPCleanerOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		if n < 1 {
-			t.Fatalf("Read(p) = %v, wanted >0", n)
+			t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
 		}
 		for i := 0; i < n; i++ {
 			if p[i] != want[offset] {
@@ -65,6 +67,73 @@ func TestQPCleanerOverflow(t *testing.T) {
 			}
 			offset++
 		}
+	}
+}
+
+// TestQPCleanerSmallDest repeatedly calls Read with a small destination buffer.
+func TestQPCleanerSmallDest(t *testing.T) {
+	input := bytes.Repeat([]byte("pédagogues =z =\r\n"), 100)
+	want := bytes.Repeat([]byte("p=C3=A9dagogues =3Dz =\r\n"), 100)
+
+	for bufSize := 5; bufSize > 0; bufSize-- {
+		t.Run(fmt.Sprintf("%v byte buffer", bufSize), func(t *testing.T) {
+			inbuf := bytes.NewBuffer(input)
+			qp := coding.NewQPCleaner(inbuf)
+
+			offset := 0
+			p := make([]byte, bufSize)
+			for {
+				n, err := qp.Read(p)
+				if err != nil && err != io.EOF {
+					t.Fatal(err)
+				}
+				if n < 1 && offset < len(want) {
+					t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
+				}
+				for i := 0; i < n; i++ {
+					if p[i] != want[offset] {
+						t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
+					}
+					offset++
+				}
+				if err == io.EOF {
+					break
+				}
+			}
+		})
+	}
+}
+
+// TestQPCleanerLineBreak verifies QPCleaner breaks long lines correctly.
+func TestQPCleanerLineBreak(t *testing.T) {
+	input := bytes.Repeat([]byte("pédagogues =z "), 10000)
+	inbuf := bytes.NewBuffer(input)
+	qp := coding.NewQPCleaner(inbuf)
+
+	output, err := ioutil.ReadAll(qp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := 1024 // Desired wrapping point.
+	tolerance := 3
+
+	if len(output) < want {
+		t.Fatalf("wanted minimum output len %v, got %v", want, len(output))
+	}
+
+	// Examine each line of output long enough to wrap.
+	for i := 0; len(output) > want; i++ {
+		got := bytes.Index(output, []byte("=\r\n"))
+		// Wrapping a few characters early is OK, but not late.
+		if got > want || want-got > tolerance {
+			t.Errorf("iteration %v: got line break at %v, wanted %v +/- %v",
+				i, got, want, tolerance)
+		}
+		if got == 0 {
+			break
+		}
+		output = output[got+3:] // Extend past =\r\n
 	}
 }
 
