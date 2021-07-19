@@ -64,7 +64,8 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 	}
 
 	// ensureLineLen ensures there is room to write `requested` bytes, preventing a line break being
-	// inserted in the middle of the escaped string.
+	// inserted in the middle of the escaped string.  The requested count is in addition to the
+	// byte that was already reserved for this loop iteration.
 	ensureLineLen := func(requested int) {
 		if qp.lineLen+requested >= MaxQPLineLen {
 			writeBytes(lineBreak)
