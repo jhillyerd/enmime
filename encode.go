@@ -97,6 +97,13 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	if p.ContentID != "" {
 		p.Header.Set(hnContentID, coding.ToIDHeader(p.ContentID))
 	}
+	fileName := p.FileName
+	switch selectTransferEncoding([]byte(p.FileName), true) {
+	case teBase64:
+		fileName = mime.BEncoding.Encode(utf8, p.FileName)
+	case teQuoted:
+		fileName = mime.QEncoding.Encode(utf8, p.FileName)
+	}
 	if p.ContentType != "" {
 		// Build content type header.
 		param := make(map[string]string)
@@ -104,7 +111,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 			param[k] = v
 		}
 		setParamValue(param, hpCharset, p.Charset)
-		setParamValue(param, hpName, stringutil.ToASCII(p.FileName))
+		setParamValue(param, hpName, fileName)
 		setParamValue(param, hpBoundary, p.Boundary)
 		if mt := mime.FormatMediaType(p.ContentType, param); mt != "" {
 			p.ContentType = mt
@@ -114,7 +121,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	if p.Disposition != "" {
 		// Build disposition header.
 		param := make(map[string]string)
-		setParamValue(param, hpFilename, stringutil.ToASCII(p.FileName))
+		setParamValue(param, hpFilename, fileName)
 		if !p.FileModDate.IsZero() {
 			setParamValue(param, hpModDate, p.FileModDate.Format(time.RFC822))
 		}
