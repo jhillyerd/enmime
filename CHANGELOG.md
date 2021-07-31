@@ -7,6 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
+## [0.9.1] - 2021-07-31
+
 ### Added
 - `mime-dump` now prints a stack trace when parsing fails for easier debugging
 
@@ -202,6 +205,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 [Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.0...master
+[0.9.1]:      https://github.com/jhillyerd/enmime/compare/v0.9.0...v0.9.1
 [0.9.0]:      https://github.com/jhillyerd/enmime/compare/v0.8.4...v0.9.0
 [0.8.4]:      https://github.com/jhillyerd/enmime/compare/v0.8.3...v0.8.4
 [0.8.3]:      https://github.com/jhillyerd/enmime/compare/v0.8.2...v0.8.3
