@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [Unreleased]
+
+### Added
+- `mime-dump` now prints a stack trace when parsing fails for easier debugging
+
+### Fixed
+- Handle trailing whitespace in `;` separated headers (#195, thanks demofrager)
+- Ignore empty sections in `;` separated headers (#199, thanks pavelbazika)
+- Handle very long lines inside mime boundaries (#200, thanks pavelbazika)
+- Handle 8-bit characters in unencoded media type params (#201, thanks
+  pavelbazika)
+- Handle tiny destination buffers and long lines in quoted-printable blocks
+  (#203)
+
+### Changed
+- Encoder now uses QP or b64 encoding for 8-bit filenames instead of flattening
+  to ASCII (#197, thanks Alexfilus)
+
+
 ## [0.9.0] - 2021-05-01
 
 ### Added
