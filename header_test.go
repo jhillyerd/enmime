@@ -440,12 +440,12 @@ func TestFixUnquotedSpecials(t *testing.T) {
 		},
 		{
 			// Value with spaces is surrounded with quotes.
-			input: "text/plain; name=Untitled document.txt",
+			input: `text/plain; name=Untitled document.txt`,
 			want:  `text/plain; name="Untitled document.txt"`,
 		},
 		{
 			// Value with spaces is surrounded with quotes.
-			input: "text/plain; name=Untitled document.txt; disposition=inline",
+			input: `text/plain; name=Untitled document.txt; disposition=inline`,
 			want:  `text/plain; name="Untitled document.txt"; disposition=inline`,
 		},
 	}
