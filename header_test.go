@@ -438,12 +438,22 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			input: "application/msword;name=\xe2\x28\xa1.doc",
 			want:  `application/msword;name="=?utf-8?b?77+9KO+/vS5kb2M=?="`,
 		},
+		{
+			// Value with spaces is surrounded with quotes.
+			input: "text/plain; name=Untitled document.txt",
+			want:  `text/plain; name="Untitled document.txt"`,
+		},
+		{
+			// Value with spaces is surrounded with quotes.
+			input: "text/plain; name=Untitled document.txt; disposition=inline",
+			want:  `text/plain; name="Untitled document.txt"; disposition=inline`,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
 			got := fixUnquotedSpecials(tc.input)
 			if got != tc.want {
-				t.Errorf("\ngot:  %s\nwant: %s", got, tc.want)
+				t.Errorf("\ngot  : %s\nwant : %s\ninput: %s", got, tc.want, tc.input)
 			}
 		})
 	}
@@ -900,6 +910,12 @@ func TestParseMediaType(t *testing.T) {
 			input:  "application/pdf; name=foo \n\n; format=flowed",
 			mtype:  "application/pdf",
 			params: map[string]string{"name": "foo", "format": "flowed"},
+		},
+		{
+			label:  "unquoted with spaces",
+			input:  "application/pdf; x-unix-mode=0644; name=File name with spaces.pdf",
+			mtype:  "application/pdf",
+			params: map[string]string{"x-unix-mode": "0644", "name": "File name with spaces.pdf"},
 		},
 	}
 	for _, tc := range testCases {
