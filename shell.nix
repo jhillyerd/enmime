@@ -6,4 +6,5 @@ stdenv.mkDerivation rec {
     go
     golint
   ];
+  hardeningDisable = [ "fortify" ];
 }
