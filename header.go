@@ -361,6 +361,7 @@ func consumeParam(s string) (consumed, rest string) {
 		return "", s
 	}
 
+	// Write out parameter name.
 	param := strings.Builder{}
 	param.WriteString(s[:i+1])
 	s = s[i+1:]
@@ -388,7 +389,9 @@ findValueStart:
 
 		case ';':
 			if value.Len() == 0 {
-				value.WriteString(`"";`)
+				// Value was empty, return immediately.
+				param.WriteString(`"";`)
+				return param.String(), s[i+1:]
 			}
 
 			break findValueStart
@@ -444,7 +447,7 @@ findValueStart:
 			}
 
 			switch r {
-			case ';', ' ', '\t':
+			case ';':
 				if valueQuotedOriginally {
 					// We're in a quoted string, so whitespace is allowed.
 					value.WriteRune(r)
@@ -455,6 +458,17 @@ findValueStart:
 				rest = s[i:]
 				break findValueEnd
 
+			case ' ', '\t':
+				if valueQuotedOriginally {
+					// We're in a quoted string, so whitespace is allowed.
+					value.WriteRune(r)
+					break
+				}
+
+				// This string contains whitespace, must be quoted.
+				quoteIfUnquoted()
+				value.WriteRune(r)
+
 			case '"':
 				if valueQuotedOriginally {
 					// We're in a quoted value. This is the end of that value.
@@ -463,13 +477,12 @@ findValueStart:
 				}
 
 				quoteIfUnquoted()
-
 				value.WriteByte('\\')
 				value.WriteRune(r)
 
 			case '\\':
 				if i < len(s)-1 {
-					// If next char is present, escape it with backslash
+					// If next char is present, escape it with backslash.
 					value.WriteRune(r)
 					escaped = true
 					quoteIfUnquoted()
@@ -477,7 +490,6 @@ findValueStart:
 
 			case '(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '=':
 				quoteIfUnquoted()
-
 				fallthrough
 
 			default:
