@@ -100,6 +100,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 			buf.Write([]byte{'\r', '\n'})
 			break
 		}
+
 		firstColon := bytes.IndexByte(s, ':')
 		firstSpace := bytes.IndexAny(s, " \t\n\r")
 		if firstSpace == 0 {
@@ -145,6 +146,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 			}
 		}
 	}
+
 	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadMIMEHeader()
@@ -176,7 +178,7 @@ func decodeToUTF8Base64Header(input string) string {
 
 	// The standard lib performs an incremental inspection of this string, where the
 	// "skipSpace" method only strings.trimLeft for spaces and tabs. Here we have a
-	// hard dependency on space existing and not on next expected rune
+	// hard dependency on space existing and not on next expected rune.
 	//
 	// For resolving #112 with the least change, I will implement the
 	// "quoted display-name" detector, which will resolve the case specific
@@ -184,6 +186,7 @@ func decodeToUTF8Base64Header(input string) string {
 	// followed, without whitespace, by addr-spec.
 	tokens := strings.FieldsFunc(quotedDisplayName(input), whiteSpaceRune)
 	output := make([]string, len(tokens))
+
 	for i, token := range tokens {
 		if len(token) > 4 && strings.Contains(token, "=?") {
 			// Stash parenthesis, they should not be encoded
@@ -231,6 +234,7 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 		}
 		return "", nil, nil, errors.WithStack(err)
 	}
+
 	if mtype == ctPlaceholder {
 		mtype = ""
 	}
@@ -241,6 +245,7 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 		invalidParams = append(invalidParams, name)
 		delete(params, name)
 	}
+
 	return mtype, params, invalidParams, err
 }
 
@@ -251,6 +256,7 @@ func fixMangledMediaType(mtype string, sep rune) string {
 	if mtype == "" {
 		return ""
 	}
+
 	parts := stringutil.SplitQuoted(mtype, sep, '"')
 	mtype = ""
 	if strings.Contains(parts[0], "=") {
@@ -258,6 +264,7 @@ func fixMangledMediaType(mtype string, sep rune) string {
 		parts[0] = fmt.Sprintf("%s%s %s", ctAppOctetStream, strsep, parts[0])
 		parts = strings.Split(strings.Join(parts, strsep), strsep)
 	}
+
 	for i, p := range parts {
 		switch i {
 		case 0:
@@ -310,7 +317,9 @@ func fixMangledMediaType(mtype string, sep rune) string {
 				continue
 			}
 		}
+
 		mtype += p
+
 		// Only terminate with semicolon if not the last parameter and if it doesn't already have a
 		// semicolon.
 		if i != len(parts)-1 && !strings.HasSuffix(mtype, ";") {
@@ -319,6 +328,7 @@ func fixMangledMediaType(mtype string, sep rune) string {
 			mtype += ";"
 		}
 	}
+
 	mtype = strings.TrimSuffix(mtype, ";")
 
 	return mtype
@@ -409,11 +419,11 @@ findValueStart:
 	}
 
 	if len(s)-i < 1 {
-		// parameter value starts at the end of the string, make empty
-		// quoted string to play nice with mime.ParseMediaType
+		// Parameter value starts at the end of the string, make empty
+		// quoted string to play nice with mime.ParseMediaType.
 		param.WriteString(`""`)
 	} else {
-		// The beginning of the value is not at the end of the string
+		// The beginning of the value is not at the end of the string.
 		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='} {
 			if s[0] == v {
 				quoteIfUnquoted()
@@ -547,6 +557,7 @@ func fixUnquotedSpecials(s string) string {
 func fixUnescapedQuotes(hvalue string) string {
 	params := strings.SplitAfter(hvalue, ";")
 	sb := &strings.Builder{}
+
 	for i := 0; i < len(params); i++ {
 		// Inspect for "=" byte.
 		eq := strings.IndexByte(params[i], '=')
@@ -559,12 +570,14 @@ func fixUnescapedQuotes(hvalue string) string {
 		param := params[i][eq:]
 		startingQuote := strings.IndexByte(param, '"')
 		closingQuote := strings.LastIndexByte(param, '"')
+
 		// Opportunity to exit early if there are no quotes.
 		if startingQuote < 0 && closingQuote < 0 {
 			// This value is not quoted, write the value and carry on.
 			sb.WriteString(param)
 			continue
 		}
+
 		// Check if only one quote was found in the string.
 		if closingQuote == startingQuote {
 			// Append the next chunk of params here in case of a semicolon mid string.
@@ -578,17 +591,20 @@ func fixUnescapedQuotes(hvalue string) string {
 				return sb.String()
 			}
 		}
+
 		// Write the k/v separator back in along with everything up until the first quote.
 		sb.WriteByte('=')
-		// Starting quote
-		sb.WriteByte('"')
+		sb.WriteByte('"') // Starting quote
 		sb.WriteString(param[1:startingQuote])
-		// Get just the value, less the outer quotes.
+
+		// Get the value, less the outer quotes.
 		rest := param[closingQuote+1:]
+
 		// If there is stuff after the last quote then we should escape the first quote.
 		if len(rest) > 0 && rest != ";" {
 			sb.WriteString("\\\"")
 		}
+
 		param = param[startingQuote+1 : closingQuote]
 		escaped := false
 		for strIdx := range []byte(param) {
@@ -610,8 +626,9 @@ func fixUnescapedQuotes(hvalue string) string {
 				sb.WriteByte(param[strIdx])
 			}
 		}
-		// If there is stuff after the last quote then we should escape
-		// the last quote, apply the rest and terminate with a quote.
+
+		// If there is stuff after the last quote then we should escape the last quote, apply the
+		// rest and terminate with a quote.
 		switch rest {
 		case ";":
 			sb.WriteByte('"')
@@ -625,6 +642,7 @@ func fixUnescapedQuotes(hvalue string) string {
 			sb.WriteByte('"')
 		}
 	}
+
 	return sb.String()
 }
 
