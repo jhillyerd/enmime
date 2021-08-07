@@ -366,7 +366,7 @@ findValueStart:
 	for i, r = range s {
 		switch r {
 		case ' ', '\t':
-			param.WriteRune(r)
+			// Do not preserve leading whitespace.
 
 		case '"':
 			valueQuotedOriginally = true
@@ -412,10 +412,8 @@ findValueStart:
 		// parameter value starts at the end of the string, make empty
 		// quoted string to play nice with mime.ParseMediaType
 		param.WriteString(`""`)
-
 	} else {
 		// The beginning of the value is not at the end of the string
-
 		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='} {
 			if s[0] == v {
 				quoteIfUnquoted()

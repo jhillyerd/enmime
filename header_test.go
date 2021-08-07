@@ -328,12 +328,14 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
 		},
 		{
+			// Do not preserve unqoted whitespace.
 			input: "application/octet-stream; param1= value1",
-			want:  "application/octet-stream; param1= value1",
+			want:  "application/octet-stream; param1=value1",
 		},
 		{
+			// Do not preserve unqoted whitespace.
 			input: "application/octet-stream; param1=\tvalue1",
-			want:  "application/octet-stream; param1=\tvalue1",
+			want:  "application/octet-stream; param1=value1",
 		},
 		{
 			input: "application/octet-stream; param1=\"value1;\"",
@@ -348,6 +350,17 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=\"value 1\"",
 		},
 		{
+			// Preserve quoted whitespace.
+			input: "application/octet-stream; param1=\" value 1\"",
+			want:  "application/octet-stream; param1=\" value 1\"",
+		},
+		{
+			// Preserve quoted whitespace.
+			input: "application/octet-stream; param1=\"\tvalue 1\"",
+			want:  "application/octet-stream; param1=\"\tvalue 1\"",
+		},
+		{
+			// Preserve quoted whitespace.
 			input: "application/octet-stream; param1=\"value\t1\"",
 			want:  "application/octet-stream; param1=\"value\t1\"",
 		},
@@ -835,7 +848,19 @@ func TestParseMediaType(t *testing.T) {
 			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
 		},
 		{
-			label:  "with whitespace",
+			label:  "with prefix whitespace",
+			input:  "text/plain; charset= \"UTF-8\"; format=flowed",
+			mtype:  "text/plain",
+			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
+		},
+		{
+			label:  "with double prefix whitespace",
+			input:  "text/plain; charset = \"UTF-8\"; format=flowed",
+			mtype:  "text/plain",
+			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
+		},
+		{
+			label:  "with postfix whitespace",
 			input:  "text/plain; charset=\"UTF-8\" ; format=flowed",
 			mtype:  "text/plain",
 			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
