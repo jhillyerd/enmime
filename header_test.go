@@ -300,32 +300,32 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream;",
 		},
 		{
-			input: "application/octet-stream; param1=\"value1\"",
-			want:  "application/octet-stream; param1=\"value1\"",
+			input: `application/octet-stream; param1="value1"`,
+			want:  `application/octet-stream; param1="value1"`,
 		},
 		{
-			input: "application/octet-stream; param1=\"value1\"\\",
-			want:  "application/octet-stream; param1=\"value1\"\\",
+			input: `application/octet-stream; param1="value1"\`,
+			want:  `application/octet-stream; param1="value1"\`,
 		},
 		{
 			input: "application/octet-stream; param1=value1",
 			want:  "application/octet-stream; param1=value1",
 		},
 		{
-			input: "application/octet-stream; param1=value1\\",
+			input: `application/octet-stream; param1=value1\`,
 			want:  "application/octet-stream; param1=value1",
 		},
 		{
-			input: "application/octet-stream; param1=value1\\\"",
-			want:  "application/octet-stream; param1=\"value1\\\"\"",
+			input: `application/octet-stream; param1=value1\"`,
+			want:  `application/octet-stream; param1="value1\""`,
 		},
 		{
-			input: "application/octet-stream; param1=value\"1\"",
-			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
+			input: `application/octet-stream; param1=value"1"`,
+			want:  `application/octet-stream; param1="value\"1\""`,
 		},
 		{
-			input: "application/octet-stream; param1=\"value\\\"1\\\"\"",
-			want:  "application/octet-stream; param1=\"value\\\"1\\\"\"",
+			input: `application/octet-stream; param1="value\"1\""`,
+			want:  `application/octet-stream; param1="value\"1\""`,
 		},
 		{
 			// Do not preserve unqoted whitespace.
@@ -338,21 +338,21 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=value1",
 		},
 		{
-			input: "application/octet-stream; param1=\"value1;\"",
-			want:  "application/octet-stream; param1=\"value1;\"",
+			input: `application/octet-stream; param1="value1;"`,
+			want:  `application/octet-stream; param1="value1;"`,
 		},
 		{
-			input: "application/octet-stream; param1=\"value1;2.txt\"",
-			want:  "application/octet-stream; param1=\"value1;2.txt\"",
+			input: `application/octet-stream; param1="value1;2.txt"`,
+			want:  `application/octet-stream; param1="value1;2.txt"`,
 		},
 		{
-			input: "application/octet-stream; param1=\"value 1\"",
-			want:  "application/octet-stream; param1=\"value 1\"",
+			input: `application/octet-stream; param1="value 1"`,
+			want:  `application/octet-stream; param1="value 1"`,
 		},
 		{
 			// Preserve quoted whitespace.
-			input: "application/octet-stream; param1=\" value 1\"",
-			want:  "application/octet-stream; param1=\" value 1\"",
+			input: `application/octet-stream; param1=" value 1"`,
+			want:  `application/octet-stream; param1=" value 1"`,
 		},
 		{
 			// Preserve quoted whitespace.
@@ -365,36 +365,36 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			want:  "application/octet-stream; param1=\"value\t1\"",
 		},
 		{
-			input: "application/octet-stream; param1=\"value(1).pdf\"",
-			want:  "application/octet-stream; param1=\"value(1).pdf\"",
+			input: `application/octet-stream; param1="value(1).pdf"`,
+			want:  `application/octet-stream; param1="value(1).pdf"`,
 		},
 		{
-			input: "application/octet-stream; param1=value(1).pdf",
-			want:  "application/octet-stream; param1=\"value(1).pdf\"",
+			input: `application/octet-stream; param1=value(1).pdf`,
+			want:  `application/octet-stream; param1="value(1).pdf"`,
 		},
 		{
-			input: "application/octet-stream; param1=value(1).pdf; param2=value(2).pdf",
-			want:  "application/octet-stream; param1=\"value(1).pdf\"; param2=\"value(2).pdf\"",
+			input: `application/octet-stream; param1=value(1).pdf; param2=value(2).pdf`,
+			want:  `application/octet-stream; param1="value(1).pdf"; param2="value(2).pdf"`,
 		},
 		{
 			input: "application/octet-stream; param1=value(1).pdf;\tparam2=value2.pdf;",
 			want:  "application/octet-stream; param1=\"value(1).pdf\";\tparam2=value2.pdf;",
 		},
 		{
-			input: "application/octet-stream; param1=value(1).pdf;param2=value2.pdf;",
-			want:  "application/octet-stream; param1=\"value(1).pdf\";param2=value2.pdf;",
+			input: `application/octet-stream; param1=value(1).pdf;param2=value2.pdf;`,
+			want:  `application/octet-stream; param1="value(1).pdf";param2=value2.pdf;`,
 		},
 		{
-			input: "application/octet-stream; param1=value/1",
-			want:  "application/octet-stream; param1=\"value/1\"",
+			input: `application/octet-stream; param1=value/1`,
+			want:  `application/octet-stream; param1="value/1"`,
 		},
 		{
-			input: "multipart/alternative; boundary=?UOAwFjScLp1is-162467503201177404728935166502-",
-			want:  "multipart/alternative; boundary=\"?UOAwFjScLp1is-162467503201177404728935166502-\"",
+			input: `multipart/alternative; boundary=?UOAwFjScLp1is-162467503201177404728935166502-`,
+			want:  `multipart/alternative; boundary="?UOAwFjScLp1is-162467503201177404728935166502-"`,
 		},
 		{
-			input: `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com`,
-			want:  `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-769869545-477063-1070564-43@bounce.email.oflce57578375.com"`,
+			input: `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-1070564-43@example.com`,
+			want:  `text/HTML; charset="UTF-8Return-Path: bounce-810_HTML-1070564-43@example.com"`,
 		},
 		{
 			input: `text/html;charset=`,
@@ -464,36 +464,36 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 		input, want string
 	}{
 		{
-			input: "application/rtf; charset=iso-8859-1; name=\"\"V047411.rtf\".rtf\"",
-			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+			input: `application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"`,
+			want:  `application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"`,
 		},
 		{
-			input: "application/octet-stream; param1=\"",
-			want:  "application/octet-stream; param1=\"\"",
+			input: `application/octet-stream; param1="`,
+			want:  `application/octet-stream; param1=""`,
 		},
 		{
-			input: "application/octet-stream; param1=\"\\\"\"",
-			want:  "application/octet-stream; param1=\"\\\"\"",
+			input: `application/octet-stream; param1="\""`,
+			want:  `application/octet-stream; param1="\""`,
 		},
 		{
-			input: "application/rtf; charset=iso-8859-1; name=b\"V047411.rtf\".rtf",
-			want:  "application/rtf; charset=iso-8859-1; name=\"b\\\"V047411.rtf\\\".rtf\"",
+			input: `application/rtf; charset=iso-8859-1; name=b"V047411.rtf".rtf`,
+			want:  `application/rtf; charset=iso-8859-1; name="b\"V047411.rtf\".rtf"`,
 		},
 		{
-			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf\".rtf",
-			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf\\\".rtf\"",
+			input: `application/rtf; charset=iso-8859-1; name="V047411.rtf".rtf`,
+			want:  `application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"`,
 		},
 		{
-			input: "application/rtf; charset=iso-8859-1; name=\"V047411.rtf;\".rtf",
-			want:  "application/rtf; charset=iso-8859-1; name=\"\\\"V047411.rtf;\\\".rtf\"",
+			input: `application/rtf; charset=iso-8859-1; name="V047411.rtf;".rtf`,
+			want:  `application/rtf; charset=iso-8859-1; name="\"V047411.rtf;\".rtf"`,
 		},
 		{
-			input: "application/rtf; charset=utf-8; name=\"žába.jpg\"",
-			want:  "application/rtf; charset=utf-8; name=\"žába.jpg\"",
+			input: `application/rtf; charset=utf-8; name="žába.jpg"`,
+			want:  `application/rtf; charset=utf-8; name="žába.jpg"`,
 		},
 		{
-			input: "application/rtf; charset=utf-8; name=\"\"žába\".jpg\"",
-			want:  "application/rtf; charset=utf-8; name=\"\\\"žába\\\".jpg\"",
+			input: `application/rtf; charset=utf-8; name=""žába".jpg"`,
+			want:  `application/rtf; charset=utf-8; name="\"žába\".jpg"`,
 		},
 	}
 	for _, tc := range testCases {
@@ -823,7 +823,7 @@ func TestParseMediaType(t *testing.T) {
 		},
 		{
 			label:  "quoted filename",
-			input:  "text/html; name=\"index.html\"",
+			input:  `text/html; name="index.html"`,
 			mtype:  "text/html",
 			params: map[string]string{"name": "index.html"},
 		},
@@ -835,43 +835,43 @@ func TestParseMediaType(t *testing.T) {
 		},
 		{
 			label:  "quoted filename trailing separator",
-			input:  "text/html; name=\"index.html\";",
+			input:  `text/html; name="index.html";`,
 			mtype:  "text/html",
 			params: map[string]string{"name": "index.html"},
 		},
 		{
 			label:  "unclosed quoted filename",
-			input:  "text/html; name=\"index.html",
+			input:  `text/html; name="index.html`,
 			mtype:  "text/html",
 			params: map[string]string{"name": "index.html"},
 		},
 		{
 			label:  "quoted filename with separator",
-			input:  "text/html; name=\"index;a.html\"",
+			input:  `text/html; name="index;a.html"`,
 			mtype:  "text/html",
 			params: map[string]string{"name": "index;a.html"},
 		},
 		{
 			label:  "quoted separator mid-string",
-			input:  "text/html; name=\"index;a.html\"; hash=8675309",
+			input:  `text/html; name="index;a.html"; hash=8675309`,
 			mtype:  "text/html",
 			params: map[string]string{"name": "index;a.html", "hash": "8675309"},
 		},
 		{
 			label:  "with prefix whitespace",
-			input:  "text/plain; charset= \"UTF-8\"; format=flowed",
+			input:  `text/plain; charset= "UTF-8"; format=flowed`,
 			mtype:  "text/plain",
 			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
 		},
 		{
 			label:  "with double prefix whitespace",
-			input:  "text/plain; charset = \"UTF-8\"; format=flowed",
+			input:  `text/plain; charset = "UTF-8"; format=flowed`,
 			mtype:  "text/plain",
 			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
 		},
 		{
 			label:  "with postfix whitespace",
-			input:  "text/plain; charset=\"UTF-8\" ; format=flowed",
+			input:  `text/plain; charset="UTF-8" ; format=flowed`,
 			mtype:  "text/plain",
 			params: map[string]string{"charset": "UTF-8", "format": "flowed"},
 		},
