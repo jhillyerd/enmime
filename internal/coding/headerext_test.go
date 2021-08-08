@@ -76,7 +76,7 @@ func TestAsciiB64(t *testing.T) {
 
 // Try decoding an embedded ASCII quoted-printable encoded word
 func TestEmbeddedAsciiQ(t *testing.T) {
-	var testTable = []struct {
+	var ttable = []struct {
 		in, want string
 	}{
 		// Abutting a MIME header comment is legal
@@ -85,17 +85,19 @@ func TestEmbeddedAsciiQ(t *testing.T) {
 		{"(Keith =?US-ASCII?Q?Moore?=)", "(Keith Moore)"},
 	}
 
-	for _, tt := range testTable {
-		got := DecodeExtHeader(tt.in)
-		if got != tt.want {
-			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
-		}
+	for _, tt := range ttable {
+		t.Run(tt.in, func(t *testing.T) {
+			got := DecodeExtHeader(tt.in)
+			if got != tt.want {
+				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }
 
 // Spacing rules from RFC 2047
 func TestSpacing(t *testing.T) {
-	var testTable = []struct {
+	var ttable = []struct {
 		in, want string
 	}{
 		{"(=?ISO-8859-1?Q?a?=)", "(a)"},
@@ -107,17 +109,19 @@ func TestSpacing(t *testing.T) {
 		{"(=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=)", "(a b)"},
 	}
 
-	for _, tt := range testTable {
-		got := DecodeExtHeader(tt.in)
-		if got != tt.want {
-			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
-		}
+	for _, tt := range ttable {
+		t.Run(tt.in, func(t *testing.T) {
+			got := DecodeExtHeader(tt.in)
+			if got != tt.want {
+				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }
 
 // Test some different character sets
 func TestCharsets(t *testing.T) {
-	var testTable = []struct {
+	var ttable = []struct {
 		in, want string
 	}{
 		{"=?utf-8?q?abcABC_=24_=c2=a2_=e2=82=ac?=", "abcABC $ \u00a2 \u20ac"},
@@ -125,10 +129,12 @@ func TestCharsets(t *testing.T) {
 		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "\uff08 \uff5b \u3008"},
 	}
 
-	for _, tt := range testTable {
-		got := DecodeExtHeader(tt.in)
-		if got != tt.want {
-			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
-		}
+	for _, tt := range ttable {
+		t.Run(tt.in, func(t *testing.T) {
+			got := DecodeExtHeader(tt.in)
+			if got != tt.want {
+				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }
