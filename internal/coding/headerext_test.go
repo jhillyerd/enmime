@@ -4,53 +4,47 @@ import (
 	"testing"
 )
 
-// Ensure that a single plain text token passes unharmed
-func TestPlainSingleToken(t *testing.T) {
-	in := "Test"
-	want := in
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
+func TestPlainPassthrough(t *testing.T) {
+	var ttable = []string{
+		"Test",
+		"Testing One two 3 4",
+	}
+
+	for _, in := range ttable {
+		t.Run(in, func(t *testing.T) {
+			got := DecodeExtHeader(in)
+			if got != in {
+				t.Errorf("DecodeHeader(%q) == %q, want: %q", in, got, in)
+			}
+		})
 	}
 }
 
-// Ensure that a string of plain text tokens do not get mangled
-func TestPlainTokens(t *testing.T) {
-	in := "Testing One two 3 4"
-	want := in
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
+func TestFailurePassthrough(t *testing.T) {
+	var ttable = []struct {
+		label, in string
+	}{
+		{
+			label: "Newline detection & abort",
+			in:    "=?US\nASCII?Q?Keith_Moore?=",
+		},
+		{
+			label: "Carriage return detection & abort",
+			in:    "=?US-ASCII?\r?Keith_Moore?=",
+		},
+		{
+			label: "Invalid termination",
+			in:    "=?US-ASCII?Q?Keith_Moore?!",
+		},
 	}
-}
 
-// Test control character detection & abort
-func TestCharsetControlDetect(t *testing.T) {
-	in := "=?US\nASCII?Q?Keith_Moore?="
-	want := in
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
-	}
-}
-
-// Test control character detection & abort
-func TestEncodingControlDetect(t *testing.T) {
-	in := "=?US-ASCII?\r?Keith_Moore?="
-	want := in
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
-	}
-}
-
-// Test mangled termination
-func TestInvalidTermination(t *testing.T) {
-	in := "=?US-ASCII?Q?Keith_Moore?!"
-	want := in
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
+	for _, tt := range ttable {
+		t.Run(tt.in, func(t *testing.T) {
+			got := DecodeExtHeader(tt.in)
+			if got != tt.in {
+				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.in)
+			}
+		})
 	}
 }
 
