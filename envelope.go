@@ -45,7 +45,7 @@ func (e *Envelope) GetHeader(name string) string {
 	if e.header == nil {
 		return ""
 	}
-	return decodeHeader(e.header.Get(name))
+	return coding.DecodeExtHeader(e.header.Get(name))
 }
 
 // GetHeaderValues processes the specified header for RFC 2047 encoded words and returns all existing
@@ -58,7 +58,7 @@ func (e *Envelope) GetHeaderValues(name string) []string {
 	rawValues := (*e.header)[textproto.CanonicalMIMEHeaderKey(name)]
 	var values []string
 	for _, v := range rawValues {
-		values = append(values, decodeHeader(v))
+		values = append(values, coding.DecodeExtHeader(v))
 	}
 	return values
 }

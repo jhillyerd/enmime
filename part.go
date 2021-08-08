@@ -143,13 +143,13 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
-		p.FileName = decodeHeader(dparams[hpFilename])
+		p.FileName = coding.DecodeExtHeader(dparams[hpFilename])
 	}
 	if p.FileName == "" && mediaParams[hpName] != "" {
-		p.FileName = decodeHeader(mediaParams[hpName])
+		p.FileName = coding.DecodeExtHeader(mediaParams[hpName])
 	}
 	if p.FileName == "" && mediaParams[hpFile] != "" {
-		p.FileName = decodeHeader(mediaParams[hpFile])
+		p.FileName = coding.DecodeExtHeader(mediaParams[hpFile])
 	}
 	if p.Charset == "" {
 		p.Charset = mediaParams[hpCharset]

@@ -8,6 +8,7 @@ import (
 	"net/textproto"
 	"strings"
 
+	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/pkg/errors"
 )
 
@@ -122,8 +123,8 @@ func rfc2047recurse(s string) (string, error) {
 	}
 
 	var val string
-	if val = decodeHeader(s); val == s {
-		if val = decodeHeader(fixRFC2047String(val)); val == s {
+	if val = coding.DecodeExtHeader(s); val == s {
+		if val = coding.DecodeExtHeader(fixRFC2047String(val)); val == s {
 			return val, io.EOF
 		}
 	}
