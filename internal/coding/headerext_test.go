@@ -48,31 +48,34 @@ func TestFailurePassthrough(t *testing.T) {
 	}
 }
 
-// Try decoding a simple ASCII quoted-printable encoded word
-func TestAsciiQ(t *testing.T) {
-	in := "=?US-ASCII?Q?Keith_Moore?="
-	want := "Keith Moore"
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
-	}
-}
-
-// Try decoding a simple ASCII quoted-printable encoded word
 func TestAsciiB64(t *testing.T) {
-	in := "=?US-ASCII?B?SGVsbG8gV29ybGQ=?="
-	want := "Hello World"
-	got := DecodeExtHeader(in)
-	if got != want {
-		t.Error("got:", got, "want:", want)
-	}
-}
-
-// Try decoding an embedded ASCII quoted-printable encoded word
-func TestEmbeddedAsciiQ(t *testing.T) {
 	var ttable = []struct {
 		in, want string
 	}{
+		// Simple ASCII quoted-printable encoded word
+		{"=?US-ASCII?B?SGVsbG8gV29ybGQ=?=", "Hello World"},
+		// Abutting a MIME header comment is legal
+		{"(=?US-ASCII?B?SGVsbG8gV29ybGQ=?=)", "(Hello World)"},
+		// The entire header does not need to be encoded
+		{"(Prefix =?US-ASCII?B?SGVsbG8gV29ybGQ=?=)", "(Prefix Hello World)"},
+	}
+
+	for _, tt := range ttable {
+		t.Run(tt.in, func(t *testing.T) {
+			got := DecodeExtHeader(tt.in)
+			if got != tt.want {
+				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAsciiQ(t *testing.T) {
+	var ttable = []struct {
+		in, want string
+	}{
+		// Simple ASCII QP encoded word
+		{"=?US-ASCII?Q?Keith_Moore?=", "Keith Moore"},
 		// Abutting a MIME header comment is legal
 		{"(=?US-ASCII?Q?Keith_Moore?=)", "(Keith Moore)"},
 		// The entire header does not need to be encoded
