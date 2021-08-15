@@ -28,13 +28,6 @@ const (
 	ctTextPlain        = "text/plain"
 	ctTextHTML         = "text/html"
 
-	// Used as a placeholder in case of malformed Content-Type headers
-	ctPlaceholder = "x-not-a-mime-type/x-not-a-mime-type"
-	// Used as a placeholder param value in case of malformed
-	// Content-Type/Content-Disposition parameters that lack values.
-	// E.g.: Content-Type: text/html;iso-8859-1
-	pvPlaceholder = "not-a-param-value"
-
 	// Standard Transfer encodings
 	cte7Bit            = "7bit"
 	cte8Bit            = "8bit"
