@@ -33,13 +33,13 @@ const (
 	utf8 = "utf-8"
 )
 
-// ParseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
+// Parse is a more tolerant implementation of Go's mime.ParseMediaType function.
 //
 // Tolerances accounted for:
 //   * Missing ';' between content-type and media parameters
 //   * Repeating media parameters
 //   * Unquoted values in media parameters containing 'tspecials' characters
-func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
 		fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ';'))))
 	if err != nil {

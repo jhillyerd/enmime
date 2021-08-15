@@ -228,7 +228,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 	var charset string
 	var isHTML bool
 	if ctype := root.Header.Get(hnContentType); ctype != "" {
-		if mediatype, mparams, _, err := mediatype.ParseMediaType(ctype); err == nil {
+		if mediatype, mparams, _, err := mediatype.Parse(ctype); err == nil {
 			isHTML = (mediatype == ctTextHTML)
 			if mparams[hpCharset] != "" {
 				charset = mparams[hpCharset]
@@ -267,7 +267,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 func parseMultiPartBody(root *Part, e *Envelope) error {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mediatype, params, _, err := mediatype.ParseMediaType(ctype)
+	mediatype, params, _, err := mediatype.Parse(ctype)
 	if err != nil {
 		return fmt.Errorf("unable to parse media type: %v", err)
 	}

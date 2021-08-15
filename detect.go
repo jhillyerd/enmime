@@ -11,7 +11,7 @@ import (
 func detectMultipartMessage(root *Part) bool {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mtype, _, _, err := mediatype.ParseMediaType(ctype)
+	mtype, _, _, err := mediatype.Parse(ctype)
 
 	// According to rfc2046#section-5.1.7 all other multipart should
 	// be treated as multipart/mixed
@@ -29,13 +29,13 @@ func detectMultipartMessage(root *Part) bool {
 //  - Content-Disposition: inline; filename="frog.jpg"
 //  - Content-Type: attachment; filename="frog.jpg"
 func detectAttachmentHeader(header textproto.MIMEHeader) bool {
-	mtype, params, _, _ := mediatype.ParseMediaType(header.Get(hnContentDisposition))
+	mtype, params, _, _ := mediatype.Parse(header.Get(hnContentDisposition))
 	if strings.ToLower(mtype) == cdAttachment ||
 		(strings.ToLower(mtype) == cdInline && len(params) > 0) {
 		return true
 	}
 
-	mtype, _, _, _ = mediatype.ParseMediaType(header.Get(hnContentType))
+	mtype, _, _, _ = mediatype.Parse(header.Get(hnContentType))
 	return strings.ToLower(mtype) == cdAttachment
 }
 
@@ -48,7 +48,7 @@ func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) 
 		return true
 	}
 
-	if mtype, _, _, err := mediatype.ParseMediaType(ctype); err == nil {
+	if mtype, _, _, err := mediatype.Parse(ctype); err == nil {
 		switch mtype {
 		case ctTextPlain, ctTextHTML:
 			return true
@@ -66,7 +66,7 @@ func detectBinaryBody(root *Part) bool {
 		// Content-Disposition: attachment; filename="test.csv"
 		// Check for attachment only, or inline body is marked
 		// as attachment, too.
-		mtype, _, _, _ := mediatype.ParseMediaType(root.Header.Get(hnContentDisposition))
+		mtype, _, _, _ := mediatype.Parse(root.Header.Get(hnContentDisposition))
 		return strings.ToLower(mtype) == cdAttachment
 	}
 
@@ -76,7 +76,7 @@ func detectBinaryBody(root *Part) bool {
 		// 'text/plain' or 'text/html'.
 		// Example:
 		// Content-Type: application/pdf; name="doc.pdf"
-		mtype, _, _, _ := mediatype.ParseMediaType(root.Header.Get(hnContentType))
+		mtype, _, _, _ := mediatype.Parse(root.Header.Get(hnContentType))
 		mtype = strings.ToLower(mtype)
 		if mtype != ctTextPlain && mtype != ctTextHTML {
 			return true

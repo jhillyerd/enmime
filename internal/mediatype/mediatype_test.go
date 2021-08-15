@@ -461,7 +461,7 @@ func TestParseMediaType(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
-			mtype, params, _, err := ParseMediaType(tc.input)
+			mtype, params, _, err := Parse(tc.input)
 
 			if err != nil {
 				t.Errorf("got err %v, want nil", err)
