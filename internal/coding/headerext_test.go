@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestPlainPassthrough(t *testing.T) {
+func TestDecodePlainPassthrough(t *testing.T) {
 	var ttable = []string{
 		"Test",
 		"Testing One two 3 4",
@@ -14,13 +14,13 @@ func TestPlainPassthrough(t *testing.T) {
 		t.Run(in, func(t *testing.T) {
 			got := DecodeExtHeader(in)
 			if got != in {
-				t.Errorf("DecodeHeader(%q) == %q, want: %q", in, got, in)
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", in, got, in)
 			}
 		})
 	}
 }
 
-func TestFailurePassthrough(t *testing.T) {
+func TestDecodeFailurePassthrough(t *testing.T) {
 	var ttable = []struct {
 		label, in string
 	}{
@@ -42,13 +42,13 @@ func TestFailurePassthrough(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			got := DecodeExtHeader(tt.in)
 			if got != tt.in {
-				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.in)
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", tt.in, got, tt.in)
 			}
 		})
 	}
 }
 
-func TestAsciiB64(t *testing.T) {
+func TestDecodeAsciiB64(t *testing.T) {
 	var ttable = []struct {
 		in, want string
 	}{
@@ -64,13 +64,13 @@ func TestAsciiB64(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			got := DecodeExtHeader(tt.in)
 			if got != tt.want {
-				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestAsciiQ(t *testing.T) {
+func TestDecodeAsciiQ(t *testing.T) {
 	var ttable = []struct {
 		in, want string
 	}{
@@ -86,14 +86,14 @@ func TestAsciiQ(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			got := DecodeExtHeader(tt.in)
 			if got != tt.want {
-				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 			}
 		})
 	}
 }
 
 // Spacing rules from RFC 2047
-func TestSpacing(t *testing.T) {
+func TestDecodeSpacing(t *testing.T) {
 	var ttable = []struct {
 		in, want string
 	}{
@@ -110,14 +110,14 @@ func TestSpacing(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			got := DecodeExtHeader(tt.in)
 			if got != tt.want {
-				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 			}
 		})
 	}
 }
 
 // Test some different character sets
-func TestCharsets(t *testing.T) {
+func TestDecodeCharsets(t *testing.T) {
 	var ttable = []struct {
 		in, want string
 	}{
@@ -130,7 +130,7 @@ func TestCharsets(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			got := DecodeExtHeader(tt.in)
 			if got != tt.want {
-				t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", tt.in, got, tt.want)
 			}
 		})
 	}
