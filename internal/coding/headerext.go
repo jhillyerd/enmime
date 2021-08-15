@@ -21,6 +21,7 @@ func DecodeExtHeader(input string) string {
 	if err != nil {
 		return input
 	}
+
 	return header
 }
 
@@ -29,6 +30,7 @@ func DecodeExtHeader(input string) string {
 //
 // RFC2047 Example: `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
 func RFC2047Decode(s string) string {
+	// Convert CR/LF to spaces.
 	s = strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\r' {
 			return ' '
@@ -102,6 +104,7 @@ func fixRFC2047String(s string) string {
 				isWithinTerminatingEqualSigns = true
 			}
 			sb.WriteRune(v)
+
 		case '?':
 			if isWithinTerminatingEqualSigns {
 				inString = true
@@ -110,15 +113,18 @@ func fixRFC2047String(s string) string {
 			}
 			isWithinTerminatingEqualSigns = false
 			sb.WriteRune(v)
+
 		case '\n', '\r', ' ':
 			if !inString {
 				sb.WriteRune(v)
 			}
 			isWithinTerminatingEqualSigns = false
+
 		default:
 			isWithinTerminatingEqualSigns = false
 			sb.WriteRune(v)
 		}
 	}
+
 	return sb.String()
 }
