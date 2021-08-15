@@ -3,17 +3,19 @@ package enmime
 import (
 	"net/textproto"
 	"strings"
+
+	"github.com/jhillyerd/enmime/internal/mediatype"
 )
 
 // detectMultipartMessage returns true if the message has a recognized multipart Content-Type header
 func detectMultipartMessage(root *Part) bool {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mediatype, _, _, err := ParseMediaType(ctype)
+	mtype, _, _, err := mediatype.Parse(ctype)
 
 	// According to rfc2046#section-5.1.7 all other multipart should
 	// be treated as multipart/mixed
-	return err == nil && strings.HasPrefix(mediatype, ctMultipartPrefix)
+	return err == nil && strings.HasPrefix(mtype, ctMultipartPrefix)
 }
 
 // detectAttachmentHeader returns true, if the given header defines an attachment. First it checks
@@ -27,14 +29,14 @@ func detectMultipartMessage(root *Part) bool {
 //  - Content-Disposition: inline; filename="frog.jpg"
 //  - Content-Type: attachment; filename="frog.jpg"
 func detectAttachmentHeader(header textproto.MIMEHeader) bool {
-	mediatype, params, _, _ := ParseMediaType(header.Get(hnContentDisposition))
-	if strings.ToLower(mediatype) == cdAttachment ||
-		(strings.ToLower(mediatype) == cdInline && len(params) > 0) {
+	mtype, params, _, _ := mediatype.Parse(header.Get(hnContentDisposition))
+	if strings.ToLower(mtype) == cdAttachment ||
+		(strings.ToLower(mtype) == cdInline && len(params) > 0) {
 		return true
 	}
 
-	mediatype, _, _, _ = ParseMediaType(header.Get(hnContentType))
-	return strings.ToLower(mediatype) == cdAttachment
+	mtype, _, _, _ = mediatype.Parse(header.Get(hnContentType))
+	return strings.ToLower(mtype) == cdAttachment
 }
 
 // detectTextHeader returns true, if the the MIME headers define a valid 'text/plain' or 'text/html'
@@ -46,8 +48,8 @@ func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) 
 		return true
 	}
 
-	if mediatype, _, _, err := ParseMediaType(ctype); err == nil {
-		switch mediatype {
+	if mtype, _, _, err := mediatype.Parse(ctype); err == nil {
+		switch mtype {
 		case ctTextPlain, ctTextHTML:
 			return true
 		}
@@ -64,8 +66,8 @@ func detectBinaryBody(root *Part) bool {
 		// Content-Disposition: attachment; filename="test.csv"
 		// Check for attachment only, or inline body is marked
 		// as attachment, too.
-		mediatype, _, _, _ := ParseMediaType(root.Header.Get(hnContentDisposition))
-		return strings.ToLower(mediatype) == cdAttachment
+		mtype, _, _, _ := mediatype.Parse(root.Header.Get(hnContentDisposition))
+		return strings.ToLower(mtype) == cdAttachment
 	}
 
 	isBin := detectAttachmentHeader(root.Header)
@@ -74,9 +76,9 @@ func detectBinaryBody(root *Part) bool {
 		// 'text/plain' or 'text/html'.
 		// Example:
 		// Content-Type: application/pdf; name="doc.pdf"
-		mediatype, _, _, _ := ParseMediaType(root.Header.Get(hnContentType))
-		mediatype = strings.ToLower(mediatype)
-		if mediatype != ctTextPlain && mediatype != ctTextHTML {
+		mtype, _, _, _ := mediatype.Parse(root.Header.Get(hnContentType))
+		mtype = strings.ToLower(mtype)
+		if mtype != ctTextPlain && mtype != ctTextHTML {
 			return true
 		}
 	}
