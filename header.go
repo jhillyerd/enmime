@@ -288,7 +288,7 @@ func fixMangledMediaType(mtype string, sep rune) string {
 			}
 
 			// RFC-2047 encoded attribute name.
-			p = rfc2047decode(p)
+			p = coding.RFC2047Decode(p)
 
 			pair := strings.SplitAfter(p, "=")
 			if strings.Contains(mtype, strings.TrimSpace(pair[0])) {
