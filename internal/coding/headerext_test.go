@@ -135,3 +135,23 @@ func TestDecodeCharsets(t *testing.T) {
 		})
 	}
 }
+
+func TestRfc2047Decode(t *testing.T) {
+	var ttable = []struct {
+		label, in, want string
+	}{
+		{"pass through", "plain text", "plain text"},
+		{"quoted", "=?US-ASCII?q?Hello=20World?=", "Hello World"},
+		{"base64", "=?US-ASCII?b?SGVsbG8gV29ybGQ=?=", "Hello World"},
+		{"nested qp+b64", "=?utf-8?b?PT9VUy1BU0NJST9xP0hlbGxvPTIwV29ybGQ/PQ==?=", "Hello World"},
+	}
+
+	for _, tt := range ttable {
+		t.Run(tt.label, func(t *testing.T) {
+			got := RFC2047Decode(tt.in)
+			if got != tt.want {
+				t.Errorf("RFC2047Decode(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
