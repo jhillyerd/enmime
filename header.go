@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/mediatype"
 	"github.com/pkg/errors"
 )
 
@@ -76,6 +77,18 @@ var AddressHeaders = map[string]bool{
 //  charset: the character set portion of the encoded word
 //  encoding: the character encoding type used for the encoded-text
 //  encoded-text: the text we are decoding
+
+// ParseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
+//
+// Tolerances accounted for:
+//   * Missing ';' between content-type and media parameters
+//   * Repeating media parameters
+//   * Unquoted values in media parameters containing 'tspecials' characters
+func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string,
+	err error) {
+	// Export of internal function.
+	return mediatype.Parse(ctype)
+}
 
 // readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
 // Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
