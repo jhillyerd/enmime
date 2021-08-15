@@ -14,6 +14,7 @@ import (
 
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/mediatype"
 	"github.com/pkg/errors"
 )
 
@@ -117,7 +118,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		ctype = defaultContentType
 	}
 	// Parse Content-Type header.
-	mtype, mparams, minvalidParams, err := ParseMediaType(ctype)
+	mtype, mparams, minvalidParams, err := mediatype.ParseMediaType(ctype)
 	if err != nil {
 		return err
 	}
@@ -139,7 +140,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	// Determine content disposition, filename, character set.
-	disposition, dparams, _, err := ParseMediaType(p.Header.Get(hnContentDisposition))
+	disposition, dparams, _, err := mediatype.ParseMediaType(p.Header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition

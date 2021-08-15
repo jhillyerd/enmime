@@ -10,6 +10,7 @@ import (
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/mediatype"
 	"github.com/pkg/errors"
 )
 
@@ -227,7 +228,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 	var charset string
 	var isHTML bool
 	if ctype := root.Header.Get(hnContentType); ctype != "" {
-		if mediatype, mparams, _, err := ParseMediaType(ctype); err == nil {
+		if mediatype, mparams, _, err := mediatype.ParseMediaType(ctype); err == nil {
 			isHTML = (mediatype == ctTextHTML)
 			if mparams[hpCharset] != "" {
 				charset = mparams[hpCharset]
@@ -266,7 +267,7 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 func parseMultiPartBody(root *Part, e *Envelope) error {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mediatype, params, _, err := ParseMediaType(ctype)
+	mediatype, params, _, err := mediatype.ParseMediaType(ctype)
 	if err != nil {
 		return fmt.Errorf("unable to parse media type: %v", err)
 	}
