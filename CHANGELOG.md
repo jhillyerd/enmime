@@ -8,6 +8,19 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.9.2] - 2021-08-21
+
+### Added
+- Auto-quote header parameters containing whitespace (#209)
+
+### Fixed
+- Remove leading header parameter whitespace (#208)
+
+### Changed
+- Move ParseMediaType to its own `mediatype` package to reduce the length of
+  header.go.  Introduce wrapper func to preserve public API.
+
+
 ## [0.9.1] - 2021-07-31
 
 ### Added
@@ -204,7 +217,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
-[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.0...master
+
+[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.2...master
+[0.9.2]:      https://github.com/jhillyerd/enmime/compare/v0.9.1...v0.9.2
 [0.9.1]:      https://github.com/jhillyerd/enmime/compare/v0.9.0...v0.9.1
 [0.9.0]:      https://github.com/jhillyerd/enmime/compare/v0.8.4...v0.9.0
 [0.8.4]:      https://github.com/jhillyerd/enmime/compare/v0.8.3...v0.8.4
