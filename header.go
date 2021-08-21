@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/mediatype"
+	"github.com/jhillyerd/enmime/mediatype"
 	"github.com/pkg/errors"
 )
 
