@@ -111,18 +111,12 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 		return nil, fmt.Errorf("%s is not an address header", key)
 	}
 
-	str := e.header.Get(key)
-	ret, err := mail.ParseAddressList(str)
-	if err == nil {
-		return ret, nil
-	}
-
-	str = decodeToUTF8Base64Header(str)
+	str := decodeToUTF8Base64Header(e.header.Get(key))
 
 	// These statements are handy for debugging ParseAddressList errors
 	// fmt.Println("in:  ", m.header.Get(key))
 	// fmt.Println("out: ", str)
-	ret, err = mail.ParseAddressList(str)
+	ret, err := mail.ParseAddressList(str)
 	if err != nil {
 		switch err.Error() {
 		case "mail: expected comma":

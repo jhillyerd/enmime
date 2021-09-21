@@ -22,6 +22,9 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 			"First Last <u@h> (=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?=)"},
 		// Quoted display name without space before angle-addr spec, Issue #112
 		{"\"=?UTF-8?b?TWlyb3PFgmF3?=\"<u@h>", "=?UTF-8?b?Ik1pcm9zxYJhdyI=?= <u@h>"},
+		// Colon char, Issue #218
+		{"=?utf-8?Q?re=3AStore=20?= =?utf-8?Q?Apple=20?= =?utf-8?Q?Premium=20?= =?utf-8?Q?Reseller?= <u@h>",
+			"\"re:Store  Apple  Premium  Reseller\" <u@h>"},
 	}
 
 	for _, tt := range testTable {
