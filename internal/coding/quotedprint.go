@@ -84,6 +84,9 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		if qp.lineLen >= MaxQPLineLen {
 			writeBytes(lineBreak)
 			qp.lineLen = 0
+			if n == destLen {
+				break
+			}
 		}
 
 		switch {

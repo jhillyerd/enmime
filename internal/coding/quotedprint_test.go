@@ -137,6 +137,21 @@ func TestQPCleanerLineBreak(t *testing.T) {
 	}
 }
 
+func TestQPCleanerLineBreakBufferFull(t *testing.T) {
+	input := bytes.Repeat([]byte("abc"), 10000)
+	inbuf := bytes.NewBuffer(input)
+	qp := coding.NewQPCleaner(inbuf)
+
+	dest := make([]byte, 1025)
+	n, err := qp.Read(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1025 {
+		t.Errorf("Unexpected result length: %d", n)
+	}
+}
+
 var ErrPeek = errors.New("enmime test peek error")
 
 type peekBreakReader string
