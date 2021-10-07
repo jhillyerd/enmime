@@ -120,7 +120,15 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	if err != nil {
 		switch err.Error() {
 		case "mail: expected comma":
-			return mail.ParseAddressList(ensureCommaDelimitedAddresses(str))
+			// ugly bugfix for #218
+			ret, err = mail.ParseAddressList(ensureCommaDelimitedAddresses(str))
+			if err != nil {
+				if err.Error() == "mail: expected comma" {
+					return mail.ParseAddressList(e.header.Get(key))
+				}
+				return nil, err
+			}
+			return ret, nil
 		case "mail: no address":
 			return nil, mail.ErrHeaderNotPresent
 		}
