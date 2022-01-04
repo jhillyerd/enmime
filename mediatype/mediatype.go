@@ -39,9 +39,10 @@ const (
 //   * Missing ';' between content-type and media parameters
 //   * Repeating media parameters
 //   * Unquoted values in media parameters containing 'tspecials' characters
+//   * Newline characters
 func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
-		fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ';'))))
+		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(ctype, ';')))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
@@ -470,4 +471,11 @@ func fixUnescapedQuotes(hvalue string) string {
 	}
 
 	return sb.String()
+}
+
+// fixNewlines replaces \n with a space and removes \r
+func fixNewlines(value string) string {
+	value = strings.ReplaceAll(value, "\n", " ")
+	value = strings.ReplaceAll(value, "\r", "")
+	return value
 }

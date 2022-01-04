@@ -458,6 +458,12 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "application/pdf",
 			params: map[string]string{"x-unix-mode": "0644", "name": "File name with spaces.pdf"},
 		},
+		{
+			label:  "Outlook-Logo with newlines",
+			input:  `application/octet-stream; name="=?utf-8?B?T3V0bG9vay1Mb2dvCgpEZXNj?="`,
+			mtype:  "application/octet-stream",
+			params: map[string]string{"name": "Outlook-Logo  Desc"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
