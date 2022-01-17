@@ -115,6 +115,18 @@ func TestFixMangledMediaType(t *testing.T) {
 			sep:   ';',
 			want:  `one/two; name="file.two"`,
 		},
+
+		// remove extra content type parts
+		{
+			input: `application/pdf/.pdf; name=1337.pdf`,
+			sep:   ';',
+			want:  `application/pdf; name=1337.pdf`,
+		},
+		{
+			input: `application/pdf/pdf/pdf; name=1337.pdf`,
+			sep:   ';',
+			want:  `application/pdf; name=1337.pdf`,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
