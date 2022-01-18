@@ -101,6 +101,11 @@ func fixMangledMediaType(mtype string, sep rune) string {
 					p = ctAppOctetStream
 				}
 			}
+			// Remove extra ctype parts
+			if strings.Count(p, "/") > 1 {
+				ps := strings.SplitN(p, "/", 3)
+				p = strings.Join(ps[0:2], "/")
+			}
 		default:
 			if len(p) == 0 {
 				// Ignore trailing separators.
