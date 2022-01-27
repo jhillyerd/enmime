@@ -231,7 +231,8 @@ func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
 	// Try to parse charset again here to see if we can salvage some badly formed
 	// ones like charset="charset=utf-8".
 	charsetp := strings.Split(p.Charset, "=")
-	if strings.ToLower(charsetp[0]) == "charset" && len(charsetp) > 1 {
+	if strings.EqualFold(charsetp[0], "charset") && len(charsetp) > 1 ||
+		strings.EqualFold(charsetp[0], "iso") && len(charsetp) > 1 {
 		p.Charset = charsetp[1]
 		reader, err = coding.NewCharsetReader(p.Charset, r)
 		if err != nil {
