@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.9.3] - 2022-01-29
+
+### Added
+- Support for more charsets (#230)
+- fixMangledMediaType now removes extra content-type parts (#225)
+
+### Fixed
+- Fix new lines (ie in filenames) in mediatype.Parse (#224)
+- Fix crash in QPCleaner, when line is too long and buffer is almost full (#220)
+
+
 ## [0.9.2] - 2021-08-21
 
 ### Added
@@ -218,7 +229,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 
-[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.2...master
+[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.3...master
+[0.9.3]:      https://github.com/jhillyerd/enmime/compare/v0.9.2...v0.9.3
 [0.9.2]:      https://github.com/jhillyerd/enmime/compare/v0.9.1...v0.9.2
 [0.9.1]:      https://github.com/jhillyerd/enmime/compare/v0.9.0...v0.9.1
 [0.9.0]:      https://github.com/jhillyerd/enmime/compare/v0.8.4...v0.9.0
