@@ -477,8 +477,14 @@ func TestParseMediaType(t *testing.T) {
 			params: map[string]string{"name": "Outlook-Logo  Desc"},
 		},
 		{
-			label:  "ignore doctype",
+			label:  "ignore tag",
 			input:  `text/html; charset="iso-8859-1"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">`,
+			mtype:  "text/html",
+			params: map[string]string{"charset": "iso-8859-1"},
+		},
+		{
+			label:  "ignore tag in string",
+			input:  `text/html; charset="iso-8859-1<!DOCTYPE ... ">"`,
 			mtype:  "text/html",
 			params: map[string]string{"charset": "iso-8859-1"},
 		},
