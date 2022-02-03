@@ -7,6 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Remove HTML tags in malformed content types (#229)
+
 
 ## [0.9.3] - 2022-01-29
 
