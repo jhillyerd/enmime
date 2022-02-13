@@ -104,7 +104,7 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 	for i := range testData {
 		v := stringutil.EnsureCommaDelimitedAddresses(testData[i].have)
 		if testData[i].want != v {
-			t.Fatalf("Expected %s, but got %s", testData[i].want, v)
+			t.Errorf("got: %q\nwant: %q", v, testData[i].want)
 		}
 	}
 }
