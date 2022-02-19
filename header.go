@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"fmt"
 	"mime"
+	"net/mail"
 	"net/textproto"
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/stringutil"
 	"github.com/jhillyerd/enmime/mediatype"
 	"github.com/pkg/errors"
 )
@@ -70,6 +72,25 @@ var AddressHeaders = map[string]bool{
 	"resent-reply-to": true,
 	"resent-to":       true,
 	"resent-sender":   true,
+}
+
+// ParseAddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8.
+// It is more tolerant of malformed headers than the ParseAddressList func provided in Go's net/mail
+// package.
+func ParseAddressList(list string) ([]*mail.Address, error) {
+	ret, err := mail.ParseAddressList(list)
+	if err != nil {
+		switch err.Error() {
+		case "mail: expected comma":
+			// Attempt to add commas and parse again.
+			return mail.ParseAddressList(stringutil.EnsureCommaDelimitedAddresses(list))
+		case "mail: no address":
+			return nil, mail.ErrHeaderNotPresent
+		}
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 // Terminology from RFC 2047:
