@@ -2,7 +2,6 @@ package enmime_test
 
 import (
 	"bytes"
-	"net/mail"
 	"sort"
 	"strings"
 	"testing"
@@ -1181,31 +1180,5 @@ func TestNilEnvelopeClone(t *testing.T) {
 	var e *enmime.Envelope
 	if e.Clone() != nil {
 		t.Fatal("Clone of nil envelope is not nil, failed")
-	}
-}
-
-func TestAddressWithColon(t *testing.T) {
-	msg := test.OpenTestData("mail", "address-colon.raw")
-	e, err := enmime.ReadEnvelope(msg)
-	if err != nil {
-		t.Fatal("Failed to parse non-MIME:", err)
-	}
-
-	address, err := mail.ParseAddress("=?utf-8?Q?re=3AStore=20?= =?utf-8?Q?Apple=20?= =?utf-8?Q?Premium=20?= =?utf-8?Q?Reseller?= <noreply@mail.restore.ru>")
-	if err != nil {
-		t.Fatal("Failed to ParseAddress:", err)
-	}
-
-	addresses, err := e.AddressList("from")
-	if err != nil {
-		t.Fatal("Failed to parse address:", err)
-	}
-
-	if len(addresses) != 1 {
-		t.Fatalf("Invalid length, got %d, want 1", len(addresses))
-	}
-
-	if addresses[0].String() != address.String() {
-		t.Fatalf("Invalid result, got %s, want %s", addresses[0].String(), address.String())
 	}
 }

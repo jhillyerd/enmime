@@ -2,6 +2,7 @@ package enmime
 
 import (
 	"bufio"
+	"net/mail"
 	"net/textproto"
 	"strings"
 	"testing"
@@ -20,7 +21,7 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 		{"=?UTF-8?Q?Miros=C5=82aw?= <u@h>", "=?UTF-8?b?TWlyb3PFgmF3?= <u@h>"},
 		{"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
 			"First Last <u@h> (=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?=)"},
-		// Quoted display name without space before angle-addr spec, Issue #112
+		// Quoted display name without space before angle-addr spec, issue #112
 		{"\"=?UTF-8?b?TWlyb3PFgmF3?=\"<u@h>", "=?UTF-8?b?Ik1pcm9zxYJhdyI=?= <u@h>"},
 	}
 
@@ -37,17 +38,69 @@ func TestParseAddressListNoFailures(t *testing.T) {
 		"user@example.com",
 		"Example User <user@example.com>",
 		`"The Example User" <user@example.com>`,
-		"a@h, b@h, c@h",
 		"=?UTF-8?Q?Miros=C5=82aw?= <u@h>",
 		"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
-		// Quoted display name without space before angle-addr spec, Issue #112
+		// Quoted display name without space before angle-addr spec, issue #112
 		`"=?UTF-8?b?TWlyb3PFgmF3?="<u@h>`,
+		// Multiple encoded words containing a colon, issue #218
+		"=?utf-8?Q?ze=3AStore=20?= =?utf-8?Q?Orange=20?= =?utf-8?Q?Premium=20?= =?utf-8?Q?Reseller?= <noreply@mail.zestore.ru>",
 	}
 	for _, ts := range testStrings {
 		t.Run(ts, func(t *testing.T) {
 			_, err := ParseAddressList(ts)
 			if err != nil {
-				t.Errorf("Failed to parse address list %q", ts)
+				t.Errorf("Failed to parse address list %q:\n%v", ts, err)
+			}
+		})
+	}
+}
+
+func TestParseAddressListResult(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  []*mail.Address
+	}{
+		{
+			"Example User <user@example.com>",
+			[]*mail.Address{{
+				Name:    "Example User",
+				Address: "user@example.com"}},
+		},
+		{
+			"a@h, b@h, c@h",
+			[]*mail.Address{
+				{Name: "", Address: "a@h"},
+				{Name: "", Address: "b@h"},
+				{Name: "", Address: "c@h"},
+			},
+		},
+		{
+			"=?utf-8?Q?ze=3AStore=20?= =?utf-8?Q?Orange=20?= =?utf-8?Q?Premium=20?= =?utf-8?Q?Reseller?= <noreply@mail.zestore.ru>",
+			[]*mail.Address{{
+				Name:    "ze:Store Orange Premium Reseller",
+				Address: "noreply@mail.zestore.ru"}},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got, err := ParseAddressList(tc.input)
+			if err != nil {
+				t.Errorf("Failed to parse address list %q:\n%v", tc.input, err)
+				return
+			}
+
+			if len(got) != len(tc.want) {
+				t.Errorf("Got %v addresses, wanted %v", len(got), len(tc.want))
+				return
+			}
+
+			for i, want := range tc.want {
+				if got[i].Name != want.Name {
+					t.Errorf("Got Name %q, wanted %q", got[i].Name, want.Name)
+				}
+				if got[i].Address != want.Address {
+					t.Errorf("Got Address %q, wanted %q", got[i].Address, want.Address)
+				}
 			}
 		})
 	}
