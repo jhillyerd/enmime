@@ -42,6 +42,8 @@ func TestParseAddressListNoFailures(t *testing.T) {
 		"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
 		// Quoted display name without space before angle-addr spec, issue #112
 		`"=?UTF-8?b?TWlyb3PFgmF3?="<u@h>`,
+		// Unquoted display name without space before angle-addr, issue #227
+		"=?utf-8?Q?=D0=9D=D0=94=D0=A4=D0=9B=D0=BA=D0=B0=20?=<support@qwerty.asdfg>",
 		// Multiple encoded words containing a colon, issue #218
 		"=?utf-8?Q?ze=3AStore=20?= =?utf-8?Q?Orange=20?= =?utf-8?Q?Premium=20?= =?utf-8?Q?Reseller?= <noreply@mail.zestore.ru>",
 	}
