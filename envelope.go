@@ -10,7 +10,6 @@ import (
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/stringutil"
 	"github.com/jhillyerd/enmime/mediatype"
 	"github.com/pkg/errors"
 )
@@ -112,22 +111,7 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 		return nil, fmt.Errorf("%s is not an address header", key)
 	}
 
-	str := decodeToUTF8Base64Header(e.header.Get(key))
-
-	// These statements are handy for debugging ParseAddressList errors
-	// fmt.Println("in:  ", m.header.Get(key))
-	// fmt.Println("out: ", str)
-	ret, err := mail.ParseAddressList(str)
-	if err != nil {
-		switch err.Error() {
-		case "mail: expected comma":
-			return mail.ParseAddressList(stringutil.EnsureCommaDelimitedAddresses(str))
-		case "mail: no address":
-			return nil, mail.ErrHeaderNotPresent
-		}
-		return nil, err
-	}
-	return ret, nil
+	return ParseAddressList(e.header.Get(key))
 }
 
 // Clone returns a clone of the current Envelope
