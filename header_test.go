@@ -32,6 +32,27 @@ func TestDecodeToUTF8Base64Header(t *testing.T) {
 	}
 }
 
+func TestParseAddressListNoFailures(t *testing.T) {
+	testStrings := []string{
+		"user@example.com",
+		"Example User <user@example.com>",
+		`"The Example User" <user@example.com>`,
+		"a@h, b@h, c@h",
+		"=?UTF-8?Q?Miros=C5=82aw?= <u@h>",
+		"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
+		// Quoted display name without space before angle-addr spec, Issue #112
+		`"=?UTF-8?b?TWlyb3PFgmF3?="<u@h>`,
+	}
+	for _, ts := range testStrings {
+		t.Run(ts, func(t *testing.T) {
+			_, err := ParseAddressList(ts)
+			if err != nil {
+				t.Errorf("Failed to parse address list %q", ts)
+			}
+		})
+	}
+}
+
 func TestReadHeader(t *testing.T) {
 	// These values will surround the test table input string.
 	prefix := "From: hooman\n \n being\n"
