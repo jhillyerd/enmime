@@ -215,6 +215,6 @@ func ExampleEnvelope_GetHeaderKeys() {
 	// Mime-Version: 1.0
 	// Sender: André Pirard <PIRARD@vm1.ulg.ac.be>
 	// Subject: MIME UTF8 Test ¢ More Text
-	// To: Mirosław Marczak <marczak@inbucket.com>
+	// To: "Mirosław Marczak" <marczak@inbucket.com>
 	// User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 }

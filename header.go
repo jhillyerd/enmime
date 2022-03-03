@@ -90,6 +90,11 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 		return nil, err
 	}
 
+	for i := range ret {
+		// try to additionally decode Name with less strict decoder
+		ret[i].Name = coding.DecodeExtHeader(ret[i].Name)
+	}
+
 	return ret, nil
 }
 

@@ -82,6 +82,13 @@ func TestParseAddressListResult(t *testing.T) {
 				Name:    "ze:Store Orange Premium Reseller",
 				Address: "noreply@mail.zestore.ru"}},
 		},
+		{
+			`"=?UTF-8?Q?Miros=C5=82aw_Marczak?=" <marczak@inbucket.com>`,
+			[]*mail.Address{{
+				Name:    "Mirosław Marczak",
+				Address: "marczak@inbucket.com",
+			}},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {

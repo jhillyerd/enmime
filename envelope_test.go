@@ -2,6 +2,8 @@ package enmime_test
 
 import (
 	"bytes"
+	"fmt"
+	"net/mail"
 	"sort"
 	"strings"
 	"testing"
@@ -714,7 +716,7 @@ func TestEnvelopeAddHeader(t *testing.T) {
 
 	// add to existing header
 	to := "James Hillyerd <jamehi03@jamehi03lx.noa.com>"
-	wantSlice := []string{"Mirosław Marczak <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
+	wantSlice := []string{"\"Mirosław Marczak\" <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
 	e.AddHeader("To", to)
 	gotSlice := e.GetHeaderValues("To")
 	diff := deep.Equal(gotSlice, wantSlice)
@@ -744,6 +746,79 @@ func TestEnvelopeDeleteHeader(t *testing.T) {
 	want := ""
 	if got != want {
 		t.Errorf("Got: %q, want: %q", got, want)
+	}
+}
+
+func TestEnvelopeAddressListInDifferentFormats(t *testing.T) {
+	template := `Date: Mon, 23 Jun 2015 11:40:36 -0400
+From: Gopher <from@example.com>
+To: %s
+Subject: Gophers at Gophercon
+
+Message body
+
+`
+	testCases := []struct {
+		input string
+		want  []*mail.Address
+	}{
+		{
+			"Example User <user@example.com>",
+			[]*mail.Address{{
+				Name:    "Example User",
+				Address: "user@example.com"}},
+		},
+		{
+			"a@h, b@h, c@h",
+			[]*mail.Address{
+				{Name: "", Address: "a@h"},
+				{Name: "", Address: "b@h"},
+				{Name: "", Address: "c@h"},
+			},
+		},
+		{
+			"=?utf-8?Q?ze=3AStore=20?= =?utf-8?Q?Orange=20?= =?utf-8?Q?Premium=20?= =?utf-8?Q?Reseller?= <noreply@mail.zestore.ru>",
+			[]*mail.Address{{
+				Name:    "ze:Store Orange Premium Reseller",
+				Address: "noreply@mail.zestore.ru"}},
+		},
+		{
+			`"=?UTF-8?Q?Miros=C5=82aw_Marczak?=" <marczak@inbucket.com>`,
+			[]*mail.Address{{
+				Name:    "Mirosław Marczak",
+				Address: "marczak@inbucket.com",
+			}},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			r := strings.NewReader(fmt.Sprintf(template, tc.input))
+			e, err := enmime.ReadEnvelope(r)
+			if err != nil {
+				t.Errorf("Failed to read envelope for %q:\n%v", tc.input, err)
+				return
+			}
+
+			got, err := e.AddressList("to")
+			if err != nil {
+				t.Errorf("Failed to parse address list %q:\n%v", tc.input, err)
+				return
+			}
+
+			if len(got) != len(tc.want) {
+				t.Errorf("Got %v addresses, wanted %v", len(got), len(tc.want))
+				return
+			}
+
+			for i, want := range tc.want {
+				if got[i].Name != want.Name {
+					t.Errorf("Got Name %q, wanted %q", got[i].Name, want.Name)
+				}
+				if got[i].Address != want.Address {
+					t.Errorf("Got Address %q, wanted %q", got[i].Address, want.Address)
+				}
+			}
+		})
 	}
 }
 
