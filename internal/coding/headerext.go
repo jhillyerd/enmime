@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// NewExtMimeDecoder creates new MIME word decoder which allows decoding of additional charsets.
+func NewExtMimeDecoder() *mime.WordDecoder {
+	return &mime.WordDecoder{
+		CharsetReader: NewCharsetReader,
+	}
+}
+
 // DecodeExtHeader decodes a single line (per RFC 2047, aka Message Header Extensions) using Golang's
 // mime.WordDecoder.
 func DecodeExtHeader(input string) string {
@@ -15,9 +22,7 @@ func DecodeExtHeader(input string) string {
 		return input
 	}
 
-	dec := new(mime.WordDecoder)
-	dec.CharsetReader = NewCharsetReader
-	header, err := dec.DecodeHeader(input)
+	header, err := NewExtMimeDecoder().DecodeHeader(input)
 	if err != nil {
 		return input
 	}

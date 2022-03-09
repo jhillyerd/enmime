@@ -89,6 +89,19 @@ func TestParseAddressListResult(t *testing.T) {
 				Address: "marczak@inbucket.com",
 			}},
 		},
+		{
+			`=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?= <a@h>, =?big5?q?=a1=5d_=a1=61_=a1=71?= <b@h>`,
+			[]*mail.Address{
+				{
+					Name:    "#\u00a3 c\u00a9 r\u00ae u\u00b5",
+					Address: "a@h",
+				},
+				{
+					Name:    "\uff08 \uff5b \u3008",
+					Address: "b@h",
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
