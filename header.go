@@ -78,7 +78,9 @@ var AddressHeaders = map[string]bool{
 // It is more tolerant of malformed headers than the ParseAddressList func provided in Go's net/mail
 // package.
 func ParseAddressList(list string) ([]*mail.Address, error) {
-	ret, err := mail.ParseAddressList(list)
+	parser := mail.AddressParser{WordDecoder: coding.NewExtMimeDecoder()}
+
+	ret, err := parser.ParseList(list)
 	if err != nil {
 		switch err.Error() {
 		case "mail: expected comma":
@@ -88,6 +90,11 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 			return nil, mail.ErrHeaderNotPresent
 		}
 		return nil, err
+	}
+
+	for i := range ret {
+		// try to additionally decode Name with less strict decoder
+		ret[i].Name = coding.DecodeExtHeader(ret[i].Name)
 	}
 
 	return ret, nil
