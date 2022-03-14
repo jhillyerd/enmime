@@ -35,7 +35,7 @@ func EnsureCommaDelimitedAddresses(s string) string {
 	inDomain := false
 	escapeSequence := false
 	sb := strings.Builder{}
-	for _, r := range s {
+	for i, r := range s {
 		if escapeSequence {
 			escapeSequence = false
 			sb.WriteRune(r)
@@ -60,8 +60,14 @@ func EnsureCommaDelimitedAddresses(s string) string {
 			}
 			if inDomain {
 				if r == ';' {
-					sb.WriteRune(r)
-					break
+					inDomain = false
+					if i == len(s)-1 {
+						// omit trailing semicolon
+						continue
+					}
+
+					sb.WriteRune(',')
+					continue
 				}
 				if r == ',' {
 					inDomain = false
