@@ -85,7 +85,7 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 		switch err.Error() {
 		case "mail: expected comma":
 			// Attempt to add commas and parse again.
-			return mail.ParseAddressList(stringutil.EnsureCommaDelimitedAddresses(list))
+			return parser.ParseList(stringutil.EnsureCommaDelimitedAddresses(list))
 		case "mail: no address":
 			return nil, mail.ErrHeaderNotPresent
 		}

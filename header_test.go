@@ -102,6 +102,19 @@ func TestParseAddressListResult(t *testing.T) {
 				},
 			},
 		},
+		{
+			`=?big5?Q?ext-encoding-without-comma?= <ext-encoding-wo-comma@example.com> <other@example.com>`,
+			[]*mail.Address{
+				{
+					Name:    "ext-encoding-without-comma",
+					Address: "ext-encoding-wo-comma@example.com",
+				},
+				{
+					Name:    "",
+					Address: "other@example.com",
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
