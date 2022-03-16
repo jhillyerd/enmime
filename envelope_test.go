@@ -789,6 +789,20 @@ Message body
 				Address: "marczak@inbucket.com",
 			}},
 		},
+		{
+			"a@example.com;b@example.com",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "", Address: "b@example.com"},
+			},
+		},
+		{
+			`"Joe @ Company" <joe@company.com>;<other@company.com>`,
+			[]*mail.Address{
+				{Name: "Joe @ Company", Address: "joe@company.com"},
+				{Name: "", Address: "other@company.com"},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
