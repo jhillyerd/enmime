@@ -309,11 +309,7 @@ func (p *Part) base64CorruptInputCheck(err error) error {
 	switch errors.Cause(err).(type) {
 	case base64.CorruptInputError:
 		p.Content = nil
-		p.Errors = append(p.Errors, &Error{
-			Name:   ErrorMalformedBase64,
-			Detail: err.Error(),
-			Severe: true,
-		})
+		p.addError(ErrorMalformedBase64, err.Error())
 		return nil
 	default:
 		return err
