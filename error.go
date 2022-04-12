@@ -25,8 +25,8 @@ const (
 	ErrorMissingRecipient = "no recipients (to, cc, bcc) set"
 )
 
-// MaxPartErrors limits number of part parsing errors, 0 means no limit.
-var MaxPartErrors = 1000
+// MaxPartErrors limits number of part parsing errors, errors after the limit are ignored. 0 means unlimited.
+var MaxPartErrors = 0
 
 // Error describes an error encountered while parsing.
 type Error struct {
