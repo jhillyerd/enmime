@@ -25,6 +25,9 @@ const (
 	ErrorMissingRecipient = "no recipients (to, cc, bcc) set"
 )
 
+// MaxPartErrors limits number of part parsing errors, errors after the limit are ignored. 0 means unlimited.
+var MaxPartErrors = 0
+
 // Error describes an error encountered while parsing.
 type Error struct {
 	Name   string // The name or type of error encountered, from Error consts.
@@ -48,22 +51,25 @@ func (e *Error) String() string {
 
 // addWarning builds a severe Error and appends to the Part error slice.
 func (p *Part) addError(name string, detailFmt string, args ...interface{}) {
-	p.Errors = append(
-		p.Errors,
-		&Error{
-			name,
-			fmt.Sprintf(detailFmt, args...),
-			true,
-		})
+	p.addProblem(&Error{
+		name,
+		fmt.Sprintf(detailFmt, args...),
+		true,
+	})
 }
 
 // addWarning builds a non-severe Error and appends to the Part error slice.
 func (p *Part) addWarning(name string, detailFmt string, args ...interface{}) {
-	p.Errors = append(
-		p.Errors,
-		&Error{
-			name,
-			fmt.Sprintf(detailFmt, args...),
-			false,
-		})
+	p.addProblem(&Error{
+		name,
+		fmt.Sprintf(detailFmt, args...),
+		false,
+	})
+}
+
+// addProblem adds general *Error to the Part error slice.
+func (p *Part) addProblem(err *Error) {
+	if (MaxPartErrors == 0) || (len(p.Errors) < MaxPartErrors) {
+		p.Errors = append(p.Errors, err)
+	}
 }
