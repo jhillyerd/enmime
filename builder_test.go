@@ -11,6 +11,8 @@ import (
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockSender struct {
@@ -788,6 +790,57 @@ func TestBuilderAddFileInline(t *testing.T) {
 	if p == nil {
 		t.Fatalf("Did not find a %q part", ctype)
 	}
+}
+
+func TestBuilderAddOtherPart(t *testing.T) {
+	a := enmime.Builder().AddOtherPart([]byte("same"), "ct", "fn", "cid")
+	b := enmime.Builder().AddOtherPart([]byte("same"), "ct", "fn", "cid")
+	assert.Equal(t, a, b)
+
+	a = enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
+	b = enmime.Builder().AddOtherPart([]byte("bar"), "ct", "fn", "cid")
+	assert.NotEqual(t, a, b)
+
+	a = enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
+	b = a.AddOtherPart([]byte("bar"), "ct", "fn", "cid")
+	b1 := b.AddOtherPart([]byte("baz"), "ct", "fn", "cid")
+	b2 := b.AddOtherPart([]byte("bax"), "ct", "fn", "cid")
+	assert.NotEqual(t, a, b, "AddOtherPart() should not mutate receiver")
+	assert.NotEqual(t, b, b1, "AddOtherPart() should not mutate receiver")
+	assert.NotEqual(t, b1, b2, "AddOtherPart() should not mutate receiver")
+
+	want := "fake JPG data"
+	name := "photo.jpg"
+	disposition := "inline"
+	cid := "<mycid>"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("name", "foo").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		AddOtherPart([]byte(want), "image/jpeg", name, cid)
+	root, err := a.Build()
+	require.NoError(t, err)
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == cid })
+	require.NotNil(t, p)
+	assert.Equal(t, p.Disposition, disposition)
+	assert.Equal(t, want, string(p.Content))
+
+	// Check structure
+	wantTypes := []string{
+		"multipart/related",
+		"multipart/alternative",
+		"text/plain",
+		"text/html",
+		"image/jpeg",
+	}
+	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotTypes := make([]string, 0)
+	for _, p := range gotParts {
+		gotTypes = append(gotTypes, p.ContentType)
+	}
+	test.DiffStrings(t, gotTypes, wantTypes)
 }
 
 func TestValidation(t *testing.T) {

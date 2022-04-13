@@ -211,6 +211,15 @@ func (p MailBuilder) AddFileInline(path string) MailBuilder {
 	return p.AddInline(b, ctype, name, name)
 }
 
+func (p MailBuilder) AddOtherPart(
+	b []byte,
+	contentType string,
+	fileName string,
+	contendID string,
+) MailBuilder {
+	panic("implement me")
+}
+
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 func (p MailBuilder) Build() (*Part, error) {
