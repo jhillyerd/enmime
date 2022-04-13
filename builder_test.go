@@ -792,17 +792,21 @@ func TestBuilderAddFileInline(t *testing.T) {
 	}
 }
 
-func TestBuilderAddOtherPart(t *testing.T) {
+func TestBuilderAddOtherPartSame(t *testing.T) {
 	a := enmime.Builder().AddOtherPart([]byte("same"), "ct", "fn", "cid")
 	b := enmime.Builder().AddOtherPart([]byte("same"), "ct", "fn", "cid")
 	assert.Equal(t, a, b)
+}
 
-	a = enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
-	b = enmime.Builder().AddOtherPart([]byte("bar"), "ct", "fn", "cid")
+func TestBuilderAddOtherPartNotSame(t *testing.T) {
+	a := enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
+	b := enmime.Builder().AddOtherPart([]byte("bar"), "ct", "fn", "cid")
 	assert.NotEqual(t, a, b)
+}
 
-	a = enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
-	b = a.AddOtherPart([]byte("bar"), "ct", "fn", "cid")
+func TestBuilderAddOtherPart(t *testing.T) {
+	a := enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
+	b := a.AddOtherPart([]byte("bar"), "ct", "fn", "cid")
 	b1 := b.AddOtherPart([]byte("baz"), "ct", "fn", "cid")
 	b2 := b.AddOtherPart([]byte("bax"), "ct", "fn", "cid")
 	assert.NotEqual(t, a, b, "AddOtherPart() should not mutate receiver")
@@ -813,15 +817,27 @@ func TestBuilderAddOtherPart(t *testing.T) {
 	name := "photo.jpg"
 	disposition := "inline"
 	cid := "<mycid>"
+	contentType := "image/jpeg"
 	a = enmime.Builder().
 		Text([]byte("text")).
 		HTML([]byte("html")).
 		From("name", "foo").
 		Subject("foo").
 		ToAddrs(addrSlice).
-		AddOtherPart([]byte(want), "image/jpeg", name, cid)
+		AddOtherPart([]byte(want), contentType, name, cid)
 	root, err := a.Build()
 	require.NoError(t, err)
+
+	buf := bytes.Buffer{}
+	require.NoError(t, root.Encode(&buf))
+	e, err := enmime.ReadEnvelope(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	require.Len(t, e.OtherParts, 1)
+	assert.Equal(t, name, e.OtherParts[0].FileName)
+	assert.Equal(t, contentType, e.OtherParts[0].ContentType)
+	assert.Equal(t, cid, e.OtherParts[0].ContentID)
+	assert.Equal(t, want, string(e.OtherParts[0].Content))
+
 	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == cid })
 	require.NotNil(t, p)
 	assert.Equal(t, p.Disposition, disposition)
