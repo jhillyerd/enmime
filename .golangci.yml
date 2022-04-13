@@ -1,0 +1,24 @@
+run:
+  timeout: 5m
+linters:
+  enable:
+    - asciicheck
+    - bodyclose
+    - deadcode
+    - exportloopref
+    - errcheck
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - megacheck
+    - prealloc
+    - rowserrcheck
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unused
+    - varcheck
