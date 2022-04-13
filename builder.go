@@ -20,15 +20,15 @@ import (
 // modify the string and byte slices passed in.  Immutability allows the headers or entire message
 // to be reused across multiple threads.
 type MailBuilder struct {
-	to, cc, bcc          []mail.Address
-	from                 mail.Address
-	replyTo              mail.Address
-	subject              string
-	date                 time.Time
-	header               textproto.MIMEHeader
-	text, html           []byte
-	inlines, attachments []*Part
-	err                  error
+	to, cc, bcc                      []mail.Address
+	from                             mail.Address
+	replyTo                          mail.Address
+	subject                          string
+	date                             time.Time
+	header                           textproto.MIMEHeader
+	text, html                       []byte
+	inlines, attachments, otherParts []*Part
+	err                              error
 }
 
 // Builder returns an empty MailBuilder struct.
@@ -215,9 +215,14 @@ func (p MailBuilder) AddOtherPart(
 	b []byte,
 	contentType string,
 	fileName string,
-	contendID string,
+	contentID string,
 ) MailBuilder {
-	panic("implement me")
+	part := NewPart(contentType)
+	part.Content = b
+	part.FileName = fileName
+	part.ContentID = contentID
+	p.otherParts = append(p.otherParts, part)
+	return p
 }
 
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
@@ -287,6 +292,18 @@ func (p MailBuilder) Build() (*Part, error) {
 			// Copy attachment Part to isolate mutations
 			part = &Part{}
 			*part = *ap
+			part.Header = make(textproto.MIMEHeader)
+			root.AddChild(part)
+		}
+	}
+	if len(p.otherParts) > 0 {
+		part = root
+		root = NewPart(ctMultipartMixed)
+		root.AddChild(part)
+		for _, op := range p.otherParts {
+			// Copy other part to isolate mutations
+			part = &Part{}
+			*part = *op
 			part.Header = make(textproto.MIMEHeader)
 			root.AddChild(part)
 		}
