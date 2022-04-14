@@ -855,12 +855,63 @@ func TestBuilderAddOtherPart(t *testing.T) {
 	gotTypes := make([]string, 0)
 	for _, p := range gotParts {
 		contentType := p.ContentType
+		// remove second part because it mostly random
 		if strings.Contains(p.ContentType, ";") {
 			contentType = strings.Split(p.ContentType, ";")[0]
 		}
 		gotTypes = append(gotTypes, contentType)
 	}
 	test.DiffStrings(t, gotTypes, wantTypes)
+}
+
+func TestBuilderAddFileOtherPart(t *testing.T) {
+	a := enmime.Builder().AddFileOtherPart("zzzDOESNOTEXIST")
+	err := a.Error()
+	require.Error(t, err)
+	_, gotErr := a.Build()
+	assert.Equal(t, err, gotErr)
+	b := a.AddFileOtherPart("zzzDOESNOTEXIST2")
+	assert.Equal(t, err, b.Error())
+
+	a = enmime.Builder().From("name", "from")
+	_ = a.AddFileOtherPart("zzzDOESNOTEXIST")
+	assert.NoError(t, a.Error(), "AddFileOtherPart error mutated receiver")
+
+	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	require.NoError(t, a.Error())
+	b = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	require.NoError(t, b.Error())
+	assert.Equal(t, a, b)
+
+	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	require.NoError(t, a.Error())
+	b = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "mail", "attachment.raw"))
+	require.NoError(t, b.Error())
+	assert.NotEqual(t, a, b)
+
+	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	b = a.AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	b1 := b.AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	b2 := b.AddFileOtherPart(filepath.Join("testdata", "mail", "attachment.raw"))
+	assert.NotEqual(t, a, b, "AddFileOtherPart() should not mutate receiver, failed")
+	assert.NotEqual(t, b, b1, "AddFileOtherPart() should not mutate receiver, failed")
+	assert.NotEqual(t, b1, b2, "AddFileOtherPart() should not mutate receiver, failed")
+
+	name := "fake.png"
+	ctype := "image/png"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("name", "foo").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	root, err := a.Build()
+	require.NoError(t, err)
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == name })
+	require.NotNil(t, p)
+	p = root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentType == ctype })
+	require.NotNil(t, p)
 }
 
 func TestValidation(t *testing.T) {

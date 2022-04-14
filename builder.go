@@ -228,6 +228,13 @@ func (p MailBuilder) AddOtherPart(
 	return p
 }
 
+// AddFileOtherPart returns a copy of MailBuilder that includes the specified other part.
+// Filename and contentID will be populated from the base name of path.
+// Content type will be detected from the path extension.
+func (p MailBuilder) AddFileOtherPart(path string) MailBuilder {
+	panic("implement me")
+}
+
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 func (p MailBuilder) Build() (*Part, error) {
