@@ -19,15 +19,15 @@ import (
 // modify the string and byte slices passed in.  Immutability allows the headers or entire message
 // to be reused across multiple threads.
 type MailBuilder struct {
-	to, cc, bcc                      []mail.Address
-	from                             mail.Address
-	replyTo                          mail.Address
-	subject                          string
-	date                             time.Time
-	header                           textproto.MIMEHeader
-	text, html                       []byte
-	inlines, attachments, otherParts []*Part
-	err                              error
+	to, cc, bcc          []mail.Address
+	from                 mail.Address
+	replyTo              mail.Address
+	subject              string
+	date                 time.Time
+	header               textproto.MIMEHeader
+	text, html           []byte
+	inlines, attachments []*Part
+	err                  error
 }
 
 // Builder returns an empty MailBuilder struct.
