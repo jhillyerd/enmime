@@ -7,7 +7,6 @@ import (
 	"mime"
 	"net/mail"
 	"net/textproto"
-	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -156,12 +155,7 @@ func (p MailBuilder) AddFileAttachment(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		p.err = err
-		return p
-	}
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p
@@ -196,12 +190,7 @@ func (p MailBuilder) AddFileInline(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		p.err = err
-		return p
-	}
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p
