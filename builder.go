@@ -211,6 +211,9 @@ func (p MailBuilder) AddFileInline(path string) MailBuilder {
 	return p.AddInline(b, ctype, name, name)
 }
 
+// AddOtherPart returns a copy of MailBuilder that includes the specified embedded part.
+// fileName may be left empty.
+// It's useful when you want to embed image with CID.
 func (p MailBuilder) AddOtherPart(
 	b []byte,
 	contentType string,
@@ -221,7 +224,7 @@ func (p MailBuilder) AddOtherPart(
 	part.Content = b
 	part.FileName = fileName
 	part.ContentID = contentID
-	p.otherParts = append(p.otherParts, part)
+	p.inlines = append(p.inlines, part)
 	return p
 }
 
@@ -246,6 +249,7 @@ func (p MailBuilder) Build() (*Part, error) {
 	//  |  |- multipart/alternative
 	//  |  |  |- text/plain
 	//  |  |  `- text/html
+	//  |  |- other parts..
 	//  |  `- inlines..
 	//  `- attachments..
 	//
@@ -277,7 +281,7 @@ func (p MailBuilder) Build() (*Part, error) {
 		root = NewPart(ctMultipartRelated)
 		root.AddChild(part)
 		for _, ip := range p.inlines {
-			// Copy inline Part to isolate mutations
+			// Copy inline/other part to isolate mutations
 			part = &Part{}
 			*part = *ip
 			part.Header = make(textproto.MIMEHeader)
@@ -292,18 +296,6 @@ func (p MailBuilder) Build() (*Part, error) {
 			// Copy attachment Part to isolate mutations
 			part = &Part{}
 			*part = *ap
-			part.Header = make(textproto.MIMEHeader)
-			root.AddChild(part)
-		}
-	}
-	if len(p.otherParts) > 0 {
-		part = root
-		root = NewPart(ctMultipartMixed)
-		root.AddChild(part)
-		for _, op := range p.otherParts {
-			// Copy other part to isolate mutations
-			part = &Part{}
-			*part = *op
 			part.Header = make(textproto.MIMEHeader)
 			root.AddChild(part)
 		}

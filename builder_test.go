@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -842,21 +843,24 @@ func TestBuilderAddOtherPart(t *testing.T) {
 	assert.Equal(t, "", p.Disposition)
 	assert.Equal(t, want, string(p.Content))
 
-	// not sure how to rewrite this test
-	//// Check structure
-	//wantTypes := []string{
-	//	"multipart/mixed",
-	//	"multipart/alternative",
-	//	"text/plain",
-	//	"text/html",
-	//	"image/jpeg",
-	//}
-	//gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
-	//gotTypes := make([]string, 0)
-	//for _, p := range gotParts {
-	//	gotTypes = append(gotTypes, p.ContentType)
-	//}
-	//test.DiffStrings(t, gotTypes, wantTypes)
+	// Check structure
+	wantTypes := []string{
+		"multipart/related",
+		"multipart/alternative",
+		"text/plain",
+		"text/html",
+		"image/jpeg",
+	}
+	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotTypes := make([]string, 0)
+	for _, p := range gotParts {
+		contentType := p.ContentType
+		if strings.Contains(p.ContentType, ";") {
+			contentType = strings.Split(p.ContentType, ";")[0]
+		}
+		gotTypes = append(gotTypes, contentType)
+	}
+	test.DiffStrings(t, gotTypes, wantTypes)
 }
 
 func TestValidation(t *testing.T) {
