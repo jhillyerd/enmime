@@ -232,7 +232,18 @@ func (p MailBuilder) AddOtherPart(
 // Filename and contentID will be populated from the base name of path.
 // Content type will be detected from the path extension.
 func (p MailBuilder) AddFileOtherPart(path string) MailBuilder {
-	panic("implement me")
+	// Only allow first p.err value
+	if p.err != nil {
+		return p
+	}
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		p.err = err
+		return p
+	}
+	name := filepath.Base(path)
+	ctype := mime.TypeByExtension(filepath.Ext(name))
+	return p.AddOtherPart(b, ctype, name, name)
 }
 
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
