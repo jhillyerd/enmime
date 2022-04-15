@@ -6,7 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.17', '1.16' ]
+        go:
+          - 1.16.x
+          - 1.17.x
+          - 1.18.x
     name: Go ${{ matrix.go }} build
     steps:
       - uses: actions/checkout@v2
