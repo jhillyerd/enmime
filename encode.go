@@ -36,9 +36,13 @@ func (p *Part) Encode(writer io.Writer) error {
 	cte := p.setupMIMEHeaders()
 	// Encode this part.
 	b := bufio.NewWriter(writer)
-	p.encodeHeader(b)
+	if err := p.encodeHeader(b); err != nil {
+		return err
+	}
 	if len(p.Content) > 0 {
-		b.Write(crnl)
+		if _, err := b.Write(crnl); err != nil {
+			return err
+		}
 		if err := p.encodeContent(b, cte); err != nil {
 			return err
 		}
@@ -51,15 +55,23 @@ func (p *Part) Encode(writer io.Writer) error {
 	marker := endMarker[:len(endMarker)-2]
 	c := p.FirstChild
 	for c != nil {
-		b.Write(marker)
-		b.Write(crnl)
+		if _, err := b.Write(marker); err != nil {
+			return err
+		}
+		if _, err := b.Write(crnl); err != nil {
+			return err
+		}
 		if err := c.Encode(b); err != nil {
 			return err
 		}
 		c = c.NextSibling
 	}
-	b.Write(endMarker)
-	b.Write(crnl)
+	if _, err := b.Write(endMarker); err != nil {
+		return err
+	}
+	if _, err := b.Write(crnl); err != nil {
+		return err
+	}
 	return b.Flush()
 }
 
@@ -134,7 +146,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 }
 
 // encodeHeader writes out a sorted list of headers.
-func (p *Part) encodeHeader(b *bufio.Writer) {
+func (p *Part) encodeHeader(b *bufio.Writer) error {
 	keys := make([]string, 0, len(p.Header))
 	for k := range p.Header {
 		keys = append(keys, k)
@@ -152,9 +164,12 @@ func (p *Part) encodeHeader(b *bufio.Writer) {
 			// _ used to prevent early wrapping
 			wb := stringutil.Wrap(76, k, ":_", encv, "\r\n")
 			wb[len(k)+1] = ' '
-			b.Write(wb)
+			if _, err := b.Write(wb); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // encodeContent writes out the content in the selected encoding.
@@ -173,7 +188,9 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 			if _, err = b.Write(text[:lineLen]); err != nil {
 				return err
 			}
-			b.Write(crnl)
+			if _, err := b.Write(crnl); err != nil {
+				return err
+			}
 			text = text[lineLen:]
 		}
 	case teQuoted:

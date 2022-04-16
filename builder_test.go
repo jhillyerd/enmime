@@ -921,7 +921,10 @@ func TestBuilderQPHeaders(t *testing.T) {
 		t.Fatal(err)
 	}
 	b := &bytes.Buffer{}
-	p.Encode(b)
+	err = p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

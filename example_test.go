@@ -28,10 +28,16 @@ func ExampleBuilder() {
 
 	// master is immutable, causing each msg below to have a single recipient.
 	msg := master.To("Esteemed Customer", "user1@inbucket.org")
-	msg.Send(sender)
+	err := msg.Send(sender)
+	if err != nil {
+		panic(err)
+	}
 
 	msg = master.To("Another Customer", "user2@inbucket.org")
-	msg.Send(sender)
+	err = msg.Send(sender)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func ExampleReadEnvelope() {

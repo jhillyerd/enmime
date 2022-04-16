@@ -15,13 +15,13 @@ const (
 	// Standard MIME content types
 	ctAppPrefix        = "application/"
 	ctAppOctetStream   = "application/octet-stream"
-	ctMultipartAltern  = "multipart/alternative"
+	ctMultipartAltern  = "multipart/alternative" //nolint
 	ctMultipartMixed   = "multipart/mixed"
 	ctMultipartPrefix  = "multipart/"
-	ctMultipartRelated = "multipart/related"
+	ctMultipartRelated = "multipart/related" //nolint
 	ctTextPrefix       = "text/"
 	ctTextPlain        = "text/plain"
-	ctTextHTML         = "text/html"
+	ctTextHTML         = "text/html" //nolint
 
 	// Used as a placeholder in case of malformed Content-Type headers
 	ctPlaceholder = "x-not-a-mime-type/x-not-a-mime-type"
