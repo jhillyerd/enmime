@@ -7,7 +7,6 @@ import (
 	"mime"
 	"net/mail"
 	"net/textproto"
-	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -156,12 +155,7 @@ func (p MailBuilder) AddFileAttachment(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		p.err = err
-		return p
-	}
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p
@@ -196,12 +190,7 @@ func (p MailBuilder) AddFileInline(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		p.err = err
-		return p
-	}
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p
@@ -209,6 +198,41 @@ func (p MailBuilder) AddFileInline(path string) MailBuilder {
 	name := filepath.Base(path)
 	ctype := mime.TypeByExtension(filepath.Ext(name))
 	return p.AddInline(b, ctype, name, name)
+}
+
+// AddOtherPart returns a copy of MailBuilder that includes the specified embedded part.
+// fileName may be left empty.
+// It's useful when you want to embed image with CID.
+func (p MailBuilder) AddOtherPart(
+	b []byte,
+	contentType string,
+	fileName string,
+	contentID string,
+) MailBuilder {
+	part := NewPart(contentType)
+	part.Content = b
+	part.FileName = fileName
+	part.ContentID = contentID
+	p.inlines = append(p.inlines, part)
+	return p
+}
+
+// AddFileOtherPart returns a copy of MailBuilder that includes the specified other part.
+// Filename and contentID will be populated from the base name of path.
+// Content type will be detected from the path extension.
+func (p MailBuilder) AddFileOtherPart(path string) MailBuilder {
+	// Only allow first p.err value
+	if p.err != nil {
+		return p
+	}
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		p.err = err
+		return p
+	}
+	name := filepath.Base(path)
+	ctype := mime.TypeByExtension(filepath.Ext(name))
+	return p.AddOtherPart(b, ctype, name, name)
 }
 
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
@@ -232,6 +256,7 @@ func (p MailBuilder) Build() (*Part, error) {
 	//  |  |- multipart/alternative
 	//  |  |  |- text/plain
 	//  |  |  `- text/html
+	//  |  |- other parts..
 	//  |  `- inlines..
 	//  `- attachments..
 	//
@@ -263,7 +288,7 @@ func (p MailBuilder) Build() (*Part, error) {
 		root = NewPart(ctMultipartRelated)
 		root.AddChild(part)
 		for _, ip := range p.inlines {
-			// Copy inline Part to isolate mutations
+			// Copy inline/other part to isolate mutations
 			part = &Part{}
 			*part = *ip
 			part.Header = make(textproto.MIMEHeader)

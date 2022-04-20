@@ -6,11 +6,14 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockSender struct {
@@ -788,6 +791,127 @@ func TestBuilderAddFileInline(t *testing.T) {
 	if p == nil {
 		t.Fatalf("Did not find a %q part", ctype)
 	}
+}
+
+func TestBuilderAddOtherPartSame(t *testing.T) {
+	a := enmime.Builder().AddOtherPart([]byte("same"), "ct", "fn", "cid")
+	b := enmime.Builder().AddOtherPart([]byte("same"), "ct", "fn", "cid")
+	assert.Equal(t, a, b)
+}
+
+func TestBuilderAddOtherPartNotSame(t *testing.T) {
+	a := enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
+	b := enmime.Builder().AddOtherPart([]byte("bar"), "ct", "fn", "cid")
+	assert.NotEqual(t, a, b)
+}
+
+func TestBuilderAddOtherPart(t *testing.T) {
+	a := enmime.Builder().AddOtherPart([]byte("foo"), "ct", "fn", "cid")
+	b := a.AddOtherPart([]byte("bar"), "ct", "fn", "cid")
+	b1 := b.AddOtherPart([]byte("baz"), "ct", "fn", "cid")
+	b2 := b.AddOtherPart([]byte("bax"), "ct", "fn", "cid")
+	assert.NotEqual(t, a, b, "AddOtherPart() should not mutate receiver")
+	assert.NotEqual(t, b, b1, "AddOtherPart() should not mutate receiver")
+	assert.NotEqual(t, b1, b2, "AddOtherPart() should not mutate receiver")
+
+	want := "fake JPG data"
+	name := "photo.jpg"
+	cid := "<mycid>"
+	contentType := "image/jpeg"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("name", "foo").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		AddOtherPart([]byte(want), contentType, name, cid)
+	root, err := a.Build()
+	require.NoError(t, err)
+
+	buf := bytes.Buffer{}
+	require.NoError(t, root.Encode(&buf))
+	e, err := enmime.ReadEnvelope(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	require.Len(t, e.OtherParts, 1)
+	assert.Equal(t, name, e.OtherParts[0].FileName)
+	assert.Equal(t, contentType, e.OtherParts[0].ContentType)
+	assert.Equal(t, cid, e.OtherParts[0].ContentID)
+	assert.Equal(t, want, string(e.OtherParts[0].Content))
+
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == cid })
+	require.NotNil(t, p)
+	assert.Equal(t, "", p.Disposition)
+	assert.Equal(t, want, string(p.Content))
+
+	// Check structure
+	wantTypes := []string{
+		"multipart/related",
+		"multipart/alternative",
+		"text/plain",
+		"text/html",
+		"image/jpeg",
+	}
+	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotTypes := make([]string, 0)
+	for _, p := range gotParts {
+		contentType := p.ContentType
+		// remove second part because it mostly random
+		if strings.Contains(p.ContentType, ";") {
+			contentType = strings.Split(p.ContentType, ";")[0]
+		}
+		gotTypes = append(gotTypes, contentType)
+	}
+	test.DiffStrings(t, gotTypes, wantTypes)
+}
+
+func TestBuilderAddFileOtherPart(t *testing.T) {
+	a := enmime.Builder().AddFileOtherPart("zzzDOESNOTEXIST")
+	err := a.Error()
+	require.Error(t, err)
+	_, gotErr := a.Build()
+	assert.Equal(t, err, gotErr)
+	b := a.AddFileOtherPart("zzzDOESNOTEXIST2")
+	assert.Equal(t, err, b.Error())
+
+	a = enmime.Builder().From("name", "from")
+	_ = a.AddFileOtherPart("zzzDOESNOTEXIST")
+	assert.NoError(t, a.Error(), "AddFileOtherPart error mutated receiver")
+
+	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	require.NoError(t, a.Error())
+	b = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	require.NoError(t, b.Error())
+	assert.Equal(t, a, b)
+
+	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	require.NoError(t, a.Error())
+	b = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "mail", "attachment.raw"))
+	require.NoError(t, b.Error())
+	assert.NotEqual(t, a, b)
+
+	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	b = a.AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	b1 := b.AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	b2 := b.AddFileOtherPart(filepath.Join("testdata", "mail", "attachment.raw"))
+	assert.NotEqual(t, a, b, "AddFileOtherPart() should not mutate receiver, failed")
+	assert.NotEqual(t, b, b1, "AddFileOtherPart() should not mutate receiver, failed")
+	assert.NotEqual(t, b1, b2, "AddFileOtherPart() should not mutate receiver, failed")
+
+	name := "fake.png"
+	ctype := "image/png"
+	a = enmime.Builder().
+		Text([]byte("text")).
+		HTML([]byte("html")).
+		From("name", "foo").
+		Subject("foo").
+		ToAddrs(addrSlice).
+		AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
+	root, err := a.Build()
+	require.NoError(t, err)
+	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == name })
+	require.NotNil(t, p)
+	p = root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentType == ctype })
+	require.NotNil(t, p)
 }
 
 func TestValidation(t *testing.T) {
