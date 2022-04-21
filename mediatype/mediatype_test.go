@@ -303,6 +303,11 @@ func TestFixUnquotedSpecials(t *testing.T) {
 			input: `text/plain; name=Untitled document.txt; disposition=inline`,
 			want:  `text/plain; name="Untitled document.txt"; disposition=inline`,
 		},
+		{
+			// Escaped character at the beginning of param.
+			input: `application/pdf; name=\"pdf\"pdf\"`,
+			want:  `application/pdf; name="\"pdf\"pdf\""`,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {

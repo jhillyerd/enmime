@@ -256,7 +256,7 @@ findValueStart:
 
 		_, runeLength := _utf8.DecodeRuneInString(s[i:])
 		s = s[i+runeLength:]
-		escaped := false
+		escaped := r == '\\'
 
 	findValueEnd:
 		for i, r = range s {
