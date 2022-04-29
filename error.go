@@ -23,6 +23,8 @@ const (
 	ErrorCharsetDeclaration = "Character Set Declaration Mismatch"
 	// ErrorMissingRecipient name.
 	ErrorMissingRecipient = "no recipients (to, cc, bcc) set"
+	// ErrorMalformedChildPart name.
+	ErrorMalformedChildPart = "Malformed child part"
 )
 
 // MaxPartErrors limits number of part parsing errors, errors after the limit are ignored. 0 means unlimited.

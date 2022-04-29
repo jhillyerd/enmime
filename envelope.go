@@ -137,9 +137,15 @@ func (e *Envelope) Clone() *Envelope {
 // provided reader into an Envelope, downconverting HTML to plain text if needed, and sorting the
 // attachments, inlines and other parts into their respective slices. Errors are collected from all
 // Parts and placed into the Envelope.Errors slice.
+// Uses default parser.
 func ReadEnvelope(r io.Reader) (*Envelope, error) {
+	return defaultParser.ReadEnvelope(r)
+}
+
+// ReadEnvelope is the same as ReadEnvelope, but respects configurations.
+func (p Parser) ReadEnvelope(r io.Reader) (*Envelope, error) {
 	// Read MIME parts from reader
-	root, err := ReadParts(r)
+	root, err := p.ReadParts(r)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to ReadParts")
 	}

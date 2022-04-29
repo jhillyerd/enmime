@@ -344,6 +344,11 @@ func (p *Part) Clone(parent *Part) *Part {
 
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
 func ReadParts(r io.Reader) (*Part, error) {
+	return defaultParser.ReadParts(r)
+}
+
+// ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
+func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
 	root := &Part{PartID: "0"}
 	// Read header; top-level default CT is text/plain us-ascii according to RFC 822.
@@ -353,7 +358,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 	}
 	if strings.HasPrefix(root.ContentType, ctMultipartPrefix) {
 		// Content is multipart, parse it.
-		err = parseParts(root, br)
+		err = parseParts(root, br, p.skipMalformedParts)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +372,7 @@ func ReadParts(r io.Reader) (*Part, error) {
 }
 
 // parseParts recursively parses a MIME multipart document and sets each Parts PartID.
-func parseParts(parent *Part, reader *bufio.Reader) error {
+func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool) error {
 	firstRecursion := parent.Parent == nil
 	// Loop over MIME boundaries.
 	br := newBoundaryReader(reader, parent.Boundary)
@@ -393,21 +398,35 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Look for part header.
 		bbr := bufio.NewReader(br)
 		if err = p.setupHeaders(bbr, ""); err != nil {
+			if skipMalformedParts {
+				parent.addError(ErrorMalformedChildPart, "read header: %s", err.Error())
+				continue
+			}
+
 			return err
 		}
 		// Insert this Part into the MIME tree.
-		parent.AddChild(p)
 		if p.Boundary == "" {
 			// Content is text or data, decode it.
 			if err = p.decodeContent(bbr); err != nil {
+				if skipMalformedParts {
+					parent.addError(ErrorMalformedChildPart, "decode content: %s", err.Error())
+					continue
+				}
 				return err
 			}
-		} else {
-			// Content is another multipart.
-			err = parseParts(p, bbr)
-			if err != nil {
-				return err
+			parent.AddChild(p)
+			continue
+		}
+
+		parent.AddChild(p)
+		// Content is another multipart.
+		if err = parseParts(p, bbr, skipMalformedParts); err != nil {
+			if skipMalformedParts {
+				parent.addError(ErrorMalformedChildPart, "parse parts: %s", err.Error())
+				continue
 			}
+			return err
 		}
 	}
 	// Store any content following the closing boundary marker into the epilogue.

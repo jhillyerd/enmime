@@ -374,6 +374,57 @@ func TestMultiMixedParts(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
+func TestMultiSkipMalformedPart(t *testing.T) {
+	var want string
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "multi-malformed.raw")
+	parser := enmime.NewParser(enmime.SkipMalformedParts())
+	p, err := parser.ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatalf("Unexpected parse error: %+v", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
+		ContentType: "multipart/mixed",
+		PartID:      "0",
+	}
+	test.ComparePart(t, p, wantp)
+
+	test.ContentEqualsString(t, p.Content, "")
+
+	// Examine first child
+	p = p.FirstChild
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "1",
+	}
+	test.ComparePart(t, p, wantp)
+
+	want = "Section one"
+	test.ContentContainsString(t, p.Content, want)
+
+	// Examine sibling
+	p = p.NextSibling
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "3",
+	}
+	test.ComparePart(t, p, wantp)
+
+	want = "Section two"
+}
+
 func TestMultiOtherParts(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
