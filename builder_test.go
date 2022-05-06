@@ -925,9 +925,6 @@ func TestBuilderQPHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "build-qp-addr-headers.golden")
 }
