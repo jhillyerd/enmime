@@ -683,7 +683,10 @@ func TestEnvelopeSetHeader(t *testing.T) {
 
 	// replace existing header
 	want := "André Pirard <PIRARD@vm1.ulg.ac.be>"
-	e.SetHeader("To", []string{want})
+	err = e.SetHeader("To", []string{want})
+	if err != nil {
+		t.Fatal(err)
+	}
 	got := e.GetHeader("To")
 	if got != want {
 		t.Errorf("Got: %q, want: %q", got, want)
@@ -691,7 +694,10 @@ func TestEnvelopeSetHeader(t *testing.T) {
 
 	// replace existing header with multiple values
 	wantSlice := []string{"Mirosław Marczak <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
-	e.SetHeader("To", wantSlice)
+	err = e.SetHeader("To", wantSlice)
+	if err != nil {
+		t.Fatal(err)
+	}
 	gotSlice := e.GetHeaderValues("to")
 	diff := deep.Equal(gotSlice, wantSlice)
 	if diff != nil {
@@ -700,7 +706,10 @@ func TestEnvelopeSetHeader(t *testing.T) {
 
 	// replace non-existing header
 	want = "foobar"
-	e.SetHeader("X-Foo-Bar", []string{want})
+	err = e.SetHeader("X-Foo-Bar", []string{want})
+	if err != nil {
+		t.Fatal(err)
+	}
 	got = e.GetHeader("X-Foo-Bar")
 	if got != want {
 		t.Errorf("Got: %q, want: %q", got, want)
@@ -717,7 +726,10 @@ func TestEnvelopeAddHeader(t *testing.T) {
 	// add to existing header
 	to := "James Hillyerd <jamehi03@jamehi03lx.noa.com>"
 	wantSlice := []string{"\"Mirosław Marczak\" <marczak@inbucket.com>", "James Hillyerd <jamehi03@jamehi03lx.noa.com>"}
-	e.AddHeader("To", to)
+	err = e.AddHeader("To", to)
+	if err != nil {
+		t.Fatal(err)
+	}
 	gotSlice := e.GetHeaderValues("To")
 	diff := deep.Equal(gotSlice, wantSlice)
 	if diff != nil {
@@ -726,7 +738,10 @@ func TestEnvelopeAddHeader(t *testing.T) {
 
 	// add to non-existing header
 	want := "foobar"
-	e.AddHeader("X-Foo-Bar", want)
+	err = e.AddHeader("X-Foo-Bar", want)
+	if err != nil {
+		t.Fatal(err)
+	}
 	got := e.GetHeader("X-Foo-Bar")
 	if got != want {
 		t.Errorf("Got: %q, want: %q", got, want)
@@ -741,7 +756,10 @@ func TestEnvelopeDeleteHeader(t *testing.T) {
 	}
 
 	// delete user-agent header
-	e.DeleteHeader("User-Agent")
+	err = e.DeleteHeader("User-Agent")
+	if err != nil {
+		t.Fatal(err)
+	}
 	got := e.GetHeader("User-Agent")
 	want := ""
 	if got != want {

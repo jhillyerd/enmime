@@ -13,15 +13,12 @@ import (
 
 const (
 	// Standard MIME content types
-	ctAppPrefix        = "application/"
-	ctAppOctetStream   = "application/octet-stream"
-	ctMultipartAltern  = "multipart/alternative"
-	ctMultipartMixed   = "multipart/mixed"
-	ctMultipartPrefix  = "multipart/"
-	ctMultipartRelated = "multipart/related"
-	ctTextPrefix       = "text/"
-	ctTextPlain        = "text/plain"
-	ctTextHTML         = "text/html"
+	ctAppPrefix       = "application/"
+	ctAppOctetStream  = "application/octet-stream"
+	ctMultipartMixed  = "multipart/mixed"
+	ctMultipartPrefix = "multipart/"
+	ctTextPrefix      = "text/"
+	ctTextPlain       = "text/plain"
 
 	// Used as a placeholder in case of malformed Content-Type headers
 	ctPlaceholder = "x-not-a-mime-type/x-not-a-mime-type"

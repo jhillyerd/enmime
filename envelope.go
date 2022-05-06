@@ -57,7 +57,7 @@ func (e *Envelope) GetHeaderValues(name string) []string {
 	}
 
 	rawValues := (*e.header)[textproto.CanonicalMIMEHeaderKey(name)]
-	var values []string
+	values := make([]string, 0, len(rawValues))
 	for _, v := range rawValues {
 		values = append(values, coding.DecodeExtHeader(v))
 	}

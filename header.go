@@ -21,13 +21,11 @@ const (
 	cdInline     = "inline"
 
 	// Standard MIME content types
-	ctAppPrefix        = "application/"
 	ctAppOctetStream   = "application/octet-stream"
 	ctMultipartAltern  = "multipart/alternative"
 	ctMultipartMixed   = "multipart/mixed"
 	ctMultipartPrefix  = "multipart/"
 	ctMultipartRelated = "multipart/related"
-	ctTextPrefix       = "text/"
 	ctTextPlain        = "text/plain"
 	ctTextHTML         = "text/html"
 
