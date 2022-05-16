@@ -1,6 +1,7 @@
 package enmime_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jhillyerd/enmime"
@@ -372,6 +373,70 @@ func TestMultiMixedParts(t *testing.T) {
 
 	want = "Section two"
 	test.ContentContainsString(t, p.Content, want)
+}
+
+func TestMultiSkipMalformedPart(t *testing.T) {
+	var want string
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "multi-malformed.raw")
+	parser := enmime.NewParser(enmime.SkipMalformedParts(true))
+	p, err := parser.ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatalf("Unexpected parse error: %+v", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
+		ContentType: "multipart/mixed",
+		PartID:      "0",
+	}
+	test.ComparePart(t, p, wantp)
+
+	test.ContentEqualsString(t, p.Content, "")
+
+	// Examine first child
+	p = p.FirstChild
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "1",
+	}
+	test.ComparePart(t, p, wantp)
+
+	want = "Section one"
+	test.ContentContainsString(t, p.Content, want)
+
+	// Verify sibling is Section two and not the malformed part.
+	p = p.NextSibling
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		ContentType: "text/plain",
+		Charset:     "us-ascii",
+		PartID:      "3",
+	}
+	test.ComparePart(t, p, wantp)
+
+	want = "Section two"
+}
+
+func TestMultiNoSkipMalformedPartFails(t *testing.T) {
+	r := test.OpenTestData("parts", "multi-malformed.raw")
+	parser := enmime.NewParser(enmime.SkipMalformedParts(false))
+	_, err := parser.ReadParts(r)
+	if err == nil {
+		t.Fatal("Expecting parsing to fail")
+	}
+
+	if !strings.Contains(err.Error(), "malformed MIME header initial line") {
+		t.Fatal("Expecting for error to contain \"malformed MIME header\" error")
+	}
 }
 
 func TestMultiOtherParts(t *testing.T) {
