@@ -1,6 +1,7 @@
 package enmime_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jhillyerd/enmime"
@@ -423,6 +424,19 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 	test.ComparePart(t, p, wantp)
 
 	want = "Section two"
+}
+
+func TestMultiNoSkipMalformedPartFails(t *testing.T) {
+	r := test.OpenTestData("parts", "multi-malformed.raw")
+	parser := enmime.NewParser()
+	_, err := parser.ReadParts(r)
+	if err == nil {
+		t.Fatal("Expecting parsing to fail")
+	}
+
+	if !strings.Contains(err.Error(), "malformed MIME header initial line") {
+		t.Fatal("Expecting for error to contain \"malformed MIME header\" error")
+	}
 }
 
 func TestMultiOtherParts(t *testing.T) {
