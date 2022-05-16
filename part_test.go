@@ -379,7 +379,7 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 	var want string
 	var wantp *enmime.Part
 	r := test.OpenTestData("parts", "multi-malformed.raw")
-	parser := enmime.NewParser(enmime.SkipMalformedParts())
+	parser := enmime.NewParser(enmime.SkipMalformedParts(true))
 	p, err := parser.ReadParts(r)
 
 	// Examine root
@@ -428,7 +428,7 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 
 func TestMultiNoSkipMalformedPartFails(t *testing.T) {
 	r := test.OpenTestData("parts", "multi-malformed.raw")
-	parser := enmime.NewParser()
+	parser := enmime.NewParser(enmime.SkipMalformedParts(false))
 	_, err := parser.ReadParts(r)
 	if err == nil {
 		t.Fatal("Expecting parsing to fail")

@@ -6,8 +6,8 @@ type Option interface {
 }
 
 // SkipMalformedParts sets parsing to skip parts that's can't be parsed.
-func SkipMalformedParts() Option {
-	return skipMalformedPartsOption(true)
+func SkipMalformedParts(s bool) Option {
+	return skipMalformedPartsOption(s)
 }
 
 type skipMalformedPartsOption bool
