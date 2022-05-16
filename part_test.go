@@ -412,7 +412,7 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 	want = "Section one"
 	test.ContentContainsString(t, p.Content, want)
 
-	// Examine sibling
+	// Verify sibling is Section two and not the malformed part.
 	p = p.NextSibling
 	wantp = &enmime.Part{
 		Parent:      test.PartExists,
