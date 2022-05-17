@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Support for parser options! (#248)
+- Option to skip parsing of malformed parts (#248)
+
 
 ## [0.9.4] - 2022-05-16
 
