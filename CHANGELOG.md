@@ -7,8 +7,24 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
+## [0.9.4] - 2022-05-16
+
 ### Added
 - Remove HTML tags in malformed content types (#229)
+- Maximal number of errors recorded in Part limited (#240)
+- Builder: Support other parts (#244)
+- Additional decoding in mail address (#247)
+- Integration test include Go 1.18
+
+### Fixed
+- Fix for quote-printed utf-8 header with quotes (#237)
+- Parse address joined with semicolons (#238) 
+- Use extended parser after fixing address list (#239) 
+- Parse media types which are escaped at first rune (#246)
+
+### Changed
+- Rely on stdlib for decoding to UTF-8, simplifies address parsing (#234)
 
 
 ## [0.9.3] - 2022-01-29
@@ -232,7 +248,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 
-[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.3...master
+[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.4...master
+[0.9.4]:      https://github.com/jhillyerd/enmime/compare/v0.9.3...v0.9.4
 [0.9.3]:      https://github.com/jhillyerd/enmime/compare/v0.9.2...v0.9.3
 [0.9.2]:      https://github.com/jhillyerd/enmime/compare/v0.9.1...v0.9.2
 [0.9.1]:      https://github.com/jhillyerd/enmime/compare/v0.9.0...v0.9.1
