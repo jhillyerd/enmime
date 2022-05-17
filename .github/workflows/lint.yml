@@ -1,5 +1,7 @@
-on: [push]
-name: lint
+name: Lint
+on:
+  push:
+  pull_request:
 jobs:
   golangci:
     runs-on: ubuntu-latest
