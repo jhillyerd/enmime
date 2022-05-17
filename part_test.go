@@ -424,6 +424,7 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 	test.ComparePart(t, p, wantp)
 
 	want = "Section two"
+	test.ContentContainsString(t, p.Content, want)
 }
 
 func TestMultiNoSkipMalformedPartFails(t *testing.T) {
