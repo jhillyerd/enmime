@@ -39,7 +39,7 @@ const (
 //   * Newline characters
 func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
-		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(fixUnexpectedTag(ctype), ';')))))
+		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';')))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
@@ -482,11 +482,32 @@ func fixNewlines(value string) string {
 	return value
 }
 
-// fixUnexpectedTag removes an unexpected <!DOCTYPE tag
-func fixUnexpectedTag(value string) string {
-	dtIdx := strings.Index(value, "<")
-	if dtIdx > -1 {
-		return value[0:dtIdx]
+// removeTrailingHTMLTags removes an unexpected HTML tags at the end of media type.
+func removeTrailingHTMLTags(value string) string {
+	tagStart := 0
+	closeTags := 0
+
+loop:
+	for i := len(value) - 1; i > 0; i-- {
+		c := value[i]
+		switch c {
+		case '"':
+			if closeTags == 0 { // quotes started outside the tag, aborting
+				break loop
+			}
+		case '>':
+			closeTags++
+		case '<':
+			closeTags--
+			if closeTags == 0 {
+				tagStart = i
+			}
+		}
 	}
+
+	if tagStart != 0 {
+		return value[0:tagStart]
+	}
+
 	return value
 }

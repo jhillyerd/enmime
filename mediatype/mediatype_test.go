@@ -482,16 +482,16 @@ func TestParseMediaType(t *testing.T) {
 			params: map[string]string{"name": "Outlook-Logo  Desc"},
 		},
 		{
-			label:  "ignore tag",
+			label:  "remove HTML tag",
 			input:  `text/html; charset="iso-8859-1"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">`,
 			mtype:  "text/html",
 			params: map[string]string{"charset": "iso-8859-1"},
 		},
 		{
-			label:  "ignore tag in string",
-			input:  `text/html; charset="iso-8859-1<!DOCTYPE ... ">"`,
-			mtype:  "text/html",
-			params: map[string]string{"charset": "iso-8859-1"},
+			label:  "ignore quoted HTML tag",
+			input:  `multipart/alternative; boundary="<myboundary>"`,
+			mtype:  "multipart/alternative",
+			params: map[string]string{"boundary": "<myboundary>"},
 		},
 	}
 	for _, tc := range testCases {
@@ -516,6 +516,67 @@ func TestParseMediaType(t *testing.T) {
 			}
 			for pname := range params {
 				t.Errorf("Found unexpected param: %q=%q", pname, params[pname])
+			}
+		})
+	}
+}
+
+func TestRemoveTrailingHTMLTags(t *testing.T) {
+	tests := map[string]struct {
+		has  string
+		want string
+	}{
+		"singe tag": {
+			has:  `text/html; charset="iso-8859-1"<tag blah-blah-blah>`,
+			want: `text/html; charset="iso-8859-1"`,
+		},
+		"no tag": {
+			has:  `text/html; charset="iso-8859-1"`,
+			want: `text/html; charset="iso-8859-1"`,
+		},
+		"no tag to params": {
+			has:  `text/html"`,
+			want: `text/html"`,
+		},
+		"multiple tags": {
+			has:  `text/html; charset="iso-8859-1"<tag1> <tag2>`,
+			want: `text/html; charset="iso-8859-1"`,
+		},
+		"nested tags": {
+			has:  `text/html; charset="iso-8859-1"<tag1 blah-blah-blah <tag2>>`,
+			want: `text/html; charset="iso-8859-1"`,
+		},
+		"with spaces": {
+			has:  `text/html; charset="iso-8859-1"  <tag1>`,
+			want: `text/html; charset="iso-8859-1"  `,
+		},
+		"multiple, nested and with spaces": {
+			has:  `text/html; charset="iso-8859-1"  <tag1<tag2>> <tag3>`,
+			want: `text/html; charset="iso-8859-1"  `,
+		},
+		"no params single tag": {
+			has:  `text/html<tag "some text">`,
+			want: `text/html`,
+		},
+		"unclosed tag": {
+			has:  `text/html <unclosed tag`,
+			want: `text/html <unclosed tag`,
+		},
+		"unopened tag": {
+			has:  `text/html unopened tag>`,
+			want: `text/html unopened tag>`,
+		},
+		"broken tag": {
+			has:  `text/html >text<`,
+			want: `text/html >text<`,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := removeTrailingHTMLTags(tt.has)
+			if got != tt.want {
+				t.Errorf("should remove trainling HTML tags, has: %q, want: %q, got: %q", tt.has, tt.want, got)
 			}
 		})
 	}
