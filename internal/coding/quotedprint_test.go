@@ -152,6 +152,40 @@ func TestQPCleanerLineBreakBufferFull(t *testing.T) {
 	}
 }
 
+func TestQPCleanerEqualSignOverflow(t *testing.T) {
+	// Test processing of =3D quoted printable token being at the end of line
+	// in combination with almost full buffer.
+	// qp cleaner should add =\r\n and then output =3D without buffer overflow
+
+	input := append(bytes.Repeat([]byte("abc"), 341), []byte("=3D")...)
+	inbuf := bytes.NewBuffer(input)
+	qp := coding.NewQPCleaner(inbuf)
+
+	output := make([]byte, 1024)
+	n, err := qp.Read(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1024 {
+		t.Errorf("Unexpected result length: %d", n)
+	}
+	if string(output[1020:]) != "abc=" {
+		t.Errorf("Unexpected result content: %s", output[1020:])
+	}
+
+	n, err = qp.Read(output)
+	if err != io.EOF {
+		t.Fatal(err)
+	}
+	if n != 5 {
+		t.Errorf("Unexpected result length: %d", n)
+	}
+	output = output[:n]
+	if string(output) != "\r\n=3D" {
+		t.Errorf("Unexpected result content: %s", string(output))
+	}
+}
+
 var ErrPeek = errors.New("enmime test peek error")
 
 type peekBreakReader string
