@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/jhillyerd/enmime"
@@ -33,6 +34,12 @@ func TestParseHeaderOnly(t *testing.T) {
 	}
 	if len(e.Root.Header) != 7 {
 		t.Errorf("Expected 7 headers, got %d", len(e.Root.Header))
+	}
+	dt, err := e.Date()
+	if err != nil {
+		t.Errorf("Failed to parse Date header: %v", err)
+	} else if !dt.Equal(time.Date(2012, time.October, 19, 5, 48, 39, 0, time.UTC)) {
+		t.Errorf("Incorrect date parsed: %s", dt)
 	}
 }
 

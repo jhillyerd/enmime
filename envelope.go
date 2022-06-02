@@ -7,6 +7,7 @@ import (
 	"net/mail"
 	"net/textproto"
 	"strings"
+	"time"
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
@@ -112,6 +113,15 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	}
 
 	return ParseAddressList(e.header.Get(key))
+}
+
+// Date parses the Date header field.
+func (e *Envelope) Date() (time.Time, error) {
+	hdr := e.GetHeader("Date")
+	if hdr == "" {
+		return time.Time{}, mail.ErrHeaderNotPresent
+	}
+	return mail.ParseDate(hdr)
 }
 
 // Clone returns a clone of the current Envelope
