@@ -148,7 +148,7 @@ func TestQPCleanerLineBreakBufferFull(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 1025 {
-		t.Errorf("Unexpected result length: %d", n)
+		t.Error("got:", n, "want:", 1025)
 	}
 }
 
@@ -167,10 +167,10 @@ func TestQPCleanerEqualSignOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 1024 {
-		t.Errorf("Unexpected result length: %d", n)
+		t.Error("got:", n, "want:", 1024)
 	}
 	if string(output[1020:]) != "abc=" {
-		t.Errorf("Unexpected result content: %s", output[1020:])
+		t.Error("got:", string(output[1020:]), "want:", "abc=")
 	}
 
 	n, err = qp.Read(output)
@@ -178,11 +178,11 @@ func TestQPCleanerEqualSignOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 5 {
-		t.Errorf("Unexpected result length: %d", n)
+		t.Error("got:", n, "want:", 5)
 	}
 	output = output[:n]
 	if string(output) != "\r\n=3D" {
-		t.Errorf("Unexpected result content: %s", string(output))
+		t.Error("got:", string(output), "want:", "\r\n=3D")
 	}
 }
 
