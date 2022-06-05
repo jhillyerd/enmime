@@ -52,6 +52,16 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		qp.lineLen++
 	}
 
+	// safeWriteByte outputs a signle byte, storing overflow for next read. Updates counters.
+	safeWriteByte := func(in byte) {
+		if n < destLen {
+			dest[n] = in
+			n++
+		} else {
+			qp.overflow = append(qp.overflow, in)
+		}
+	}
+
 	// writeBytes outputs multiple bytes, storing overflow for next read. Updates counters.
 	writeBytes := func(in []byte) {
 		nc := copy(dest[n:], in)
@@ -100,8 +110,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 				return 0, err
 			}
 			if validHexBytes(hexBytes) {
-				dest[n] = b
-				n++
+				safeWriteByte(b)
 			} else {
 				writeBytes(escapedEquals)
 			}
