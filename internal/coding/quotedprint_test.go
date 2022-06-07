@@ -205,6 +205,39 @@ func TestQPPeekError(t *testing.T) {
 	}
 }
 
+func TestQPCleanerQuotedLineLength(t *testing.T) {
+	input := strings.Repeat("=BC", 700) // ~ two lines of token
+	inr := strings.NewReader(input)
+	qp := coding.NewQPCleaner(inr)
+
+	// Check line length is counted proerly even for quoted printable encoded chars
+	longLineLen := coding.MaxQPLineLen + 2
+	output := make([]byte, longLineLen)
+	n, err := qp.Read(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != longLineLen {
+		t.Error("got:", n, "want:", longLineLen)
+	}
+	if string(output[longLineLen-2:]) != "\r\n" {
+		t.Error("got:", string(output[longLineLen-2:]), "want:", "\r\n")
+	}
+
+	// Check line length is correct also when overflow buffer of QPCleaner is used
+	output = make([]byte, longLineLen)
+	n, err = qp.Read(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != longLineLen {
+		t.Error("got:", n, "want:", longLineLen)
+	}
+	if string(output[longLineLen-2:]) != "\r\n" {
+		t.Error("got:", string(output[longLineLen-2:]), "want:", "\r\n")
+	}
+}
+
 var result int
 
 func BenchmarkQPCleaner(b *testing.B) {

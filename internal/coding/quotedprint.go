@@ -52,7 +52,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		qp.lineLen++
 	}
 
-	// safeWriteByte outputs a signle byte, storing overflow for next read. Updates counters.
+	// safeWriteByte outputs a single byte, storing overflow for next read. Updates counters.
 	safeWriteByte := func(in byte) {
 		if n < destLen {
 			dest[n] = in
@@ -60,6 +60,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		} else {
 			qp.overflow = append(qp.overflow, in)
 		}
+		qp.lineLen++
 	}
 
 	// writeBytes outputs multiple bytes, storing overflow for next read. Updates counters.
