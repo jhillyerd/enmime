@@ -355,6 +355,10 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 			input: `application/rtf; charset=utf-8; name=""žába".jpg"`,
 			want:  `application/rtf; charset=utf-8; name="\"žába\".jpg"`,
 		},
+		{
+			input: `multipart/mixed; boundary="aaa;bbb;ccc"`, // `;` inside quoted text, should ignore it
+			want:  `multipart/mixed; boundary="aaa;bbb;ccc"`,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {

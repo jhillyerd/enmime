@@ -384,7 +384,7 @@ func fixUnquotedSpecials(s string) string {
 //  Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
 //  Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
 func fixUnescapedQuotes(hvalue string) string {
-	params := strings.SplitAfter(hvalue, ";")
+	params := stringutil.SplitAfterQuoted(hvalue, ';', '"')
 	sb := &strings.Builder{}
 
 	for i := 0; i < len(params); i++ {
