@@ -49,8 +49,6 @@ func TestSplitQuoted(t *testing.T) {
 			want:  []string{`"a;b"`, `"c`, `d`},
 		},
 		{
-			// Quotes must be escaped via RFC2047 encoding, not just a backslash.
-			// b through c below must not be treated as a single quoted-run.
 			input: `a;"b\";\"c";d`,
 			want:  []string{`a`, `"b\";\"c"`, `d`},
 		},
@@ -123,8 +121,6 @@ func TestSplitAfterQuoted(t *testing.T) {
 			want:  []string{`"a;b";`, `"c;`, `d`},
 		},
 		{
-			// Quotes must be escaped via RFC2047 encoding, not just a backslash.
-			// b through c below must not be treated as a single quoted-run.
 			input: `a;"b\";\"c";d`,
 			want:  []string{`a;`, `"b\";\"c";`, `d`},
 		},
