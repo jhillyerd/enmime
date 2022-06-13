@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestSplitQuoted(t *testing.T) {
+func TestSplitUnquoted(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  []string
@@ -60,7 +60,7 @@ func TestSplitQuoted(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := SplitQuoted(tc.input, ';', '"')
+			got := SplitUnquoted(tc.input, ';', '"')
 
 			if len(got) != len(tc.want) {
 				t.Errorf("got len %v, want len %v", len(got), len(tc.want))
@@ -76,7 +76,7 @@ func TestSplitQuoted(t *testing.T) {
 	}
 }
 
-func TestSplitAfterQuoted(t *testing.T) {
+func TestSplitAfterUnquoted(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  []string
@@ -136,7 +136,7 @@ func TestSplitAfterQuoted(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := SplitAfterQuoted(tc.input, ';', '"')
+			got := SplitAfterUnquoted(tc.input, ';', '"')
 
 			if len(got) != len(tc.want) {
 				t.Errorf("got len %v, want len %v", len(got), len(tc.want))

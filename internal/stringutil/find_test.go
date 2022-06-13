@@ -2,7 +2,7 @@ package stringutil
 
 import "testing"
 
-func TestFindQuoted(t *testing.T) {
+func TestFindUnquoted(t *testing.T) {
 	findRune := ';'
 	quoteRune := '"'
 	testCases := []struct {
@@ -81,7 +81,7 @@ func TestFindQuoted(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := FindQuoted(tc.input, findRune, quoteRune)
+			got := FindUnquoted(tc.input, findRune, quoteRune)
 
 			if len(got) != len(tc.want) {
 				t.Errorf("got len %v, want len %v", len(got), len(tc.want))

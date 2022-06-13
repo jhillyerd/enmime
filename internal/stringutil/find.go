@@ -1,8 +1,8 @@
 package stringutil
 
-// FindQuoted returns the indexes of the instance of v in s, or empty slice if v is not present in s.
+// FindUnquoted returns the indexes of the instance of v in s, or empty slice if v is not present in s.
 // It ignores v present inside quoted runs.
-func FindQuoted(s string, v rune, quote rune) []int {
+func FindUnquoted(s string, v rune, quote rune) []int {
 	escaped := false
 	quoted := false
 	indexes := make([]int, 0)

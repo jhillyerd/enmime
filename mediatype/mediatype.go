@@ -69,7 +69,7 @@ func fixMangledMediaType(mtype string, sep rune) string {
 		return ""
 	}
 
-	parts := stringutil.SplitQuoted(mtype, sep, '"')
+	parts := stringutil.SplitUnquoted(mtype, sep, '"')
 	mtype = ""
 	if strings.Contains(parts[0], "=") {
 		// A parameter pair at this position indicates we are missing a content-type.
@@ -384,7 +384,7 @@ func fixUnquotedSpecials(s string) string {
 //  Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
 //  Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
 func fixUnescapedQuotes(hvalue string) string {
-	params := stringutil.SplitAfterQuoted(hvalue, ';', '"')
+	params := stringutil.SplitAfterUnquoted(hvalue, ';', '"')
 	sb := &strings.Builder{}
 
 	for i := 0; i < len(params); i++ {
