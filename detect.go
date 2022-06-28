@@ -8,14 +8,21 @@ import (
 )
 
 // detectMultipartMessage returns true if the message has a recognized multipart Content-Type header
-func detectMultipartMessage(root *Part) bool {
+func detectMultipartMessage(root *Part, multipartWOBoundaryAsSinglepart bool) bool {
 	// Parse top-level multipart
 	ctype := root.Header.Get(hnContentType)
-	mtype, _, _, err := mediatype.Parse(ctype)
+	mtype, params, _, err := mediatype.Parse(ctype)
+	if err != nil {
+		return false
+	}
+
+	if boundary := params[hpBoundary]; multipartWOBoundaryAsSinglepart && boundary == "" {
+		return false
+	}
 
 	// According to rfc2046#section-5.1.7 all other multipart should
 	// be treated as multipart/mixed
-	return err == nil && strings.HasPrefix(mtype, ctMultipartPrefix)
+	return strings.HasPrefix(mtype, ctMultipartPrefix)
 }
 
 // detectAttachmentHeader returns true, if the given header defines an attachment. First it checks

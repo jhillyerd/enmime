@@ -14,7 +14,7 @@ func TestDetectSinglePart(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if detectMultipartMessage(msg) {
+	if detectMultipartMessage(msg, false) {
 		t.Error("Failed to identify non-multipart message")
 	}
 }
@@ -26,7 +26,7 @@ func TestDetectMultiPart(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !detectMultipartMessage(msg) {
+	if !detectMultipartMessage(msg, false) {
 		t.Error("Failed to identify multipart MIME message")
 	}
 }
@@ -38,8 +38,24 @@ func TestDetectUnknownMultiPart(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !detectMultipartMessage(msg) {
+	if !detectMultipartMessage(msg, false) {
 		t.Error("Failed to identify multipart MIME message of unknown type")
+	}
+}
+
+func TestDetectMultipartWithoutBoundary(t *testing.T) {
+	r, _ := os.Open(filepath.Join("testdata", "mail", "multipart-wo-boundary.raw"))
+	msg, err := ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !detectMultipartMessage(msg, false) {
+		t.Error("Failed to identify multipart MIME message")
+	}
+
+	if detectMultipartMessage(msg, true) {
+		t.Error("Failed to identify multipart MIME message without boundaries as single-part")
 	}
 }
 
