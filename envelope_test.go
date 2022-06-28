@@ -589,6 +589,31 @@ func TestParseHTMLOnlyCharsetInHeaderOnly(t *testing.T) {
 	}
 }
 
+func TestParseMultipartWOBoundaryFails(t *testing.T) {
+	r := test.OpenTestData("mail", "multipart-wo-boundary.raw")
+	_, err := enmime.ReadEnvelope(r)
+	if err == nil {
+		t.Fatal("Expecting parsing to fail")
+	}
+
+	if !strings.Contains(err.Error(), "unable to locate boundary param in Content-Type header") {
+		t.Fatal("Expecting for unable to locate boundary error")
+	}
+}
+
+func TestParseMultipartWOBoundaryAsSinglepart(t *testing.T) {
+	r := test.OpenTestData("mail", "multipart-wo-boundary.raw")
+	p := enmime.NewParser(enmime.MultipartWOBoundaryAsSinglepart(true))
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if !bytes.Contains(e.Root.Content, []byte(`I'm  multipart message without boundary`)) {
+		t.Fatal("Expecting multipart without boundary to be parsed")
+	}
+}
+
 func TestEnvelopeGetHeader(t *testing.T) {
 	// Test empty header
 	e := &enmime.Envelope{}

@@ -3,7 +3,8 @@ package enmime
 // Parser parses MIME.
 // Default parser is a valid one.
 type Parser struct {
-	skipMalformedParts bool
+	skipMalformedParts              bool
+	multipartWOBoundaryAsSinglepart bool
 }
 
 // defaultParser is a Parser with default configuration.

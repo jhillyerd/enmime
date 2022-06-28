@@ -356,7 +356,8 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 	if err != nil {
 		return nil, err
 	}
-	if strings.HasPrefix(root.ContentType, ctMultipartPrefix) {
+
+	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglepart) {
 		// Content is multipart, parse it.
 		err = parseParts(root, br, p.skipMalformedParts)
 		if err != nil {
