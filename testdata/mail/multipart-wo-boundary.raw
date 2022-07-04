@@ -1,0 +1,8 @@
+Delivered-To: test@example.com
+From: Mailer-Daemon@example.com
+Subject: Delivery Status Notification (Failure)
+To: user@example.com
+Content-Type: multipart/report;
+Message-Id: <444A6F676F-A9A1C1F7-799A-4D89-B97E-8057E132FBFB@YSHSERVER>
+
+I'm  multipart message without boundary
