@@ -16,14 +16,14 @@ func (o skipMalformedPartsOption) apply(p *Parser) {
 	p.skipMalformedParts = bool(o)
 }
 
-// MultipartWOBoundaryAsSinglepart if set to true will treat a multi-part messages without boundary parameter as single-part.
+// MultipartWOBoundaryAsSinglePart if set to true will treat a multi-part messages without boundary parameter as single-part.
 // Otherwise, will return error that boundary is not found.
-func MultipartWOBoundaryAsSinglepart(a bool) Option {
-	return multipartWOBoundaryAsSinglepartOption(a)
+func MultipartWOBoundaryAsSinglePart(a bool) Option {
+	return multipartWOBoundaryAsSinglePartOption(a)
 }
 
-type multipartWOBoundaryAsSinglepartOption bool
+type multipartWOBoundaryAsSinglePartOption bool
 
-func (o multipartWOBoundaryAsSinglepartOption) apply(p *Parser) {
-	p.multipartWOBoundaryAsSinglepart = bool(o)
+func (o multipartWOBoundaryAsSinglePartOption) apply(p *Parser) {
+	p.multipartWOBoundaryAsSinglePart = bool(o)
 }

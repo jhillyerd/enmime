@@ -4,7 +4,7 @@ package enmime
 // Default parser is a valid one.
 type Parser struct {
 	skipMalformedParts              bool
-	multipartWOBoundaryAsSinglepart bool
+	multipartWOBoundaryAsSinglePart bool
 }
 
 // defaultParser is a Parser with default configuration.

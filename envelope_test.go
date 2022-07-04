@@ -603,7 +603,7 @@ func TestParseMultipartWOBoundaryFails(t *testing.T) {
 
 func TestParseMultipartWOBoundaryAsSinglepart(t *testing.T) {
 	r := test.OpenTestData("mail", "multipart-wo-boundary.raw")
-	p := enmime.NewParser(enmime.MultipartWOBoundaryAsSinglepart(true))
+	p := enmime.NewParser(enmime.MultipartWOBoundaryAsSinglePart(true))
 	e, err := p.ReadEnvelope(r)
 	if err != nil {
 		t.Fatal("Failed to parse MIME:", err)

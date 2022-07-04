@@ -176,7 +176,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 		header: &root.Header,
 	}
 
-	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglepart) {
+	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglePart) {
 		// Multi-part message (message with attachments, etc)
 		if err := parseMultiPartBody(root, e); err != nil {
 			return nil, err

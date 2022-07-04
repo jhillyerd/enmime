@@ -357,7 +357,7 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 		return nil, err
 	}
 
-	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglepart) {
+	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglePart) {
 		// Content is multipart, parse it.
 		err = parseParts(root, br, p.skipMalformedParts)
 		if err != nil {
