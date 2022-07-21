@@ -5,11 +5,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [Unreleased]
+## [0.10.0] - 2022-07-20
 
 ### Added
 - Support for parser options! (#248)
 - Option to skip parsing of malformed parts (#248)
+- Envelope.Date() method for parsing date (#253)
+- Option to handle missing multipart boundaries (#257)
+
+### Fixed
+- Remove trailing HTML tags (#252)
+- Buffer overrun in quoted-printable (#254)
+- Corrected quoted-printable equals counting (#255)
+- Improve splitting inside quoted text (#256)
 
 
 ## [0.9.4] - 2022-05-16
