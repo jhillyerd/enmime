@@ -46,16 +46,31 @@ func (p MailBuilder) Date(date time.Time) MailBuilder {
 	return p
 }
 
+// GetDate returns the stored date.
+func (p *MailBuilder) GetDate() time.Time {
+	return p.date
+}
+
 // From returns a copy of MailBuilder with the specified From header.
 func (p MailBuilder) From(name, addr string) MailBuilder {
 	p.from = mail.Address{Name: name, Address: addr}
 	return p
 }
 
+// GetFrom returns the stored from header.
+func (p *MailBuilder) GetFrom() mail.Address {
+	return p.from
+}
+
 // Subject returns a copy of MailBuilder with the specified Subject header.
 func (p MailBuilder) Subject(subject string) MailBuilder {
 	p.subject = subject
 	return p
+}
+
+// GetSubject returns the stored subject header.
+func (p *MailBuilder) GetSubject() string {
+	return p.subject
 }
 
 // To returns a copy of MailBuilder with this name & address appended to the To header.  name may be
@@ -73,6 +88,11 @@ func (p MailBuilder) ToAddrs(to []mail.Address) MailBuilder {
 	return p
 }
 
+// GetTo returns the stored to addresses.
+func (p *MailBuilder) GetTo() []mail.Address {
+	return p.to
+}
+
 // CC returns a copy of MailBuilder with this name & address appended to the CC header.  name may be
 // empty.
 func (p MailBuilder) CC(name, addr string) MailBuilder {
@@ -86,6 +106,11 @@ func (p MailBuilder) CC(name, addr string) MailBuilder {
 func (p MailBuilder) CCAddrs(cc []mail.Address) MailBuilder {
 	p.cc = cc
 	return p
+}
+
+// GetCC returns the stored cc addresses.
+func (p *MailBuilder) GetCC() []mail.Address {
+	return p.cc
 }
 
 // BCC returns a copy of MailBuilder with this name & address appended to the BCC list.  name may be
@@ -106,11 +131,21 @@ func (p MailBuilder) BCCAddrs(bcc []mail.Address) MailBuilder {
 	return p
 }
 
+// GetBCC returns the stored bcc addresses.
+func (p *MailBuilder) GetBCC() []mail.Address {
+	return p.bcc
+}
+
 // ReplyTo returns a copy of MailBuilder with this name & address appended to the To header.  name
 // may be empty.
 func (p MailBuilder) ReplyTo(name, addr string) MailBuilder {
 	p.replyTo = mail.Address{Name: name, Address: addr}
 	return p
+}
+
+// GetReplyTo returns the stored replyTo header.
+func (p *MailBuilder) GetReplyTo() mail.Address {
+	return p.replyTo
 }
 
 // Header returns a copy of MailBuilder with the specified value added to the named header.
@@ -125,16 +160,31 @@ func (p MailBuilder) Header(name, value string) MailBuilder {
 	return p
 }
 
+// GetHeader gets the first value associated with the given header.
+func (p *MailBuilder) GetHeader(name string) string {
+	return p.header.Get(name)
+}
+
 // Text returns a copy of MailBuilder that will use the provided bytes for its text/plain Part.
 func (p MailBuilder) Text(body []byte) MailBuilder {
 	p.text = body
 	return p
 }
 
+// GetText returns the stored text/plain part.
+func (p *MailBuilder) GetText() []byte {
+	return p.text
+}
+
 // HTML returns a copy of MailBuilder that will use the provided bytes for its text/html Part.
 func (p MailBuilder) HTML(body []byte) MailBuilder {
 	p.html = body
 	return p
+}
+
+// GetHTML returns the stored text/html part.
+func (p *MailBuilder) GetHTML() []byte {
+	return p.html
 }
 
 // AddAttachment returns a copy of MailBuilder that includes the specified attachment.
