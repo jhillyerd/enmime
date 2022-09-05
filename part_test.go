@@ -427,6 +427,184 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
+func TestReadPartErrorPolicy(t *testing.T) {
+	type testData struct {
+		policy                       enmime.ReadPartErrorPolicy
+		expectedPlainTextPartContent string
+		expectedHTMLPartContent      string
+		expectedErrorPlainTextPart   enmime.Error
+		expectedErrorHTMLPart        enmime.Error
+	}
+
+	var test0, test1, test2, test3 testData
+
+	// example policy 1: recover the buffer read
+	// only on base64.CorruptInputBuffer error and when content type is text/plain or text/html
+	examplePolicy1 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
+		allowedContentType := map[string]bool{
+			"text/html":  true,
+			"text/plain": true,
+		}
+		if enmime.IsBase64CorruptInputError(err) && allowedContentType[p.ContentType] {
+			return true
+		}
+		return false
+	})
+
+	// example policy 2: recover the buffer read
+	// only on base64.CorruptInputBuffer error and when content type is text/plain
+	examplePolicy2 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
+		allowedContentType := map[string]bool{
+			"text/plain": true,
+		}
+		if enmime.IsBase64CorruptInputError(err) && allowedContentType[p.ContentType] {
+			return true
+		}
+		return false
+	})
+
+	// example policy 3: always recover the buffer read, no matter the error
+	examplePolicy3 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
+		return true
+	})
+
+	plainContent := "Hello World!"
+	htmlContent := "<p>Hello World</p>"
+
+	ilegalBase64Error := enmime.Error{
+		Name:   enmime.ErrorMalformedBase64,
+		Detail: "illegal base64 data at input byte 0",
+		Severe: true,
+	}
+
+	keepingBufferWarning := enmime.Error{
+		Name:   enmime.ErrorMalformedChildPart,
+		Detail: "keeping the buffer read on error: illegal base64 data at input byte 0",
+		Severe: false,
+	}
+
+	test0 = testData{
+		policy:                       nil,
+		expectedPlainTextPartContent: "",
+		expectedErrorPlainTextPart:   ilegalBase64Error,
+		expectedHTMLPartContent:      "",
+		expectedErrorHTMLPart:        ilegalBase64Error,
+	}
+	test1 = testData{
+		policy:                       examplePolicy1,
+		expectedPlainTextPartContent: plainContent,
+		expectedErrorPlainTextPart:   keepingBufferWarning,
+		expectedHTMLPartContent:      htmlContent,
+		expectedErrorHTMLPart:        keepingBufferWarning,
+	}
+	test2 = testData{
+		policy:                       examplePolicy2,
+		expectedPlainTextPartContent: plainContent,
+		expectedErrorPlainTextPart:   keepingBufferWarning,
+		expectedHTMLPartContent:      "",
+		expectedErrorHTMLPart:        ilegalBase64Error,
+	}
+	test3 = testData{
+		policy:                       examplePolicy3,
+		expectedPlainTextPartContent: plainContent,
+		expectedErrorPlainTextPart:   keepingBufferWarning,
+		expectedHTMLPartContent:      htmlContent,
+		expectedErrorHTMLPart:        keepingBufferWarning,
+	}
+
+	tests := map[string]testData{
+		"no policy (default behavior)":      test0,
+		"keep buffer according to policy 1": test1,
+		"keep buffer according to policy 2": test2,
+		"keep buffer according to policy 3": test3,
+	}
+
+	for testName, testData := range tests {
+		t.Run(testName, func(t *testing.T) {
+			r := test.OpenTestData("parts", "extra-base64-character.raw")
+			parser := enmime.NewParser(enmime.SetReadPartErrorPolicy(testData.policy))
+			p, err := parser.ReadParts(r)
+
+			if err != nil {
+				t.Fatalf("Unexpected parse error: %+v", err)
+			}
+
+			var expectedPart *enmime.Part
+
+			// Examine root
+			expectedPart = &enmime.Part{
+				FirstChild:  test.PartExists,
+				ContentType: "multipart/alternative",
+				PartID:      "0",
+			}
+			expectedSubject := "Each part contains 1 extra base64 character (4*n + 1)"
+			gotSubject := p.Header.Get("Subject")
+
+			test.ComparePart(t, p, expectedPart)
+			test.ContentEqualsString(t, p.Content, "")
+			if gotSubject != expectedSubject {
+				t.Errorf("Subject got: %q, expected: %q", gotSubject, expectedSubject)
+			}
+
+			// Examine parts
+			expectedCharset := "utf-8"
+			expectedContentTransferEncoding := "base64"
+			var foundExpectedErr bool
+
+			// Examine first child
+			p = p.FirstChild
+			expectedPart = &enmime.Part{
+				Parent:      test.PartExists,
+				NextSibling: test.PartExists,
+				ContentType: "text/plain",
+				Charset:     expectedCharset,
+				PartID:      "1",
+			}
+			gotContentTransferEncoding := p.Header.Get("Content-Transfer-Encoding")
+
+			test.ComparePart(t, p, expectedPart)
+			test.ContentEqualsString(t, p.Content, testData.expectedPlainTextPartContent)
+			if gotContentTransferEncoding != expectedContentTransferEncoding {
+				t.Errorf("Content-Transfer-Encoding got: %q, expected: %q", gotContentTransferEncoding, expectedContentTransferEncoding)
+			}
+			foundExpectedErr = false
+			for _, v := range p.Errors {
+				if *v == testData.expectedErrorPlainTextPart {
+					foundExpectedErr = true
+				}
+			}
+			if !foundExpectedErr {
+				t.Errorf("Expected to find error: %v", testData.expectedErrorPlainTextPart)
+			}
+
+			// Examine second child
+			p = p.NextSibling
+			expectedPart = &enmime.Part{
+				Parent:      test.PartExists,
+				ContentType: "text/html",
+				Charset:     expectedCharset,
+				PartID:      "2",
+			}
+			gotContentTransferEncoding = p.Header.Get("Content-Transfer-Encoding")
+
+			test.ComparePart(t, p, expectedPart)
+			test.ContentEqualsString(t, p.Content, testData.expectedHTMLPartContent)
+			if gotContentTransferEncoding != expectedContentTransferEncoding {
+				t.Errorf("Content-Transfer-Encoding got: %q, expected: %q", gotContentTransferEncoding, expectedContentTransferEncoding)
+			}
+			foundExpectedErr = false
+			for _, v := range p.Errors {
+				if *v == testData.expectedErrorHTMLPart {
+					foundExpectedErr = true
+				}
+			}
+			if !foundExpectedErr {
+				t.Errorf("Expected to find error: %v", testData.expectedErrorHTMLPart)
+			}
+		})
+	}
+}
+
 func TestMultiNoSkipMalformedPartFails(t *testing.T) {
 	r := test.OpenTestData("parts", "multi-malformed.raw")
 	parser := enmime.NewParser(enmime.SkipMalformedParts(false))

@@ -1,10 +1,14 @@
 package enmime
 
+// ReadPartErrorPolicy allows to recover the buffer (or not) on an error when reading a Part content.
+type ReadPartErrorPolicy func(*Part, error) bool
+
 // Parser parses MIME.
 // Default parser is a valid one.
 type Parser struct {
 	skipMalformedParts              bool
 	multipartWOBoundaryAsSinglePart bool
+	readPartErrorPolicy             ReadPartErrorPolicy
 }
 
 // defaultParser is a Parser with default configuration.
