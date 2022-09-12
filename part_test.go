@@ -428,42 +428,18 @@ func TestMultiSkipMalformedPart(t *testing.T) {
 }
 
 func TestReadPartErrorPolicy(t *testing.T) {
-	type testData struct {
-		policy                       enmime.ReadPartErrorPolicy
-		expectedPlainTextPartContent string
-		expectedHTMLPartContent      string
-		expectedErrorPlainTextPart   enmime.Error
-		expectedErrorHTMLPart        enmime.Error
-	}
+	// example policy 1
+	examplePolicy1 := enmime.AllowCorruptTextPartErrorPolicy
 
-	var test0, test1, test2, test3 testData
-
-	// example policy 1: recover the buffer read
-	// only on base64.CorruptInputBuffer error and when content type is text/plain or text/html
-	examplePolicy1 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
-		allowedContentType := map[string]bool{
-			"text/html":  true,
-			"text/plain": true,
-		}
-		if enmime.IsBase64CorruptInputError(err) && allowedContentType[p.ContentType] {
-			return true
-		}
-		return false
-	})
-
-	// example policy 2: recover the buffer read
-	// only on base64.CorruptInputBuffer error and when content type is text/plain
+	// example policy 2: recover partial content from base64.CorruptInputError when content type is text/plain
 	examplePolicy2 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
-		allowedContentType := map[string]bool{
-			"text/plain": true,
-		}
-		if enmime.IsBase64CorruptInputError(err) && allowedContentType[p.ContentType] {
+		if enmime.IsBase64CorruptInputError(err) && p.ContentType == "text/plain" {
 			return true
 		}
 		return false
 	})
 
-	// example policy 3: always recover the buffer read, no matter the error
+	// example policy 3: always recover the partial content read, no matter the error
 	examplePolicy3 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
 		return true
 	})
@@ -471,7 +447,7 @@ func TestReadPartErrorPolicy(t *testing.T) {
 	plainContent := "Hello World!"
 	htmlContent := "<p>Hello World</p>"
 
-	ilegalBase64Error := enmime.Error{
+	illegalBase64Error := enmime.Error{
 		Name:   enmime.ErrorMalformedBase64,
 		Detail: "illegal base64 data at input byte 0",
 		Severe: true,
@@ -479,44 +455,45 @@ func TestReadPartErrorPolicy(t *testing.T) {
 
 	keepingBufferWarning := enmime.Error{
 		Name:   enmime.ErrorMalformedChildPart,
-		Detail: "keeping the buffer read on error: illegal base64 data at input byte 0",
+		Detail: "partial content: illegal base64 data at input byte 0",
 		Severe: false,
 	}
 
-	test0 = testData{
-		policy:                       nil,
-		expectedPlainTextPartContent: "",
-		expectedErrorPlainTextPart:   ilegalBase64Error,
-		expectedHTMLPartContent:      "",
-		expectedErrorHTMLPart:        ilegalBase64Error,
-	}
-	test1 = testData{
-		policy:                       examplePolicy1,
-		expectedPlainTextPartContent: plainContent,
-		expectedErrorPlainTextPart:   keepingBufferWarning,
-		expectedHTMLPartContent:      htmlContent,
-		expectedErrorHTMLPart:        keepingBufferWarning,
-	}
-	test2 = testData{
-		policy:                       examplePolicy2,
-		expectedPlainTextPartContent: plainContent,
-		expectedErrorPlainTextPart:   keepingBufferWarning,
-		expectedHTMLPartContent:      "",
-		expectedErrorHTMLPart:        ilegalBase64Error,
-	}
-	test3 = testData{
-		policy:                       examplePolicy3,
-		expectedPlainTextPartContent: plainContent,
-		expectedErrorPlainTextPart:   keepingBufferWarning,
-		expectedHTMLPartContent:      htmlContent,
-		expectedErrorHTMLPart:        keepingBufferWarning,
-	}
-
-	tests := map[string]testData{
-		"no policy (default behavior)":      test0,
-		"keep buffer according to policy 1": test1,
-		"keep buffer according to policy 2": test2,
-		"keep buffer according to policy 3": test3,
+	tests := map[string]struct {
+		policy                       enmime.ReadPartErrorPolicy
+		expectedPlainTextPartContent string
+		expectedHTMLPartContent      string
+		expectedErrorPlainTextPart   enmime.Error
+		expectedErrorHTMLPart        enmime.Error
+	}{
+		"no policy (default behavior)": {
+			policy:                       nil,
+			expectedPlainTextPartContent: "",
+			expectedErrorPlainTextPart:   illegalBase64Error,
+			expectedHTMLPartContent:      "",
+			expectedErrorHTMLPart:        illegalBase64Error,
+		},
+		"keep buffer according to policy 1": {
+			policy:                       examplePolicy1,
+			expectedPlainTextPartContent: plainContent,
+			expectedErrorPlainTextPart:   keepingBufferWarning,
+			expectedHTMLPartContent:      htmlContent,
+			expectedErrorHTMLPart:        keepingBufferWarning,
+		},
+		"keep buffer according to policy 2": {
+			policy:                       examplePolicy2,
+			expectedPlainTextPartContent: plainContent,
+			expectedErrorPlainTextPart:   keepingBufferWarning,
+			expectedHTMLPartContent:      "",
+			expectedErrorHTMLPart:        illegalBase64Error,
+		},
+		"keep buffer according to policy 3": {
+			policy:                       examplePolicy3,
+			expectedPlainTextPartContent: plainContent,
+			expectedErrorPlainTextPart:   keepingBufferWarning,
+			expectedHTMLPartContent:      htmlContent,
+			expectedErrorHTMLPart:        keepingBufferWarning,
+		},
 	}
 
 	for testName, testData := range tests {
@@ -571,6 +548,7 @@ func TestReadPartErrorPolicy(t *testing.T) {
 			for _, v := range p.Errors {
 				if *v == testData.expectedErrorPlainTextPart {
 					foundExpectedErr = true
+					break
 				}
 			}
 			if !foundExpectedErr {
@@ -596,6 +574,7 @@ func TestReadPartErrorPolicy(t *testing.T) {
 			for _, v := range p.Errors {
 				if *v == testData.expectedErrorHTMLPart {
 					foundExpectedErr = true
+					break
 				}
 			}
 			if !foundExpectedErr {

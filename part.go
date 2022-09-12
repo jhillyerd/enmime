@@ -164,7 +164,7 @@ func (p *Part) readPartContent(r io.Reader, readPartErrorPolicy ReadPartErrorPol
 	buf, err := ioutil.ReadAll(r)
 	if err != nil {
 		if readPartErrorPolicy != nil && readPartErrorPolicy(p, err) {
-			p.addWarning(ErrorMalformedChildPart, "keeping the buffer read on error: %s", err.Error())
+			p.addWarning(ErrorMalformedChildPart, "partial content: %s", err.Error())
 			return buf, nil
 		}
 		return nil, err
@@ -314,7 +314,9 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 	return nil
 }
 
-// IsBase64CorruptInputError returns true when err is of type base64.CorruptInputError
+// IsBase64CorruptInputError returns true when err is of type base64.CorruptInputError.
+//
+// It can be used to create ReadPartErrorPolicy functions.
 func IsBase64CorruptInputError(err error) bool {
 	switch errors.Cause(err).(type) {
 	case base64.CorruptInputError:
