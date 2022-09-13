@@ -160,11 +160,23 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	}
 }
 
+func (p *Part) readPartContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) ([]byte, error) {
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		if readPartErrorPolicy != nil && readPartErrorPolicy(p, err) {
+			p.addWarning(ErrorMalformedChildPart, "partial content: %s", err.Error())
+			return buf, nil
+		}
+		return nil, err
+	}
+	return buf, nil
+}
+
 // convertFromDetectedCharset attempts to detect the character set for the given part, and returns
 // an io.Reader that will convert from that charset to UTF-8. If the charset cannot be detected,
 // this method adds a warning to the part and automatically falls back to using
 // `convertFromStatedCharset` and returns the reader from that method.
-func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
+func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) (io.Reader, error) {
 	// Attempt to detect character set from part content.
 	var cd *chardet.Detector
 	switch p.ContentType {
@@ -174,7 +186,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader) (io.Reader, error) {
 		cd = chardet.NewTextDetector()
 	}
 
-	buf, err := ioutil.ReadAll(r)
+	buf, err := p.readPartContent(r, readPartErrorPolicy)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -249,7 +261,7 @@ func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
 // decodeContent performs transport decoding (base64, quoted-printable) and charset decoding,
 // placing the result into Part.Content.  IO errors will be returned immediately; other errors
 // and warnings will be added to Part.Errors.
-func (p *Part) decodeContent(r io.Reader) error {
+func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) error {
 	// contentReader will point to the end of the content decoding pipeline.
 	contentReader := r
 	// b64cleaner aggregates errors, must maintain a reference to it to get them later.
@@ -277,7 +289,7 @@ func (p *Part) decodeContent(r io.Reader) error {
 	// Build charset decoding reader.
 	if validEncoding && strings.HasPrefix(p.ContentType, "text/") {
 		var err error
-		contentReader, err = p.convertFromDetectedCharset(contentReader)
+		contentReader, err = p.convertFromDetectedCharset(contentReader, readPartErrorPolicy)
 		if err != nil {
 			return p.base64CorruptInputCheck(err)
 		}
@@ -302,18 +314,28 @@ func (p *Part) decodeContent(r io.Reader) error {
 	return nil
 }
 
+// IsBase64CorruptInputError returns true when err is of type base64.CorruptInputError.
+//
+// It can be used to create ReadPartErrorPolicy functions.
+func IsBase64CorruptInputError(err error) bool {
+	switch errors.Cause(err).(type) {
+	case base64.CorruptInputError:
+		return true
+	default:
+		return false
+	}
+}
+
 // base64CorruptInputCheck will avoid fatal failure on corrupt base64 input
 //
 // This is a switch on errors.Cause(err).(type) for base64.CorruptInputError
 func (p *Part) base64CorruptInputCheck(err error) error {
-	switch errors.Cause(err).(type) {
-	case base64.CorruptInputError:
+	if IsBase64CorruptInputError(err) {
 		p.Content = nil
 		p.addError(ErrorMalformedBase64, err.Error())
 		return nil
-	default:
-		return err
 	}
+	return err
 }
 
 // Clone returns a clone of the current Part.
@@ -359,13 +381,13 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 
 	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglePart) {
 		// Content is multipart, parse it.
-		err = parseParts(root, br, p.skipMalformedParts)
+		err = parseParts(root, br, p.skipMalformedParts, p.readPartErrorPolicy)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// Content is text or data, decode it.
-		if err := root.decodeContent(br); err != nil {
+		if err := root.decodeContent(br, p.readPartErrorPolicy); err != nil {
 			return nil, err
 		}
 	}
@@ -373,7 +395,7 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 }
 
 // parseParts recursively parses a MIME multipart document and sets each Parts PartID.
-func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool) error {
+func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool, readPartErrorPolicy ReadPartErrorPolicy) error {
 	firstRecursion := parent.Parent == nil
 	// Loop over MIME boundaries.
 	br := newBoundaryReader(reader, parent.Boundary)
@@ -409,7 +431,7 @@ func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool) err
 		// Insert this Part into the MIME tree.
 		if p.Boundary == "" {
 			// Content is text or data, decode it.
-			if err = p.decodeContent(bbr); err != nil {
+			if err = p.decodeContent(bbr, readPartErrorPolicy); err != nil {
 				if skipMalformedParts {
 					parent.addError(ErrorMalformedChildPart, "decode content: %s", err.Error())
 					continue
@@ -422,7 +444,7 @@ func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool) err
 
 		parent.AddChild(p)
 		// Content is another multipart.
-		if err = parseParts(p, bbr, skipMalformedParts); err != nil {
+		if err = parseParts(p, bbr, skipMalformedParts, readPartErrorPolicy); err != nil {
 			if skipMalformedParts {
 				parent.addError(ErrorMalformedChildPart, "parse parts: %s", err.Error())
 				continue

@@ -1,0 +1,16 @@
+Subject: Each part contains 1 extra base64 character (4*n + 1)
+Content-Type: multipart/alternative; boundary="Enmime-Test-Base64-One-Extra-Character"
+
+--Enmime-Test-Base64-One-Extra-Character
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+SGVsbG8gV29ybGQhA
+
+--Enmime-Test-Base64-One-Extra-Character
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+PHA+SGVsbG8gV29ybGQ8L3A+A
+
+--Enmime-Test-Base64-One-Extra-Character--
