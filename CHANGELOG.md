@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [0.10.1] - 2022-09-18
+
+### Added
+- Mail builder field accessors (#261)
+- Partial content recovery option (#262)
+
+
 ## [0.10.0] - 2022-07-20
 
 ### Added
@@ -260,7 +267,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initial implementation of MIME encoding, using `enmime.MailBuilder`
 
 
-[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.9.4...master
+[Unreleased]: https://github.com/jhillyerd/enmime/compare/v0.10.1...master
+[0.10.1]:     https://github.com/jhillyerd/enmime/compare/v0.10.0...v0.10.1
+[0.10.0]:     https://github.com/jhillyerd/enmime/compare/v0.9.4...v0.10.0
 [0.9.4]:      https://github.com/jhillyerd/enmime/compare/v0.9.3...v0.9.4
 [0.9.3]:      https://github.com/jhillyerd/enmime/compare/v0.9.2...v0.9.3
 [0.9.2]:      https://github.com/jhillyerd/enmime/compare/v0.9.1...v0.9.2
