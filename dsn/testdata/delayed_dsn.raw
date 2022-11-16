@@ -1,0 +1,27 @@
+MIME-Version: 1.0
+From: <postmaster@nsfnet-relay.ac.uk>
+Message-Id: <199407092338.TAA23293@CS.UTK.EDU>
+Received: from nsfnet-relay.ac.uk by sun2.nsfnet-relay.ac.uk
+       id <g.12954-0@sun2.nsfnet-relay.ac.uk>;
+       Sun, 10 Jul 1994 00:36:51 +0100
+To: owner-info-mime@cs.utk.edu
+Date: Sun, 10 Jul 1994 00:36:51 +0100
+Subject: WARNING: message delayed at "nsfnet-relay.ac.uk"
+content-type: multipart/report; report-type=delivery-status;
+      boundary=foobar
+
+--foobar
+content-type: text/plain
+
+[human-readable explanation goes here]
+
+--foobar
+content-type: message/delivery-status
+
+Reporting-MTA: dns; sun2.nsfnet-relay.ac.uk
+
+Final-Recipient: rfc822;thomas@de-montfort.ac.uk
+Status: 4.0.0 (unknown temporary failure)
+Action: delayed
+
+--foobar--
