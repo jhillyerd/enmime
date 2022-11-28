@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDeliveryStatusMessage(t *testing.T) {
+func TestParseDeliveryStatusFields(t *testing.T) {
 	tests := map[string]struct {
 		status string
 		want   []textproto.MIMEHeader
@@ -64,7 +64,7 @@ Diagnostic-Code: smtp; 426 connection timed out`,
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := parseDeliveryStatusMessage([]byte(tt.status))
+			got, err := parseDeliveryStatusFields([]byte(tt.status))
 			if err != nil {
 				t.Fatal(err)
 			}

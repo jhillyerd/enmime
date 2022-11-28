@@ -87,10 +87,10 @@ func setExplanation(e *Explanation, p *enmime.Part) bool {
 	return false
 }
 
-func parseDeliveryStatus(date []byte) (DeliveryStatus, error) {
-	fields, err := parseDeliveryStatusMessage(date)
+func parseDeliveryStatus(data []byte) (DeliveryStatus, error) {
+	fields, err := parseDeliveryStatusFields(data)
 	if err != nil {
-		return DeliveryStatus{}, fmt.Errorf("parse delivey status: %w", err)
+		return DeliveryStatus{}, fmt.Errorf("parse delivery status: %w", err)
 	}
 
 	perMessage, perRecipient := splitDSNFields(fields)
@@ -101,11 +101,11 @@ func parseDeliveryStatus(date []byte) (DeliveryStatus, error) {
 	}, nil
 }
 
-// parseDeliveryStatusMessage parses delivery-status message per https://www.rfc-editor.org/rfc/rfc3464#section-2.1
+// parseDeliveryStatusFields parses delivery-status message per https://www.rfc-editor.org/rfc/rfc3464#section-2.1
 // The body of a message/delivery-status consists of one or more "fields" formatted according to the ABNF of
 // RFC 822 header "fields". In other words, body of delivery status is multiple headers separated by blank line.
 // First part is per-message fields, following by per-recipient fields.
-func parseDeliveryStatusMessage(data []byte) ([]textproto.MIMEHeader, error) {
+func parseDeliveryStatusFields(data []byte) ([]textproto.MIMEHeader, error) {
 	if len(data) > 0 && data[len(data)-1] != '\n' { // additional new line if missing
 		data = append(data, byte('\n'))
 	}
