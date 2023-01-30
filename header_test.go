@@ -247,9 +247,9 @@ func TestReadHeader(t *testing.T) {
 		{
 			label:   "equals in name",
 			input:   "name=value:text\n",
-			hname:   "name=value",
-			want:    "text",
-			correct: true,
+			hname:   "",
+			want:    "",
+			correct: false,
 		},
 		{
 			label:   "no space before continuation",
@@ -354,6 +354,11 @@ func TestReadHeader(t *testing.T) {
 			gotErrs := len(p.Errors)
 			if gotErrs != wantErrs {
 				t.Errorf("Got %v p.Errors, want %v", gotErrs, wantErrs)
+				if gotErrs > 0 {
+					for _, e := range p.Errors {
+						t.Log(e)
+					}
+				}
 			}
 
 			// Check for extra headers by removing expected ones.
