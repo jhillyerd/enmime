@@ -1,10 +1,11 @@
-with import <nixpkgs> {};
-stdenv.mkDerivation rec {
-  name = "env";
-  env = buildEnv { name = name; paths = buildInputs; };
-  buildInputs = [
-    go
+{ pkgs ? import <nixpkgs> { } }:
+pkgs.mkShell {
+  buildInputs = with pkgs; [
+    delve
+    go_1_20
     golint
+    gopls
   ];
+
   hardeningDisable = [ "fortify" ];
 }
