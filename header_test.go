@@ -217,8 +217,6 @@ func TestReadHeader(t *testing.T) {
 		{
 			label:   "missing name",
 			input:   ": line1=foo\r\n",
-			hname:   "",
-			want:    "",
 			correct: false,
 		},
 		{
@@ -245,10 +243,15 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
+			label:   "permitted specials in name",
+			input:   "Begin!#$%&'*+-.^_`|~End: text\n",
+			hname:   "Begin!#$%&'*+-.^_`|~End",
+			want:    "text",
+			correct: true,
+		},
+		{
 			label:   "equals in name",
 			input:   "name=value:text\n",
-			hname:   "",
-			want:    "",
 			correct: false,
 		},
 		{
