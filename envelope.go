@@ -215,11 +215,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
 			// Using DepthMatchAll to traverse all parts, don't care about result.
-			for i := range part.Errors {
-				// Range index is needed to get the correct address, because range value points to
-				// a locally scoped variable.
-				e.Errors = append(e.Errors, part.Errors[i])
-			}
+			e.Errors = append(e.Errors, part.Errors...)
 			return false
 		})
 	}
