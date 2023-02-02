@@ -22,10 +22,12 @@ var defaultHeadersList = []string{
 
 // DecodeHeaders returns a limited selection of mime headers for use by user agents
 // Default header list:
-//   "Date", "Subject", "Sender", "From", "To", "CC" and "BCC"
+//
+//	"Date", "Subject", "Sender", "From", "To", "CC" and "BCC"
 //
 // Additional headers provided will be formatted canonically:
-//   h, err := enmime.DecodeHeaders(b, "content-type", "user-agent")
+//
+//	h, err := enmime.DecodeHeaders(b, "content-type", "user-agent")
 func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, error) {
 	b = ensureHeaderBoundary(b)
 	tr := textproto.NewReader(bufio.NewReader(bytes.NewReader(b)))
