@@ -2,13 +2,13 @@
 // included mime/multipart support where possible, but is geared towards parsing MIME encoded
 // emails.
 //
-// Overview
+// # Overview
 //
 // The enmime API has two conceptual layers.  The lower layer is a tree of Part structs,
 // representing each component of a decoded MIME message.  The upper layer, called an Envelope
 // provides an intuitive way to interact with a MIME message.
 //
-// Part Tree
+// # Part Tree
 //
 // Calling ReadParts causes enmime to parse the body of a MIME message into a tree of Part objects,
 // each of which is aware of its content type, filename and headers.  The content of a Part is
@@ -22,7 +22,7 @@
 // DepthMatchFirst() methods to search the Part tree.  BreadthMatchAll() and DepthMatchAll() will
 // collect all Parts matching your criteria.
 //
-// Envelope
+// # Envelope
 //
 // ReadEnvelope returns an Envelope struct.  Behind the scenes a Part tree is constructed, and then
 // sorted into the correct fields of the Envelope.
@@ -31,7 +31,7 @@
 // text Part available, the HTML Part will be down-converted using the html2text library[1].  The
 // root of the Part tree, as well as slices of the inline and attachment Parts are also available.
 //
-// Headers
+// # Headers
 //
 // Every MIME Part has its own headers, accessible via the Part.Header field.  The raw headers for
 // an Envelope are available in Root.Header.  Envelope also provides helper methods to fetch
@@ -39,7 +39,7 @@
 // AddressList(key) will convert the specified address header into a slice of net/mail.Address
 // values.
 //
-// Errors
+// # Errors
 //
 // enmime attempts to be tolerant of poorly encoded MIME messages. In situations where parsing is
 // not possible, the ReadEnvelope and ReadParts functions will return a hard error.  If enmime is

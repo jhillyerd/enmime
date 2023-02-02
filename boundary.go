@@ -44,31 +44,31 @@ func newBoundaryReader(reader *bufio.Reader, boundary string) *boundaryReader {
 
 // Read returns a buffer containing the content up until boundary
 //
-//   Excerpt from io package on io.Reader implementations:
+//	Excerpt from io package on io.Reader implementations:
 //
-//     type Reader interface {
-//        Read(p []byte) (n int, err error)
-//     }
+//	  type Reader interface {
+//	     Read(p []byte) (n int, err error)
+//	  }
 //
-//     Read reads up to len(p) bytes into p. It returns the number of
-//     bytes read (0 <= n <= len(p)) and any error encountered. Even
-//     if Read returns n < len(p), it may use all of p as scratch space
-//     during the call. If some data is available but not len(p) bytes,
-//     Read conventionally returns what is available instead of waiting
-//     for more.
+//	  Read reads up to len(p) bytes into p. It returns the number of
+//	  bytes read (0 <= n <= len(p)) and any error encountered. Even
+//	  if Read returns n < len(p), it may use all of p as scratch space
+//	  during the call. If some data is available but not len(p) bytes,
+//	  Read conventionally returns what is available instead of waiting
+//	  for more.
 //
-//     When Read encounters an error or end-of-file condition after
-//     successfully reading n > 0 bytes, it returns the number of bytes
-//     read. It may return the (non-nil) error from the same call or
-//     return the error (and n == 0) from a subsequent call. An instance
-//     of this general case is that a Reader returning a non-zero number
-//     of bytes at the end of the input stream may return either err == EOF
-//     or err == nil. The next Read should return 0, EOF.
+//	  When Read encounters an error or end-of-file condition after
+//	  successfully reading n > 0 bytes, it returns the number of bytes
+//	  read. It may return the (non-nil) error from the same call or
+//	  return the error (and n == 0) from a subsequent call. An instance
+//	  of this general case is that a Reader returning a non-zero number
+//	  of bytes at the end of the input stream may return either err == EOF
+//	  or err == nil. The next Read should return 0, EOF.
 //
-//     Callers should always process the n > 0 bytes returned before
-//     considering the error err. Doing so correctly handles I/O errors
-//     that happen after reading some bytes and also both of the allowed
-//     EOF behaviors.
+//	  Callers should always process the n > 0 bytes returned before
+//	  considering the error err. Doing so correctly handles I/O errors
+//	  that happen after reading some bytes and also both of the allowed
+//	  EOF behaviors.
 func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	if b.buffer.Len() >= len(dest) {
 		// This read request can be satisfied entirely by the buffer.

@@ -33,10 +33,10 @@ const (
 // Parse is a more tolerant implementation of Go's mime.ParseMediaType function.
 //
 // Tolerances accounted for:
-//   * Missing ';' between content-type and media parameters
-//   * Repeating media parameters
-//   * Unquoted values in media parameters containing 'tspecials' characters
-//   * Newline characters
+//   - Missing ';' between content-type and media parameters
+//   - Repeating media parameters
+//   - Unquoted values in media parameters containing 'tspecials' characters
+//   - Newline characters
 func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
 		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';')))))
@@ -156,16 +156,24 @@ func fixMangledMediaType(mtype string, sep rune) string {
 // Content-Type header.
 //
 // Given this this header:
-//     `Content-Type: text/calendar; charset=utf-8; method=text/calendar`
+//
+//	`Content-Type: text/calendar; charset=utf-8; method=text/calendar`
+//
 // `consumeParams` should be given this part:
-//     ` charset=utf-8; method=text/calendar`
+//
+//	` charset=utf-8; method=text/calendar`
+//
 // And returns (first pass):
-//     `consumed = "charset=utf-8;"`
-//     `rest     = " method=text/calendar"`
+//
+//	`consumed = "charset=utf-8;"`
+//	`rest     = " method=text/calendar"`
+//
 // Capture the `consumed` value (to build a clean Content-Type header value) and pass the value of
 // `rest` back to `consumeParam`. That second call will return:
-//     `consumed = " method=\"text/calendar\""`
-//     `rest     = ""`
+//
+//	`consumed = " method=\"text/calendar\""`
+//	`rest     = ""`
+//
 // Again, use the value of `consumed` to build a clean Content-Type header value. Given that `rest`
 // is empty, all of the parameters have been consumed successfully.
 //
@@ -381,8 +389,8 @@ func fixUnquotedSpecials(s string) string {
 
 // fixUnescapedQuotes inspects for unescaped quotes inside of a quoted string and escapes them
 //
-//  Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
-//  Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
+//	Input:  application/rtf; charset=iso-8859-1; name=""V047411.rtf".rtf"
+//	Output: application/rtf; charset=iso-8859-1; name="\"V047411.rtf\".rtf"
 func fixUnescapedQuotes(hvalue string) string {
 	params := stringutil.SplitAfterUnquoted(hvalue, ';', '"')
 	sb := &strings.Builder{}

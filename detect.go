@@ -32,9 +32,9 @@ func detectMultipartMessage(root *Part, multipartWOBoundaryAsSinglepart bool) bo
 //
 // Valid Attachment-Headers:
 //
-//  - Content-Disposition: attachment; filename="frog.jpg"
-//  - Content-Disposition: inline; filename="frog.jpg"
-//  - Content-Type: attachment; filename="frog.jpg"
+//   - Content-Disposition: attachment; filename="frog.jpg"
+//   - Content-Disposition: inline; filename="frog.jpg"
+//   - Content-Type: attachment; filename="frog.jpg"
 func detectAttachmentHeader(header textproto.MIMEHeader) bool {
 	mtype, params, _, _ := mediatype.Parse(header.Get(hnContentDisposition))
 	if strings.ToLower(mtype) == cdAttachment ||
