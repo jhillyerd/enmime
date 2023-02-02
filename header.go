@@ -108,9 +108,9 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 // ParseMediaType is a more tolerant implementation of Go's mime.ParseMediaType function.
 //
 // Tolerances accounted for:
-//   * Missing ';' between content-type and media parameters
-//   * Repeating media parameters
-//   * Unquoted values in media parameters containing 'tspecials' characters
+//   - Missing ';' between content-type and media parameters
+//   - Repeating media parameters
+//   - Unquoted values in media parameters containing 'tspecials' characters
 func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string,
 	err error) {
 	// Export of internal function.
@@ -124,6 +124,7 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 	buf := &bytes.Buffer{}
 	tp := textproto.NewReader(r)
 	firstHeader := true
+line:
 	for {
 		// Pull out each line of the headers as a temporary slice s
 		s, err := tp.ReadLineBytes()
@@ -146,18 +147,29 @@ func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 			continue
 		}
 		if firstColon > 0 {
-			// Contains a colon, treat as a new header line
-			if !firstHeader {
-				// New Header line, end the previous
-				buf.Write([]byte{'\r', '\n'})
-			}
-
 			// Behavior change in net/textproto package in Golang 1.12.10 and 1.13.1:
 			// A space preceding the first colon in a header line is no longer handled
 			// automatically due to CVE-2019-16276 which takes advantage of this
 			// particular violation of RFC-7230 to exploit HTTP/1.1
 			if bytes.Contains(s[:firstColon+1], []byte{' ', ':'}) {
 				s = bytes.Replace(s, []byte{' ', ':'}, []byte{':'}, 1)
+				firstColon = bytes.IndexByte(s, ':')
+			}
+
+			// Behavior change in net/textproto package in Golang 1.20: invalid characters
+			// in header keys are no longer allowed; https://github.com/golang/go/issues/53188
+			for _, c := range s[:firstColon] {
+				if c != ' ' && !validHeaderFieldByte(c) {
+					p.addError(
+						ErrorMalformedHeader, "Header name %q contains invalid character %q", s, c)
+					continue line
+				}
+			}
+
+			// Contains a colon, treat as a new header line
+			if !firstHeader {
+				// New Header line, end the previous
+				buf.Write([]byte{'\r', '\n'})
 			}
 
 			s = textproto.TrimBytes(s)
@@ -239,4 +251,33 @@ func quotedDisplayName(s string) string {
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
+}
+
+// Mirror of func in net/textproto/reader.go; from go 1.20.0-rc.2
+func validHeaderFieldByte(c byte) bool {
+	// mask is a 128-bit bitmap with 1s for allowed bytes,
+	// so that the byte c can be tested with a shift and an and.
+	// If c >= 128, then 1<<c and 1<<(c-64) will both be zero,
+	// and this function will return false.
+	const mask = 0 |
+		(1<<(10)-1)<<'0' |
+		(1<<(26)-1)<<'a' |
+		(1<<(26)-1)<<'A' |
+		1<<'!' |
+		1<<'#' |
+		1<<'$' |
+		1<<'%' |
+		1<<'&' |
+		1<<'\'' |
+		1<<'*' |
+		1<<'+' |
+		1<<'-' |
+		1<<'.' |
+		1<<'^' |
+		1<<'_' |
+		1<<'`' |
+		1<<'|' |
+		1<<'~'
+	return ((uint64(1)<<c)&(mask&(1<<64-1)) |
+		(uint64(1)<<(c-64))&(mask>>64)) != 0
 }

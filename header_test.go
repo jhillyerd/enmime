@@ -217,8 +217,6 @@ func TestReadHeader(t *testing.T) {
 		{
 			label:   "missing name",
 			input:   ": line1=foo\r\n",
-			hname:   "",
-			want:    "",
 			correct: false,
 		},
 		{
@@ -245,11 +243,16 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
-			label:   "equals in name",
-			input:   "name=value:text\n",
-			hname:   "name=value",
+			label:   "permitted specials in name",
+			input:   "Begin!#$%&'*+-.^_`|~End: text\n",
+			hname:   "Begin!#$%&'*+-.^_`|~End",
 			want:    "text",
 			correct: true,
+		},
+		{
+			label:   "equals in name",
+			input:   "name=value:text\n",
+			correct: false,
 		},
 		{
 			label:   "no space before continuation",
@@ -354,6 +357,11 @@ func TestReadHeader(t *testing.T) {
 			gotErrs := len(p.Errors)
 			if gotErrs != wantErrs {
 				t.Errorf("Got %v p.Errors, want %v", gotErrs, wantErrs)
+				if gotErrs > 0 {
+					for _, e := range p.Errors {
+						t.Log(e)
+					}
+				}
 			}
 
 			// Check for extra headers by removing expected ones.
