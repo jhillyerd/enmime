@@ -16,9 +16,10 @@ func AllowCorruptTextPartErrorPolicy(p *Part, err error) bool {
 // Parser parses MIME.
 // Default parser is a valid one.
 type Parser struct {
-	skipMalformedParts              bool
+	maxStoredPartErrors             *int // TODO: Pointer until global var removed.
 	multipartWOBoundaryAsSinglePart bool
 	readPartErrorPolicy             ReadPartErrorPolicy
+	skipMalformedParts              bool
 }
 
 // defaultParser is a Parser with default configuration.

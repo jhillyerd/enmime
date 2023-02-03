@@ -27,7 +27,10 @@ const (
 	ErrorMalformedChildPart = "Malformed child part"
 )
 
-// MaxPartErrors limits number of part parsing errors, errors after the limit are ignored. 0 means unlimited.
+// MaxPartErrors limits number of part parsing errors, errors after the limit are ignored.
+// 0 means unlimited.
+//
+// Deprecated: This limit may be set via the `MaxStoredPartErrors` Parser option.
 var MaxPartErrors = 0
 
 // Error describes an error encountered while parsing.
@@ -71,7 +74,13 @@ func (p *Part) addWarning(name string, detailFmt string, args ...interface{}) {
 
 // addProblem adds general *Error to the Part error slice.
 func (p *Part) addProblem(err *Error) {
-	if (MaxPartErrors == 0) || (len(p.Errors) < MaxPartErrors) {
+	maxErrors := MaxPartErrors
+	if p.parser != nil && p.parser.maxStoredPartErrors != nil {
+		// Override global var.
+		maxErrors = *p.parser.maxStoredPartErrors
+	}
+
+	if (maxErrors == 0) || (len(p.Errors) < maxErrors) {
 		p.Errors = append(p.Errors, err)
 	}
 }

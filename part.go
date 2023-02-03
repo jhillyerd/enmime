@@ -45,6 +45,8 @@ type Part struct {
 	Errors   []*Error // Errors encountered while parsing this part.
 	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
 	Epilogue []byte   // Epilogue contains data following the closing boundary marker.
+
+	parser *Parser // Provides access to parsing options.
 }
 
 // NewPart creates a new Part object.
@@ -53,6 +55,7 @@ func NewPart(contentType string) *Part {
 		Header:            make(textproto.MIMEHeader),
 		ContentType:       contentType,
 		ContentTypeParams: make(map[string]string),
+		parser:            &defaultParser,
 	}
 }
 
@@ -372,17 +375,16 @@ func ReadParts(r io.Reader) (*Part, error) {
 // ReadParts reads a MIME document from the provided reader and parses it into tree of Part objects.
 func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 	br := bufio.NewReader(r)
-	root := &Part{PartID: "0"}
+	root := &Part{PartID: "0", parser: &p}
+
 	// Read header; top-level default CT is text/plain us-ascii according to RFC 822.
-	err := root.setupHeaders(br, `text/plain; charset="us-ascii"`)
-	if err != nil {
+	if err := root.setupHeaders(br, `text/plain; charset="us-ascii"`); err != nil {
 		return nil, err
 	}
 
 	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglePart) {
 		// Content is multipart, parse it.
-		err = parseParts(root, br, p.skipMalformedParts, p.readPartErrorPolicy)
-		if err != nil {
+		if err := parseParts(root, br); err != nil {
 			return nil, err
 		}
 	} else {
@@ -395,7 +397,7 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 }
 
 // parseParts recursively parses a MIME multipart document and sets each Parts PartID.
-func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool, readPartErrorPolicy ReadPartErrorPolicy) error {
+func parseParts(parent *Part, reader *bufio.Reader) error {
 	firstRecursion := parent.Parent == nil
 	// Loop over MIME boundaries.
 	br := newBoundaryReader(reader, parent.Boundary)
@@ -411,28 +413,31 @@ func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool, rea
 		if !next {
 			break
 		}
-		p := &Part{}
+
 		// Set this Part's PartID, indicating its position within the MIME Part tree.
+		p := &Part{parser: parent.parser}
 		if firstRecursion {
 			p.PartID = strconv.Itoa(indexPartID)
 		} else {
 			p.PartID = parent.PartID + "." + strconv.Itoa(indexPartID)
 		}
+
 		// Look for part header.
 		bbr := bufio.NewReader(br)
 		if err = p.setupHeaders(bbr, ""); err != nil {
-			if skipMalformedParts {
+			if p.parser.skipMalformedParts {
 				parent.addError(ErrorMalformedChildPart, "read header: %s", err.Error())
 				continue
 			}
 
 			return err
 		}
+
 		// Insert this Part into the MIME tree.
 		if p.Boundary == "" {
 			// Content is text or data, decode it.
-			if err = p.decodeContent(bbr, readPartErrorPolicy); err != nil {
-				if skipMalformedParts {
+			if err = p.decodeContent(bbr, p.parser.readPartErrorPolicy); err != nil {
+				if p.parser.skipMalformedParts {
 					parent.addError(ErrorMalformedChildPart, "decode content: %s", err.Error())
 					continue
 				}
@@ -444,20 +449,22 @@ func parseParts(parent *Part, reader *bufio.Reader, skipMalformedParts bool, rea
 
 		parent.AddChild(p)
 		// Content is another multipart.
-		if err = parseParts(p, bbr, skipMalformedParts, readPartErrorPolicy); err != nil {
-			if skipMalformedParts {
+		if err = parseParts(p, bbr); err != nil {
+			if p.parser.skipMalformedParts {
 				parent.addError(ErrorMalformedChildPart, "parse parts: %s", err.Error())
 				continue
 			}
 			return err
 		}
 	}
+
 	// Store any content following the closing boundary marker into the epilogue.
 	epilogue, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	parent.Epilogue = epilogue
+
 	// If a Part is "multipart/" Content-Type, it will have .0 appended to its PartID
 	// i.e. it is the root of its MIME Part subtree.
 	if !firstRecursion {
