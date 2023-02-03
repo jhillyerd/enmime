@@ -38,3 +38,16 @@ type readPartErrorPolicyOption ReadPartErrorPolicy
 func (o readPartErrorPolicyOption) apply(p *Parser) {
 	p.readPartErrorPolicy = ReadPartErrorPolicy(o)
 }
+
+// MaxStoredPartErrors limits number of part parsing errors, errors beyond the limit are discarded.
+// Zero, the default, means all errors will be kept.
+func MaxStoredPartErrors(n int) Option {
+	return maxStoredPartErrorsOption(n)
+}
+
+type maxStoredPartErrorsOption int
+
+func (o maxStoredPartErrorsOption) apply(p *Parser) {
+	max := int(o)
+	p.maxStoredPartErrors = &max
+}

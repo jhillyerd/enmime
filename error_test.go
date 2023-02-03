@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorStringConversion(t *testing.T) {
@@ -34,7 +36,7 @@ func TestErrorStringConversion(t *testing.T) {
 }
 
 func TestErrorAddError(t *testing.T) {
-	p := &Part{}
+	p := NewPart("text/plain")
 	p.addError(ErrorMalformedHeader, "1 %v %q", 2, "three")
 
 	if len(p.Errors) != 1 {
@@ -55,7 +57,7 @@ func TestErrorAddError(t *testing.T) {
 }
 
 func TestErrorAddWarning(t *testing.T) {
-	p := &Part{}
+	p := NewPart("text/plain")
 	p.addWarning(ErrorMalformedHeader, "1 %v %q", 2, "three")
 
 	if len(p.Errors) != 1 {
@@ -131,6 +133,7 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 	}
 }
 
+// Deprecated.
 func TestErrorLimit(t *testing.T) {
 	// Backup global variable
 	originalMaxPartErros := MaxPartErrors
@@ -139,7 +142,7 @@ func TestErrorLimit(t *testing.T) {
 	}()
 
 	addThreeErrors := func() int {
-		part := &Part{}
+		part := NewPart("text/plain")
 		part.addError("test1", "test1")
 		part.addError("test2", "test2")
 		part.addError("test3", "test3")
@@ -168,4 +171,54 @@ func TestErrorLimit(t *testing.T) {
 	if errCount != 3 {
 		t.Errorf("Expected limited errors (3), got %d", errCount)
 	}
+}
+
+func TestErrorLimitOption(t *testing.T) {
+	// Backup global variable
+	originalMaxPartErros := MaxPartErrors
+	defer func() {
+		MaxPartErrors = originalMaxPartErros
+	}()
+
+	addThreeErrors := func(parser *Parser) int {
+		part := NewPart("text/plain")
+		if parser != nil {
+			part.parser = parser
+		}
+
+		part.addError("test1", "test1")
+		part.addError("test2", "test2")
+		part.addError("test3", "test3")
+
+		return len(part.Errors)
+	}
+
+	var got, want int
+
+	// Check unlimited by default.
+	want = 3
+	got = addThreeErrors(nil)
+	assert.Equal(t, want, got, "expected unlimited errors")
+
+	// Check unlimited by default when providing Parser.
+	want = 3
+	got = addThreeErrors(NewParser())
+	assert.Equal(t, want, got, "expected unlimited errors")
+
+	// Check the default actually comes from deprecated MaxPartErrors global.
+	want = 1
+	MaxPartErrors = want
+	got = addThreeErrors(nil)
+	assert.Equal(t, want, got, "expected limited errors")
+	MaxPartErrors = 0
+
+	// Check limit.
+	want = 1
+	got = addThreeErrors(NewParser(MaxStoredPartErrors(want)))
+	assert.Equal(t, want, got, "expected limited errors")
+
+	// Check limit matching count.
+	want = 3
+	got = addThreeErrors(NewParser(MaxStoredPartErrors(want)))
+	assert.Equal(t, want, got, "expected limited errors")
 }
