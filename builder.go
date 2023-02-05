@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
+	"math/rand"
 	"mime"
 	"net/mail"
 	"net/textproto"
@@ -28,6 +29,10 @@ type MailBuilder struct {
 	text, html           []byte
 	inlines, attachments []*Part
 	err                  error
+}
+
+func SetRandomSource(s rand.Source) {
+	stringutil.SetSource(s)
 }
 
 // Builder returns an empty MailBuilder struct.
