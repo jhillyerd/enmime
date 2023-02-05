@@ -411,6 +411,9 @@ func (p MailBuilder) Build() (*Part, error) {
 func (p *Part) propagateRand(rand *rand.Rand) {
 	p.rand = rand
 	for _, x := range []*Part{p.FirstChild, p.NextSibling} {
+		if x == nil {
+			continue
+		}
 		x.propagateRand(rand)
 	}
 }
