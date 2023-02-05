@@ -3,7 +3,9 @@ package enmime
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"mime"
 	"net/mail"
 	"net/textproto"
@@ -28,11 +30,20 @@ type MailBuilder struct {
 	text, html           []byte
 	inlines, attachments []*Part
 	err                  error
+	rand                 *rand.Rand
 }
 
 // Builder returns an empty MailBuilder struct.
-func Builder() MailBuilder {
-	return MailBuilder{}
+func Builder(optionalRand ...*rand.Rand) MailBuilder {
+	var r *rand.Rand
+	switch n := len(optionalRand); n {
+	case 0:
+	case 1:
+		r = optionalRand[0]
+	default:
+		panic(fmt.Errorf("UUID only takes 0 or 1 optional rand's, we got %d", n))
+	}
+	return MailBuilder{rand: r}
 }
 
 // Error returns the stored error from a file attachment/inline read or nil.
@@ -391,7 +402,17 @@ func (p MailBuilder) Build() (*Part, error) {
 			h.Add(k, s)
 		}
 	}
+	if r := p.rand; r != nil {
+		root.propagateRand(r)
+	}
 	return root, nil
+}
+
+func (p *Part) propagateRand(rand *rand.Rand) {
+	p.rand = rand
+	for _, x := range []*Part{p.FirstChild, p.NextSibling} {
+		x.propagateRand(rand)
+	}
 }
 
 // SendWithReversePath encodes the message and sends it via the specified Sender.

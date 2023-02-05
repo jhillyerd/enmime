@@ -104,7 +104,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	// Setup headers.
 	if p.FirstChild != nil && p.Boundary == "" {
 		// Multipart, generate random boundary marker.
-		p.Boundary = "enmime-" + stringutil.UUID()
+		p.Boundary = "enmime-" + stringutil.UUID(p.rand)
 	}
 	if p.ContentID != "" {
 		p.Header.Set(hnContentID, coding.ToIDHeader(p.ContentID))

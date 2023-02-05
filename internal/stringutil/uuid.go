@@ -8,13 +8,16 @@ import (
 )
 
 var uuidRand = rand.New(rand.NewSource(time.Now().UnixNano()))
-var uuidMutex = &sync.Mutex{}
+var uuidMutex = new(sync.Mutex)
 
-// UUID generates a random UUID according to RFC 4122.
-func UUID() string {
+// UUID generates a random UUID according to RFC 4122, using optional rand if supplied
+func UUID(r *rand.Rand) string {
 	uuid := make([]byte, 16)
+	if r == nil {
+		r = uuidRand
+	}
 	uuidMutex.Lock()
-	_, _ = uuidRand.Read(uuid)
+	_, _ = r.Read(uuid)
 	uuidMutex.Unlock()
 	// variant bits; see section 4.1.1
 	uuid[8] = uuid[8]&^0xc0 | 0x80
