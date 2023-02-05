@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
-	"math/rand"
 	"mime"
 	"net/mail"
 	"net/textproto"
@@ -29,11 +28,6 @@ type MailBuilder struct {
 	text, html           []byte
 	inlines, attachments []*Part
 	err                  error
-}
-
-// SetRandom sets the rand.Rand used for generating boundary headers.
-func SetRandom(r *rand.Rand) {
-	stringutil.SetRandom(r)
 }
 
 // Builder returns an empty MailBuilder struct.

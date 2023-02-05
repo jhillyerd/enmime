@@ -7,22 +7,13 @@ import (
 	"time"
 )
 
-var uuidRand *rand.Rand
+var uuidRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 var uuidMutex = &sync.Mutex{}
-
-func SetRandom(r *rand.Rand) {
-	uuidMutex.Lock()
-	defer uuidMutex.Unlock()
-	uuidRand = r
-}
 
 // UUID generates a random UUID according to RFC 4122.
 func UUID() string {
 	uuid := make([]byte, 16)
 	uuidMutex.Lock()
-	if uuidRand == nil {
-		uuidRand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	}
 	_, _ = uuidRand.Read(uuid)
 	uuidMutex.Unlock()
 	// variant bits; see section 4.1.1
