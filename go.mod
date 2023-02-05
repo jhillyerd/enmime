@@ -1,4 +1,4 @@
-module github.com/jhillyerd/enmime
+module github.com/xoba/enmime
 
 require (
 	github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a
