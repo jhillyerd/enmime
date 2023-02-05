@@ -31,8 +31,8 @@ type MailBuilder struct {
 	err                  error
 }
 
-func SetRandomSource(s rand.Source) {
-	stringutil.SetSource(s)
+func SetRandom(r *rand.Rand) {
+	stringutil.SetRandom(r)
 }
 
 // Builder returns an empty MailBuilder struct.
