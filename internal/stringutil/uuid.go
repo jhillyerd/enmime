@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
-	"time"
 )
 
-var uuidRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+var uuidRand = rand.New(rand.NewSource(0))
 var uuidMutex = &sync.Mutex{}
 
 // UUID generates a random UUID according to RFC 4122.
