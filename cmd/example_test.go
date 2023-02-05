@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xoba/enmime"
-	"github.com/xoba/enmime/cmd"
+	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/cmd"
 )
 
 func Example() {

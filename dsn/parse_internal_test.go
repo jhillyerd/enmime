@@ -4,7 +4,7 @@ import (
 	"net/textproto"
 	"testing"
 
-	"github.com/xoba/enmime"
+	"github.com/jhillyerd/enmime"
 	"github.com/stretchr/testify/assert"
 )
 

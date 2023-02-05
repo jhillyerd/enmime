@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xoba/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 func TestQPCleaner(t *testing.T) {

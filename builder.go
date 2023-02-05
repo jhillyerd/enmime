@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/xoba/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/internal/stringutil"
 )
 
 // MailBuilder facilitates the easy construction of a MIME message.  Each manipulation method

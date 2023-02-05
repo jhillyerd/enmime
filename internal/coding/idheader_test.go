@@ -3,7 +3,7 @@ package coding_test
 import (
 	"testing"
 
-	"github.com/xoba/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 func TestFromIDHeader(t *testing.T) {

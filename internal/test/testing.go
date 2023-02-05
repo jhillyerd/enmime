@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xoba/enmime"
+	"github.com/jhillyerd/enmime"
 )
 
 // PartExists indicates to ComparePart that this part is expect to exist

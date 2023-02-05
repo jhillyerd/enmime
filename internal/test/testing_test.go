@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/xoba/enmime"
+	"github.com/jhillyerd/enmime"
 )
 
 func TestHelperComparePartsEqual(t *testing.T) {

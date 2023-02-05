@@ -6,8 +6,8 @@ import (
 	"strings"
 	_utf8 "unicode/utf8"
 
-	"github.com/xoba/enmime/internal/coding"
-	"github.com/xoba/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/stringutil"
 	"github.com/pkg/errors"
 )
 

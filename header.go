@@ -9,9 +9,9 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/xoba/enmime/internal/coding"
-	"github.com/xoba/enmime/internal/stringutil"
-	"github.com/xoba/enmime/mediatype"
+	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/mediatype"
 	"github.com/pkg/errors"
 )
 

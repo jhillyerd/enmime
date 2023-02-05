@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/textproto"
 
-	"github.com/xoba/enmime"
+	"github.com/jhillyerd/enmime"
 )
 
 // ParseReport parses p as a "container" for delivery status report (per rfc6522) if p is "multipart/report".

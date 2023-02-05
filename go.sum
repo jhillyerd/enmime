@@ -25,8 +25,6 @@ github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf/go.mod h1:RJID2RhlZKId02n
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/xoba/enmime v0.10.6 h1:dtrT6P3hyIrsK8w1K3ZU4/B58dFK+5Uvz2l3XK/+A/8=
-github.com/xoba/enmime v0.10.6/go.mod h1:rDm57zDpzPG1kAaYsGZBe052S94/zOs9IzSDKC5oA8I=
 golang.org/x/net v0.0.0-20210501142056-aec3718b3fa0 h1:6QqBc2UURz4Sbr4IE15uXM8CTQlHnRdtKuogDhwnu2Y=
 golang.org/x/net v0.0.0-20210501142056-aec3718b3fa0/go.mod h1:OJAsFXCWl8Ukc7SiCT/9KSuxbyM7479/AVlXFRxuMCk=
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

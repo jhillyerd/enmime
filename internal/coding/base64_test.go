@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xoba/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/coding"
 )
 
 func TestBase64Cleaner(t *testing.T) {
