@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jhillyerd/enmime"
-	"github.com/jhillyerd/enmime/internal/test"
+	"github.com/xoba/enmime"
+	"github.com/xoba/enmime/internal/test"
 )
 
 func TestDecodeHeaders(t *testing.T) {

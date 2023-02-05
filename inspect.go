@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/textproto"
 
-	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/xoba/enmime/internal/coding"
 	"github.com/pkg/errors"
 )
 

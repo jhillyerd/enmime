@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jhillyerd/enmime"
-	"github.com/jhillyerd/enmime/cmd"
+	"github.com/xoba/enmime"
+	"github.com/xoba/enmime/cmd"
 )
 
 var (

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jhillyerd/enmime"
+	"github.com/xoba/enmime"
 )
 
 // AddressHeaders enumerates SMTP headers that contain email addresses

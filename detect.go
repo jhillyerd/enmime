@@ -4,7 +4,7 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/jhillyerd/enmime/mediatype"
+	"github.com/xoba/enmime/mediatype"
 )
 
 // detectMultipartMessage returns true if the message has a recognized multipart Content-Type header
