@@ -3,7 +3,6 @@ package enmime
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"mime"
@@ -34,16 +33,28 @@ type MailBuilder struct {
 }
 
 // Builder returns an empty MailBuilder struct.
-func Builder(optionalRand ...*rand.Rand) MailBuilder {
-	var r *rand.Rand
-	switch n := len(optionalRand); n {
-	case 0:
-	case 1:
-		r = optionalRand[0]
-	default:
-		panic(fmt.Errorf("UUID only takes 0 or 1 optional rand's, we got %d", n))
+func Builder(options ...BuilderOption) MailBuilder {
+	b := MailBuilder{}
+	for _, o := range options {
+		o.apply(&b)
 	}
-	return MailBuilder{rand: r}
+	return b
+}
+
+type BuilderOption interface {
+	apply(*MailBuilder)
+}
+
+type randOption struct {
+	rand *rand.Rand
+}
+
+func (r *randOption) apply(b *MailBuilder) {
+	b.rand = r.rand
+}
+
+func RandBuilderOption(r *rand.Rand) BuilderOption {
+	return &randOption{rand: r}
 }
 
 // Error returns the stored error from a file attachment/inline read or nil.
