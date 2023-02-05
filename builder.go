@@ -31,7 +31,7 @@ type MailBuilder struct {
 	err                  error
 }
 
-// SetRandom sets the rand.Rand used for generating boundary headers
+// SetRandom sets the rand.Rand used for generating boundary headers.
 func SetRandom(r *rand.Rand) {
 	stringutil.SetRandom(r)
 }
