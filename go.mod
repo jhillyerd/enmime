@@ -1,4 +1,4 @@
-module github.com/xoba/enmime
+module github.com/jhillyerd/enmime
 
 go 1.20
 
@@ -9,6 +9,7 @@ require (
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
+	github.com/xoba/enmime v0.10.6
 	golang.org/x/text v0.3.6
 )
 
