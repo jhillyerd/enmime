@@ -41,6 +41,7 @@ func Builder(options ...BuilderOption) MailBuilder {
 	return b
 }
 
+// BuilderOption controls an aspect of MailBuilder.
 type BuilderOption interface {
 	apply(*MailBuilder)
 }
@@ -53,6 +54,7 @@ func (r *randOption) apply(b *MailBuilder) {
 	b.rand = r.rand
 }
 
+// RandBuilderOption controls MailBuilder's source of randomness.
 func RandBuilderOption(r *rand.Rand) BuilderOption {
 	return &randOption{rand: r}
 }
