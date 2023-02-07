@@ -16,7 +16,7 @@ func TestRandOption(t *testing.T) {
 	for _, a := range types {
 		for _, b := range types {
 			ha, hb := hashEmailOutput(t, a), hashEmailOutput(t, b)
-			if a == b && a.Reproducible() {
+			if a == b && a.IsReproducible() {
 				if ha != hb {
 					t.Fatalf("hashes of email buffers differ with %s: %s vs %s", a, ha, hb)
 				}
@@ -38,7 +38,7 @@ const (
 	TimestampSource
 )
 
-func (mode ReproducibilityMode) Reproducible() bool {
+func (mode ReproducibilityMode) IsReproducible() bool {
 	switch mode {
 	case ZeroSource:
 		return true
