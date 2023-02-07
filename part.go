@@ -47,8 +47,9 @@ type Part struct {
 	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
 	Epilogue []byte   // Epilogue contains data following the closing boundary marker.
 
-	parser *Parser    // Provides access to parsing options.
-	rand   *rand.Rand // optional rand for uuid boundary generation
+	parser *Parser // Provides access to parsing options.
+
+	randSource rand.Source // optional rand for uuid boundary generation
 }
 
 // NewPart creates a new Part object.

@@ -29,34 +29,18 @@ type MailBuilder struct {
 	text, html           []byte
 	inlines, attachments []*Part
 	err                  error
-	rand                 *rand.Rand
+	randSource           rand.Source
 }
 
 // Builder returns an empty MailBuilder struct.
-func Builder(options ...BuilderOption) MailBuilder {
-	b := MailBuilder{}
-	for _, o := range options {
-		o.apply(&b)
-	}
-	return b
+func Builder() MailBuilder {
+	return MailBuilder{}
 }
 
-// BuilderOption controls an aspect of MailBuilder.
-type BuilderOption interface {
-	apply(*MailBuilder)
-}
-
-type randOption struct {
-	rand *rand.Rand
-}
-
-func (r *randOption) apply(b *MailBuilder) {
-	b.rand = r.rand
-}
-
-// RandBuilderOption controls MailBuilder's source of randomness.
-func RandBuilderOption(r *rand.Rand) BuilderOption {
-	return &randOption{rand: r}
+// RandSeed sets the seed for random uuid boundary strings.
+func (p MailBuilder) RandSeed(seed int64) MailBuilder {
+	p.randSource = stringutil.NewLockedSource(seed)
+	return p
 }
 
 // Error returns the stored error from a file attachment/inline read or nil.
@@ -415,14 +399,14 @@ func (p MailBuilder) Build() (*Part, error) {
 			h.Add(k, s)
 		}
 	}
-	if r := p.rand; r != nil {
+	if r := p.randSource; r != nil {
 		root.propagateRand(r)
 	}
 	return root, nil
 }
 
-func (p *Part) propagateRand(rand *rand.Rand) {
-	p.rand = rand
+func (p *Part) propagateRand(rand rand.Source) {
+	p.randSource = rand
 	for _, x := range []*Part{p.FirstChild, p.NextSibling} {
 		if x == nil {
 			continue

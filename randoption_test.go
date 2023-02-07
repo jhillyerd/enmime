@@ -4,53 +4,93 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/jhillyerd/enmime"
 )
 
+// TestRandOption checks that different randomness modes behave as expected, relative to one another.
 func TestRandOption(t *testing.T) {
-	if hash(t, NewZeroSource) != hash(t, NewZeroSource) {
-		t.Fatalf("hashes of email buffers differ")
-	}
-	if hash(t, Default) == hash(t, Default) {
-		t.Fatalf("hashes of email buffers should differ")
-	}
-	if hash(t, Timestamp) == hash(t, Timestamp) {
-		t.Fatalf("hashes of email buffers should differ")
+	types := []ReproducibilityMode{ZeroSource, OneSource, DefaultSource, TimestampSource}
+	for _, a := range types {
+		for _, b := range types {
+			ha, hb := hashEmailOutput(t, a), hashEmailOutput(t, b)
+			if a == b && a.Reproducible() {
+				if ha != hb {
+					t.Fatalf("hashes of email buffers differ with %s: %s vs %s", a, ha, hb)
+				}
+			} else {
+				if ha == hb {
+					t.Fatalf("hashes of email buffers should differ with %s vs %s: got %s", a, b, ha)
+				}
+			}
+		}
 	}
 }
 
-type Reproducibility int
+type ReproducibilityMode int
 
 const (
-	NewZeroSource Reproducibility = iota
-	Default
-	Timestamp
+	ZeroSource ReproducibilityMode = iota
+	OneSource
+	DefaultSource
+	TimestampSource
 )
 
-func hash(t *testing.T, mode Reproducibility) string {
-	var b enmime.MailBuilder
+func (mode ReproducibilityMode) Reproducible() bool {
 	switch mode {
-	case NewZeroSource:
-		b = enmime.Builder(enmime.RandBuilderOption(rand.New(rand.NewSource(0))))
-	case Default:
-		b = enmime.Builder()
-	case Timestamp:
-		b = enmime.Builder(enmime.RandBuilderOption(rand.New(rand.NewSource(time.Now().UTC().UnixNano()))))
+	case ZeroSource:
+		return true
+	case OneSource:
+		return true
+	case DefaultSource:
+		return false
+	case TimestampSource:
+		return false
 	default:
 		panic(fmt.Errorf("illegal mode: %d", mode))
 	}
-	b = b.From("name", "same").To("anon", "anon@example.com").AddAttachment([]byte("testing"), "plain/text", "test.txt")
+}
+
+func (mode ReproducibilityMode) String() string {
+	switch mode {
+	case ZeroSource:
+		return "ZeroSource"
+	case OneSource:
+		return "OneSource"
+	case DefaultSource:
+		return "DefaultSource"
+	case TimestampSource:
+		return "TimestampSource"
+	default:
+		panic(fmt.Errorf("illegal mode: %d", mode))
+	}
+}
+
+// hashEmailOutput hashes the output of a test email, given the Reproducibility mode.
+func hashEmailOutput(t *testing.T, mode ReproducibilityMode) string {
+	var b enmime.MailBuilder
+	switch mode {
+	case ZeroSource:
+		b = enmime.Builder().RandSeed(0)
+	case OneSource:
+		b = enmime.Builder().RandSeed(1)
+	case DefaultSource:
+		b = enmime.Builder()
+	case TimestampSource:
+		b = enmime.Builder().RandSeed(time.Now().UTC().UnixNano())
+	default:
+		panic(fmt.Errorf("illegal mode: %d", mode))
+	}
+	b = b.From("name", "same").To("anon", "anon@example.com").AddAttachment([]byte("testing"), "text/plain", "test.txt")
 	p, err := b.Build()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("can't build email: %v", err)
 	}
 	w := new(bytes.Buffer)
 	if err := p.Encode(w); err != nil {
-		t.Fatal(err)
+		t.Fatalf("can't encode part: %v", err)
 	}
 	h := md5.New()
 	h.Write(w.Bytes())
