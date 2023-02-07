@@ -27,5 +27,7 @@ _testmain.go
 # vim swp files
 *.swp
 
+/.direnv
+
 cmd/mime-dump/mime-dump
 cmd/mime-extractor/mime-extractor
