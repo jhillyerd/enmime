@@ -2,12 +2,12 @@ package enmime_test
 
 import (
 	"bytes"
-	"crypto/md5"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/jhillyerd/enmime"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestRandOption checks that different randomness modes behave as expected, relative to one another.
@@ -15,15 +15,11 @@ func TestRandOption(t *testing.T) {
 	types := []ReproducibilityMode{ZeroSource, OneSource, DefaultSource, TimestampSource}
 	for _, a := range types {
 		for _, b := range types {
-			ha, hb := hashEmailOutput(t, a), hashEmailOutput(t, b)
+			ha, hb := buildEmail(t, a), buildEmail(t, b)
 			if a == b && a.IsReproducible() {
-				if ha != hb {
-					t.Fatalf("hashes of email buffers differ with %s: %s vs %s", a, ha, hb)
-				}
+				assert.Equal(t, ha, hb)
 			} else {
-				if ha == hb {
-					t.Fatalf("hashes of email buffers should differ with %s vs %s: got %s", a, b, ha)
-				}
+				assert.NotEqual(t, ha, hb)
 			}
 		}
 	}
@@ -68,8 +64,9 @@ func (mode ReproducibilityMode) String() string {
 	}
 }
 
-// hashEmailOutput hashes the output of a test email, given the Reproducibility mode.
-func hashEmailOutput(t *testing.T, mode ReproducibilityMode) string {
+// buildEmail creates a string email, according to the given Reproducibilitymode.
+func buildEmail(t *testing.T, mode ReproducibilityMode) string {
+	t.Helper()
 	var b enmime.MailBuilder
 	switch mode {
 	case ZeroSource:
@@ -92,7 +89,5 @@ func hashEmailOutput(t *testing.T, mode ReproducibilityMode) string {
 	if err := p.Encode(w); err != nil {
 		t.Fatalf("can't encode part: %v", err)
 	}
-	h := md5.New()
-	h.Write(w.Bytes())
-	return fmt.Sprintf("0x%x", h.Sum(nil))
+	return w.String()
 }

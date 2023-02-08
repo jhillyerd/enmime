@@ -7,7 +7,6 @@ import (
 
 // UUID generates a random UUID according to RFC 4122, using optional rand if supplied
 func UUID(rs rand.Source) string {
-	rand.Float64()
 	uuid := make([]byte, 16)
 	if rs == nil {
 		rs = globalRandSource
