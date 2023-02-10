@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"mime/quotedprintable"
 	"net/textproto"
 	"strconv"
@@ -26,11 +27,11 @@ const (
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
-	PartID      string               // PartID labels this parts position within the tree.
+	PartID      string               // PartID labels this part's position within the tree.
 	Parent      *Part                // Parent of this part (can be nil.)
 	FirstChild  *Part                // FirstChild is the top most child of this part.
 	NextSibling *Part                // NextSibling of this part.
-	Header      textproto.MIMEHeader // Header for this Part.
+	Header      textproto.MIMEHeader // Header for this part.
 
 	Boundary          string            // Boundary marker used within this part.
 	ContentID         string            // ContentID header for cid URL scheme.
@@ -47,6 +48,8 @@ type Part struct {
 	Epilogue []byte   // Epilogue contains data following the closing boundary marker.
 
 	parser *Parser // Provides access to parsing options.
+
+	randSource rand.Source // optional rand for uuid boundary generation
 }
 
 // NewPart creates a new Part object.

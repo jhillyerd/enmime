@@ -3,19 +3,15 @@ package stringutil
 import (
 	"fmt"
 	"math/rand"
-	"sync"
-	"time"
 )
 
-var uuidRand = rand.New(rand.NewSource(time.Now().UnixNano()))
-var uuidMutex = &sync.Mutex{}
-
-// UUID generates a random UUID according to RFC 4122.
-func UUID() string {
+// UUID generates a random UUID according to RFC 4122, using optional rand if supplied
+func UUID(rs rand.Source) string {
 	uuid := make([]byte, 16)
-	uuidMutex.Lock()
-	_, _ = uuidRand.Read(uuid)
-	uuidMutex.Unlock()
+	if rs == nil {
+		rs = globalRandSource
+	}
+	_, _ = rand.New(rs).Read(uuid)
 	// variant bits; see section 4.1.1
 	uuid[8] = uuid[8]&^0xc0 | 0x80
 	// version 4 (pseudo-random); see section 4.1.3

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
+	"math/rand"
 	"mime"
 	"net/mail"
 	"net/textproto"
@@ -28,11 +29,18 @@ type MailBuilder struct {
 	text, html           []byte
 	inlines, attachments []*Part
 	err                  error
+	randSource           rand.Source
 }
 
 // Builder returns an empty MailBuilder struct.
 func Builder() MailBuilder {
 	return MailBuilder{}
+}
+
+// RandSeed sets the seed for random uuid boundary strings.
+func (p MailBuilder) RandSeed(seed int64) MailBuilder {
+	p.randSource = stringutil.NewLockedSource(seed)
+	return p
 }
 
 // Error returns the stored error from a file attachment/inline read or nil.
@@ -391,7 +399,20 @@ func (p MailBuilder) Build() (*Part, error) {
 			h.Add(k, s)
 		}
 	}
+	if r := p.randSource; r != nil {
+		root.propagateRand(r)
+	}
 	return root, nil
+}
+
+func (p *Part) propagateRand(rand rand.Source) {
+	p.randSource = rand
+	for _, x := range []*Part{p.FirstChild, p.NextSibling} {
+		if x == nil {
+			continue
+		}
+		x.propagateRand(rand)
+	}
 }
 
 // SendWithReversePath encodes the message and sends it via the specified Sender.
