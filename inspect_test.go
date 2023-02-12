@@ -13,6 +13,29 @@ import (
 	"github.com/jhillyerd/enmime/internal/test"
 )
 
+func TestDecodeRFC2047(t *testing.T) {
+	t.Run("rfc2047 basic", func(t *testing.T) {
+		s := enmime.DecodeRFC2047("=?UTF-8?Q?Miros=C5=82aw_Marczak?=")
+		if s != "Mirosław Marczak" {
+			t.Errorf("Wrong decoded result")
+		}
+	})
+
+	t.Run("rfc2047 unknown", func(t *testing.T) {
+		s := enmime.DecodeRFC2047("=?ABC-1?Q?FooBar?=")
+		if s != "=?ABC-1?Q?FooBar?=" {
+			t.Errorf("Expected unmodified result for unknown charset")
+		}
+	})
+
+	t.Run("rfc2047 pass-through", func(t *testing.T) {
+		s := enmime.DecodeRFC2047("Hello World")
+		if s != "Hello World" {
+			t.Errorf("Expected unmodified result")
+		}
+	})
+}
+
 func TestDecodeHeaders(t *testing.T) {
 	t.Run("rfc2047 sample", func(t *testing.T) {
 		r := test.OpenTestData("mail", "qp-utf8-header.raw")
