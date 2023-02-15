@@ -400,19 +400,13 @@ func (p MailBuilder) Build() (*Part, error) {
 		}
 	}
 	if r := p.randSource; r != nil {
-		root.propagateRand(r)
+		// Traverse all parts, discard match result.
+		_ = root.DepthMatchAll(func(part *Part) bool {
+			part.randSource = r
+			return false
+		})
 	}
 	return root, nil
-}
-
-func (p *Part) propagateRand(rand rand.Source) {
-	p.randSource = rand
-	for _, x := range []*Part{p.FirstChild, p.NextSibling} {
-		if x == nil {
-			continue
-		}
-		x.propagateRand(rand)
-	}
 }
 
 // SendWithReversePath encodes the message and sends it via the specified Sender.
