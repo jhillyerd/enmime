@@ -15,13 +15,12 @@ func init() {
 // NewLockedSource creates a source of randomness using the given seed.
 func NewLockedSource(seed int64) rand.Source64 {
 	return &lockedSource{
-		lock: new(sync.Mutex),
-		s:    rand.NewSource(seed).(rand.Source64),
+		s: rand.NewSource(seed).(rand.Source64),
 	}
 }
 
 type lockedSource struct {
-	lock sync.Locker
+	lock sync.Mutex
 	s    rand.Source64
 }
 
