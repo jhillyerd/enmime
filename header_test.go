@@ -3,9 +3,10 @@ package enmime
 import (
 	"bufio"
 	"net/mail"
-	"net/textproto"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime/textproto"
 )
 
 // Test re-encoding to base64

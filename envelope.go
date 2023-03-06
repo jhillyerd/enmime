@@ -5,13 +5,13 @@ import (
 	"io"
 	"mime"
 	"net/mail"
-	"net/textproto"
 	"strings"
 	"time"
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/mediatype"
+	"github.com/jhillyerd/enmime/textproto"
 	"github.com/pkg/errors"
 )
 

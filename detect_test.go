@@ -1,10 +1,11 @@
 package enmime
 
 import (
-	"net/textproto"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/jhillyerd/enmime/textproto"
 )
 
 func TestDetectSinglePart(t *testing.T) {
