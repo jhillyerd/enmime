@@ -601,15 +601,15 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		if !ok {
 			return m, ProtocolError("malformed MIME header line: " + string(kv))
 		}
-		key, ok := canonicalMIMEHeaderKey(k)
+		key, ok := canonicalEmailMIMEHeaderKey(k)
 		if !ok {
 			return m, ProtocolError("malformed MIME header line: " + string(kv))
 		}
-		for _, c := range v {
-			if !validHeaderValueByte(c) {
-				return m, ProtocolError("malformed MIME header line: " + string(kv))
-			}
-		}
+		// for _, c := range v {
+		// 	if !validHeaderValueByte(c) {
+		// 		return m, ProtocolError("malformed MIME header line: " + string(kv))
+		// 	}
+		// }
 
 		// As per RFC 7230 field-name is a token, tokens consist of one or more chars.
 		// We could return a ProtocolError here, but better to be liberal in what we
