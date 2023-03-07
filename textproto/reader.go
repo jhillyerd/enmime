@@ -767,29 +767,45 @@ func validHeaderFieldByte(c byte) bool {
 		(uint64(1)<<(c-64))&(mask>>64)) != 0
 }
 
+// validEmailHeaderFieldByte Valid email header name.
+// https://www.rfc-editor.org/rfc/rfc5322#section-2.2
 func validEmailHeaderFieldByte(c byte) bool {
-	// mask is a 128-bit bitmap with 1s for allowed bytes,
-	// so that the byte c can be tested with a shift and an and.
-	// If c >= 128, then 1<<c and 1<<(c-64) will both be zero,
-	// and this function will return false.
+	// A field name MUST be composed of printable US-ASCII characters (i.e.,
+	// characters that have values between 33 and 126, inclusive), except colon.
 	const mask = 0 |
 		(1<<(10)-1)<<'0' |
 		(1<<(26)-1)<<'a' |
 		(1<<(26)-1)<<'A' |
 		1<<'!' |
+		1<<'"' |
 		1<<'#' |
 		1<<'$' |
 		1<<'%' |
 		1<<'&' |
 		1<<'\'' |
+		1<<'(' |
+		1<<')' |
 		1<<'*' |
 		1<<'+' |
+		1<<',' |
 		1<<'-' |
 		1<<'.' |
+		1<<'/' |
+		1<<';' |
+		1<<'<' |
+		1<<'=' |
+		1<<'>' |
+		1<<'?' |
+		1<<'@' |
+		1<<'[' |
+		1<<'\\' |
+		1<<']' |
 		1<<'^' |
 		1<<'_' |
 		1<<'`' |
+		1<<'{' |
 		1<<'|' |
+		1<<'}' |
 		1<<'~'
 	return ((uint64(1)<<c)&(mask&(1<<64-1)) |
 		(uint64(1)<<(c-64))&(mask>>64)) != 0
