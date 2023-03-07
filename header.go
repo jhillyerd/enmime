@@ -261,8 +261,6 @@ func whiteSpaceRune(r rune) bool {
 //	> characters that have values between 33 and 126, inclusive), except
 //	> colon.
 func validHeaderFieldByte(c byte) bool {
-	// A field name MUST be composed of printable US-ASCII characters (i.e.,
-	// characters that have values between 33 and 126, inclusive), except colon.
 	const mask = 0 |
 		(1<<(10)-1)<<'0' |
 		(1<<(26)-1)<<'a' |

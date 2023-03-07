@@ -251,17 +251,19 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
-			label:   "equals in name",
-			input:   "name=value:text\n",
-			hname:   "name=value",
+			// all special characters of printable ASCII characters (exclude
+			// 0-9, a-z, A-Z, :, and ` (tested in next case).
+			label:   "special characters in header field",
+			input:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~:text\n`,
+			hname:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~`,
 			want:    "text",
 			correct: true,
 		},
 		{
-			label:   "equals chars '/', '@'",
-			input:   "X/A@B:0\n",
-			hname:   "X/A@B",
-			want:    "0",
+			label:   "special character (`) in header field",
+			input:   "X-`:text\n",
+			hname:   "X-`",
+			want:    "text",
 			correct: true,
 		},
 		{
