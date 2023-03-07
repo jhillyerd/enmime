@@ -301,7 +301,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 		}
 	}
 	// Decode and store content.
-	content, err := ioutil.ReadAll(contentReader)
+	content, err := p.readPartContent(contentReader, readPartErrorPolicy)
 	if err != nil {
 		return p.base64CorruptInputCheck(errors.WithStack(err))
 	}
