@@ -133,21 +133,17 @@ func canonicalEmailMIMEHeaderKey(a []byte) (_ string, ok bool) {
 		return string(a), true
 	}
 
-	commonHeaderOnce.Do(initCommonHeader)
-	// The compiler recognizes m[string(byteSlice)] as a special
-	// case, so a copy of a's bytes into a new string does not
-	// happen in this map lookup:
-	if v := commonHeader[string(a)]; v != "" {
-		return v, true
-	}
 	return string(a), true
 }
 
-// validEmailHeaderFieldByte Valid email header name.
-// https://www.rfc-editor.org/rfc/rfc5322#section-2.2
+// validEmailHeaderFieldByte Valid characters in email header field.
+//
+// According to [RFC 5322](https://www.rfc-editor.org/rfc/rfc5322#section-2.2),
+//
+//	> A field name MUST be composed of printable US-ASCII characters (i.e.,
+//	> characters that have values between 33 and 126, inclusive), except
+//	> colon.
 func validEmailHeaderFieldByte(c byte) bool {
-	// A field name MUST be composed of printable US-ASCII characters (i.e.,
-	// characters that have values between 33 and 126, inclusive), except colon.
 	const mask = 0 |
 		(1<<(10)-1)<<'0' |
 		(1<<(26)-1)<<'a' |
