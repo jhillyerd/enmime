@@ -192,7 +192,7 @@ line:
 
 	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
-	header, err := tr.ReadMIMEHeader()
+	header, err := tr.ReadEmailMIMEHeader()
 	return header, errors.WithStack(err)
 }
 

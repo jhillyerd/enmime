@@ -253,7 +253,16 @@ func TestReadHeader(t *testing.T) {
 		{
 			label:   "equals in name",
 			input:   "name=value:text\n",
-			correct: false,
+			hname:   "name=value",
+			want:    "text",
+			correct: true,
+		},
+		{
+			label:   "equals chars '/', '@'",
+			input:   "X/A@B:0\n",
+			hname:   "X/A@B",
+			want:    "0",
+			correct: true,
 		},
 		{
 			label:   "no space before continuation",
@@ -368,9 +377,9 @@ func TestReadHeader(t *testing.T) {
 			// Check for extra headers by removing expected ones.
 			delete(header, "From")
 			delete(header, "Subject")
-			delete(header, textproto.CanonicalMIMEHeaderKey(tt.hname))
+			delete(header, textproto.CanonicalEmailMIMEHeaderKey(tt.hname))
 			for _, hname := range tt.extras {
-				delete(header, textproto.CanonicalMIMEHeaderKey(hname))
+				delete(header, textproto.CanonicalEmailMIMEHeaderKey(hname))
 			}
 			for hname := range header {
 				t.Errorf("Found unexpected header %q after parsing", hname)

@@ -896,7 +896,7 @@ func canonicalEmailMIMEHeaderKey(a []byte) (_ string, ok bool) {
 	// See if a looks like a header key. If not, return it unchanged.
 	noCanon := false
 	for _, c := range a {
-		if validHeaderFieldByte(c) {
+		if validEmailHeaderFieldByte(c) {
 			continue
 		}
 		// Don't canonicalize.
