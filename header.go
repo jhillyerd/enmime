@@ -10,8 +10,9 @@ import (
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
-	"github.com/jhillyerd/enmime/textproto"
+
 	"github.com/pkg/errors"
 )
 

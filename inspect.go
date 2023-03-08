@@ -6,7 +6,8 @@ import (
 	"io"
 
 	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/textproto"
+	"github.com/jhillyerd/enmime/internal/textproto"
+
 	"github.com/pkg/errors"
 )
 

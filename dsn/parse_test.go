@@ -8,7 +8,7 @@ import (
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/dsn"
-	"github.com/jhillyerd/enmime/textproto"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

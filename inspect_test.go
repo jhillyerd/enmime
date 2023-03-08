@@ -10,7 +10,7 @@ import (
 
 	"github.com/jhillyerd/enmime"
 	"github.com/jhillyerd/enmime/internal/test"
-	"github.com/jhillyerd/enmime/textproto"
+	"github.com/jhillyerd/enmime/internal/textproto"
 )
 
 func TestDecodeRFC2047(t *testing.T) {
