@@ -11,7 +11,7 @@ type MIMEHeader map[string][]string
 // Add adds the key, value pair to the header.
 // It appends to any existing values associated with key.
 func (h MIMEHeader) Add(key, value string) {
-	key = CanonicalMIMEHeaderKey(key)
+	key = CanonicalEmailMIMEHeaderKey(key)
 	h[key] = append(h[key], value)
 }
 
@@ -19,7 +19,7 @@ func (h MIMEHeader) Add(key, value string) {
 // the single element value. It replaces any existing
 // values associated with key.
 func (h MIMEHeader) Set(key, value string) {
-	h[CanonicalMIMEHeaderKey(key)] = []string{value}
+	h[CanonicalEmailMIMEHeaderKey(key)] = []string{value}
 }
 
 // Get gets the first value associated with the given key.
@@ -31,7 +31,7 @@ func (h MIMEHeader) Get(key string) string {
 	if h == nil {
 		return ""
 	}
-	v := h[CanonicalMIMEHeaderKey(key)]
+	v := h[CanonicalEmailMIMEHeaderKey(key)]
 	if len(v) == 0 {
 		return ""
 	}
@@ -47,10 +47,10 @@ func (h MIMEHeader) Values(key string) []string {
 	if h == nil {
 		return nil
 	}
-	return h[CanonicalMIMEHeaderKey(key)]
+	return h[CanonicalEmailMIMEHeaderKey(key)]
 }
 
 // Del deletes the values associated with key.
 func (h MIMEHeader) Del(key string) {
-	delete(h, CanonicalMIMEHeaderKey(key))
+	delete(h, CanonicalEmailMIMEHeaderKey(key))
 }

@@ -160,7 +160,7 @@ line:
 			// Behavior change in net/textproto package in Golang 1.20: invalid characters
 			// in header keys are no longer allowed; https://github.com/golang/go/issues/53188
 			for _, c := range s[:firstColon] {
-				if c != ' ' && !validHeaderFieldByte(c) {
+				if c != ' ' && !textproto.ValidEmailHeaderFieldByte(c) {
 					p.addError(
 						ErrorMalformedHeader, "Header name %q contains invalid character %q", s, c)
 					continue line
@@ -252,51 +252,4 @@ func quotedDisplayName(s string) string {
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
-}
-
-// validHeaderFieldByte Valid characters in email header field.
-//
-// According to [RFC 5322](https://www.rfc-editor.org/rfc/rfc5322#section-2.2),
-//
-//	> A field name MUST be composed of printable US-ASCII characters (i.e.,
-//	> characters that have values between 33 and 126, inclusive), except
-//	> colon.
-func validHeaderFieldByte(c byte) bool {
-	const mask = 0 |
-		(1<<(10)-1)<<'0' |
-		(1<<(26)-1)<<'a' |
-		(1<<(26)-1)<<'A' |
-		1<<'!' |
-		1<<'"' |
-		1<<'#' |
-		1<<'$' |
-		1<<'%' |
-		1<<'&' |
-		1<<'\'' |
-		1<<'(' |
-		1<<')' |
-		1<<'*' |
-		1<<'+' |
-		1<<',' |
-		1<<'-' |
-		1<<'.' |
-		1<<'/' |
-		1<<';' |
-		1<<'<' |
-		1<<'=' |
-		1<<'>' |
-		1<<'?' |
-		1<<'@' |
-		1<<'[' |
-		1<<'\\' |
-		1<<']' |
-		1<<'^' |
-		1<<'_' |
-		1<<'`' |
-		1<<'{' |
-		1<<'|' |
-		1<<'}' |
-		1<<'~'
-	return ((uint64(1)<<c)&(mask&(1<<64-1)) |
-		(uint64(1)<<(c-64))&(mask>>64)) != 0
 }

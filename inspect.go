@@ -50,7 +50,7 @@ func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, erro
 	headerList = append(headerList, addtlHeaders...)
 	res := map[string][]string{}
 	for _, header := range headerList {
-		h := textproto.CanonicalMIMEHeaderKey(header)
+		h := textproto.CanonicalEmailMIMEHeaderKey(header)
 		res[h] = make([]string, 0, len(headers[h]))
 		for _, value := range headers[h] {
 			res[h] = append(res[h], DecodeRFC2047(value))

@@ -96,7 +96,7 @@ func CanonicalEmailMIMEHeaderKey(s string) string {
 	upper := true
 	for i := 0; i < len(s); i++ {
 		c := s[i]
-		if !validEmailHeaderFieldByte(c) {
+		if !ValidEmailHeaderFieldByte(c) {
 			return s
 		}
 		if upper && 'a' <= c && c <= 'z' {
@@ -116,7 +116,7 @@ func canonicalEmailMIMEHeaderKey(a []byte) (_ string, ok bool) {
 	// See if a looks like a header key. If not, return it unchanged.
 	noCanon := false
 	for _, c := range a {
-		if validEmailHeaderFieldByte(c) {
+		if ValidEmailHeaderFieldByte(c) {
 			continue
 		}
 		// Don't canonicalize.
@@ -136,14 +136,14 @@ func canonicalEmailMIMEHeaderKey(a []byte) (_ string, ok bool) {
 	return string(a), true
 }
 
-// validEmailHeaderFieldByte Valid characters in email header field.
+// ValidEmailHeaderFieldByte Valid characters in email header field.
 //
 // According to [RFC 5322](https://www.rfc-editor.org/rfc/rfc5322#section-2.2),
 //
 //	> A field name MUST be composed of printable US-ASCII characters (i.e.,
 //	> characters that have values between 33 and 126, inclusive), except
 //	> colon.
-func validEmailHeaderFieldByte(c byte) bool {
+func ValidEmailHeaderFieldByte(c byte) bool {
 	const mask = 0 |
 		(1<<(10)-1)<<'0' |
 		(1<<(26)-1)<<'a' |
