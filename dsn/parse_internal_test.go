@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/internal/textproto"
 
 	"github.com/stretchr/testify/assert"
 )

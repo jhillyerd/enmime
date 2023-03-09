@@ -254,7 +254,7 @@ func TestReadHeader(t *testing.T) {
 			// all special characters of printable ASCII characters (exclude
 			// 0-9, a-z, A-Z, :, and ` (tested in next case).
 			label:   "special characters in header field",
-			input:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~:text\n`,
+			input:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~:text` + "\n",
 			hname:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~`,
 			want:    "text",
 			correct: true,
