@@ -1,5 +1,7 @@
 module github.com/jhillyerd/enmime
 
+go 1.18
+
 require (
 	github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a
 	github.com/go-test/deep v1.0.7
@@ -20,5 +22,3 @@ require (
 	golang.org/x/net v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
-
-go 1.18
