@@ -7,12 +7,12 @@ import (
 	"math/rand"
 	"mime"
 	"net/mail"
-	"net/textproto"
 	"path/filepath"
 	"reflect"
 	"time"
 
 	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/internal/textproto"
 )
 
 // MailBuilder facilitates the easy construction of a MIME message.  Each manipulation method

@@ -3,9 +3,10 @@ package enmime
 import (
 	"bufio"
 	"net/mail"
-	"net/textproto"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime/internal/textproto"
 )
 
 // Test re-encoding to base64
@@ -250,9 +251,20 @@ func TestReadHeader(t *testing.T) {
 			correct: true,
 		},
 		{
-			label:   "equals in name",
-			input:   "name=value:text\n",
-			correct: false,
+			// all special characters of printable ASCII characters (exclude
+			// 0-9, a-z, A-Z, :, and ` (tested in next case).
+			label:   "special characters in header field",
+			input:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~:text` + "\n",
+			hname:   `X-!"#$%&'()*+,-./;<=>?@[\]^_{|}~`,
+			want:    "text",
+			correct: true,
+		},
+		{
+			label:   "special character (`) in header field",
+			input:   "X-`:text\n",
+			hname:   "X-`",
+			want:    "text",
+			correct: true,
 		},
 		{
 			label:   "no space before continuation",
@@ -367,9 +379,9 @@ func TestReadHeader(t *testing.T) {
 			// Check for extra headers by removing expected ones.
 			delete(header, "From")
 			delete(header, "Subject")
-			delete(header, textproto.CanonicalMIMEHeaderKey(tt.hname))
+			delete(header, textproto.CanonicalEmailMIMEHeaderKey(tt.hname))
 			for _, hname := range tt.extras {
-				delete(header, textproto.CanonicalMIMEHeaderKey(hname))
+				delete(header, textproto.CanonicalEmailMIMEHeaderKey(hname))
 			}
 			for hname := range header {
 				t.Errorf("Found unexpected header %q after parsing", hname)

@@ -6,12 +6,12 @@ import (
 	"io"
 	"mime"
 	"mime/quotedprintable"
-	"net/textproto"
 	"sort"
 	"time"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/internal/textproto"
 )
 
 // b64Percent determines the percent of non-ASCII characters enmime will tolerate before switching

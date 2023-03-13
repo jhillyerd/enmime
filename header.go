@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"mime"
 	"net/mail"
-	"net/textproto"
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
+
 	"github.com/pkg/errors"
 )
 
@@ -159,7 +160,7 @@ line:
 			// Behavior change in net/textproto package in Golang 1.20: invalid characters
 			// in header keys are no longer allowed; https://github.com/golang/go/issues/53188
 			for _, c := range s[:firstColon] {
-				if c != ' ' && !validHeaderFieldByte(c) {
+				if c != ' ' && !textproto.ValidEmailHeaderFieldByte(c) {
 					p.addError(
 						ErrorMalformedHeader, "Header name %q contains invalid character %q", s, c)
 					continue line
@@ -192,7 +193,7 @@ line:
 
 	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
-	header, err := tr.ReadMIMEHeader()
+	header, err := tr.ReadEmailMIMEHeader()
 	return header, errors.WithStack(err)
 }
 
@@ -251,33 +252,4 @@ func quotedDisplayName(s string) string {
 // Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
 func whiteSpaceRune(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
-}
-
-// Mirror of func in net/textproto/reader.go; from go 1.20.0-rc.2
-func validHeaderFieldByte(c byte) bool {
-	// mask is a 128-bit bitmap with 1s for allowed bytes,
-	// so that the byte c can be tested with a shift and an and.
-	// If c >= 128, then 1<<c and 1<<(c-64) will both be zero,
-	// and this function will return false.
-	const mask = 0 |
-		(1<<(10)-1)<<'0' |
-		(1<<(26)-1)<<'a' |
-		(1<<(26)-1)<<'A' |
-		1<<'!' |
-		1<<'#' |
-		1<<'$' |
-		1<<'%' |
-		1<<'&' |
-		1<<'\'' |
-		1<<'*' |
-		1<<'+' |
-		1<<'-' |
-		1<<'.' |
-		1<<'^' |
-		1<<'_' |
-		1<<'`' |
-		1<<'|' |
-		1<<'~'
-	return ((uint64(1)<<c)&(mask&(1<<64-1)) |
-		(uint64(1)<<(c-64))&(mask>>64)) != 0
 }

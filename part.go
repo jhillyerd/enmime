@@ -8,14 +8,15 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"mime/quotedprintable"
-	"net/textproto"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
+	"github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
+
 	"github.com/pkg/errors"
 )
 

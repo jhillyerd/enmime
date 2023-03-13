@@ -1,9 +1,9 @@
 package enmime
 
 import (
-	"net/textproto"
 	"strings"
 
+	"github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
 )
 
