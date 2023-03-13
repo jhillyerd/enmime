@@ -6,6 +6,10 @@ import (
 	"math"
 )
 
+// ReadEmailMIMEHeader reads a MIME-style header from r.
+//
+// This is a modified version of the stock func that better handles the characters
+// we must support in email, instead of just HTTP.
 func (r *Reader) ReadEmailMIMEHeader() (MIMEHeader, error) {
 	return readEmailMIMEHeader(r, math.MaxInt64)
 }
@@ -91,6 +95,11 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 	}
 }
 
+// CanonicalEmailMIMEHeaderKey returns the canonical format of the
+// MIME header key s.
+//
+// This is a modified version of the stock func that better handles the characters
+// we must support in email, instead of just HTTP.
 func CanonicalEmailMIMEHeaderKey(s string) string {
 	// Quick check for canonical encoding.
 	upper := true

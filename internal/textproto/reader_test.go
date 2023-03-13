@@ -387,9 +387,9 @@ func TestIssue46363(t *testing.T) {
 	r, w := net.Pipe()
 	go func() {
 		// ReadMIMEHeader calls canonicalMIMEHeaderKey, which reads from commonHeader
-		NewConn(r).ReadMIMEHeader()
+		_, _ = NewConn(r).ReadMIMEHeader()
 	}()
-	w.Write([]byte("A: 1\r\nB: 2\r\nC: 3\r\n\r\n"))
+	_, _ = w.Write([]byte("A: 1\r\nB: 2\r\nC: 3\r\n\r\n"))
 
 	// CanonicalMIMEHeaderKey calls commonHeaderOnce.Do(initCommonHeader) which initializes commonHeader
 	CanonicalMIMEHeaderKey("a")
