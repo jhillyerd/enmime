@@ -113,7 +113,6 @@ func CanonicalEmailMIMEHeaderKey(s string) string {
 }
 
 func canonicalEmailMIMEHeaderKey(a []byte) (_ string, ok bool) {
-	// See if a looks like a header key. If not, return it unchanged.
 	noCanon := false
 	for _, c := range a {
 		if ValidEmailHeaderFieldByte(c) {
@@ -133,6 +132,27 @@ func canonicalEmailMIMEHeaderKey(a []byte) (_ string, ok bool) {
 		return string(a), true
 	}
 
+	upper := true
+	for i, c := range a {
+		// Canonicalize: first letter upper case
+		// and upper case after each dash.
+		// (Host, User-Agent, If-Modified-Since).
+		// MIME headers are ASCII only, so no Unicode issues.
+		if upper && 'a' <= c && c <= 'z' {
+			c -= toLower
+		} else if !upper && 'A' <= c && c <= 'Z' {
+			c += toLower
+		}
+		a[i] = c
+		upper = c == '-' // for next time
+	}
+	commonHeaderOnce.Do(initCommonHeader)
+	// The compiler recognizes m[string(byteSlice)] as a special
+	// case, so a copy of a's bytes into a new string does not
+	// happen in this map lookup:
+	if v := commonHeader[string(a)]; v != "" {
+		return v, true
+	}
 	return string(a), true
 }
 
