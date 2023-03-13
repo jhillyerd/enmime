@@ -180,7 +180,7 @@ func (r *Reader) skipSpace() int {
 			break
 		}
 		if c != ' ' && c != '\t' {
-			r.R.UnreadByte()
+			_ = r.R.UnreadByte()
 			break
 		}
 		n++
@@ -373,7 +373,7 @@ func (d *dotReader) Read(b []byte) (n int, err error) {
 			}
 			// Not part of .\r\n.
 			// Consume leading dot and emit saved \r.
-			br.UnreadByte()
+			_ = br.UnreadByte()
 			c = '\r'
 			d.state = stateData
 
@@ -383,7 +383,7 @@ func (d *dotReader) Read(b []byte) (n int, err error) {
 				break
 			}
 			// Not part of \r\n. Emit saved \r
-			br.UnreadByte()
+			_ = br.UnreadByte()
 			c = '\r'
 			d.state = stateData
 
@@ -418,7 +418,7 @@ func (r *Reader) closeDot() {
 	for r.dot != nil {
 		// When Read reaches EOF or an error,
 		// it will set r.dot == nil.
-		r.dot.Read(buf)
+		_, _ = r.dot.Read(buf)
 	}
 }
 
@@ -589,7 +589,7 @@ var nl = []byte("\n")
 // that will be in this header. If it gets confused, it returns 0.
 func (r *Reader) upcomingHeaderNewlines() (n int) {
 	// Try to determine the 'hint' size.
-	r.R.Peek(1) // force a buffer load if empty
+	_, _ = r.R.Peek(1) // force a buffer load if empty
 	s := r.R.Buffered()
 	if s == 0 {
 		return

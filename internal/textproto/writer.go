@@ -29,7 +29,7 @@ var dotcrnl = []byte{'.', '\r', '\n'}
 func (w *Writer) PrintfLine(format string, args ...any) error {
 	w.closeDot()
 	fmt.Fprintf(w.W, format, args...)
-	w.W.Write(crnl)
+	_, _ = w.W.Write(crnl)
 	return w.W.Flush()
 }
 
@@ -73,7 +73,7 @@ func (d *dotWriter) Write(b []byte) (n int, err error) {
 			d.state = wstateData
 			if c == '.' {
 				// escape leading dot
-				bw.WriteByte('.')
+				_ = bw.WriteByte('.')
 			}
 			fallthrough
 
@@ -82,7 +82,7 @@ func (d *dotWriter) Write(b []byte) (n int, err error) {
 				d.state = wstateCR
 			}
 			if c == '\n' {
-				bw.WriteByte('\r')
+				_ = bw.WriteByte('\r')
 				d.state = wstateBeginLine
 			}
 
@@ -107,13 +107,13 @@ func (d *dotWriter) Close() error {
 	bw := d.w.W
 	switch d.state {
 	default:
-		bw.WriteByte('\r')
+		_ = bw.WriteByte('\r')
 		fallthrough
 	case wstateCR:
-		bw.WriteByte('\n')
+		_ = bw.WriteByte('\n')
 		fallthrough
 	case wstateBeginLine:
-		bw.Write(dotcrnl)
+		_, _ = bw.Write(dotcrnl)
 	}
 	return bw.Flush()
 }
