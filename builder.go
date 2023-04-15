@@ -22,7 +22,7 @@ import (
 type MailBuilder struct {
 	to, cc, bcc          []mail.Address
 	from                 mail.Address
-	replyTo              mail.Address
+	replyTo              []mail.Address
 	subject              string
 	date                 time.Time
 	header               textproto.MIMEHeader
@@ -153,13 +153,26 @@ func (p *MailBuilder) GetBCC() []mail.Address {
 // ReplyTo returns a copy of MailBuilder with this name & address appended to the To header.  name
 // may be empty.
 func (p MailBuilder) ReplyTo(name, addr string) MailBuilder {
-	p.replyTo = mail.Address{Name: name, Address: addr}
+	if len(addr) > 0 {
+		p.replyTo = append(p.replyTo, mail.Address{Name: name, Address: addr})
+	}
 	return p
 }
 
-// GetReplyTo returns the stored replyTo header.
-func (p *MailBuilder) GetReplyTo() mail.Address {
-	return p.replyTo
+// ReplyToAddrs returns a copy of MailBuilder with the new reply to header list. This method only
+// has an effect if the Send method is used to transmit the message, there is no effect on the parts
+// returned by Build().
+func (p MailBuilder) ReplyToAddrs(replyTo []mail.Address) MailBuilder {
+	p.replyTo = replyTo
+	return p
+}
+
+// GetReplyTo returns a copy of the stored replyTo header addresses.
+func (p *MailBuilder) GetReplyTo() []mail.Address {
+	replyTo := make([]mail.Address, len(p.replyTo))
+	copy(replyTo, p.replyTo)
+
+	return replyTo
 }
 
 // Header returns a copy of MailBuilder with the specified value added to the named header.
@@ -386,8 +399,8 @@ func (p MailBuilder) Build() (*Part, error) {
 	if len(p.cc) > 0 {
 		h.Set("Cc", stringutil.JoinAddress(p.cc))
 	}
-	if p.replyTo.Address != "" {
-		h.Set("Reply-To", p.replyTo.String())
+	if len(p.replyTo) > 0 {
+		h.Set("Reply-To", stringutil.JoinAddress(p.replyTo))
 	}
 	date := p.date
 	if date.IsZero() {

@@ -348,6 +348,12 @@ func TestBuilderReplyTo(t *testing.T) {
 		t.Error("Same ReplyTo(value) should be equal")
 	}
 
+	if !reflect.DeepEqual(a.GetReplyTo(), b.GetReplyTo()) {
+		t.Error("Same GetReplyTo() should be equal")
+	} else if len(a.GetReplyTo()) == 0 {
+		t.Error("GetReplyTo() shouldn't be empty")
+	}
+
 	a = enmime.Builder().ReplyTo("name", "foo")
 	b = enmime.Builder().ReplyTo("name", "bar")
 	if a.Equals(b) {
@@ -360,6 +366,12 @@ func TestBuilderReplyTo(t *testing.T) {
 		t.Error("ReplyTo() should not mutate receiver, failed")
 	}
 
+	a = enmime.Builder().ReplyToAddrs([]mail.Address{{Name: "name", Address: "foo"}})
+	b = a.ReplyToAddrs([]mail.Address{{Name: "name", Address: "bar"}})
+	if a.Equals(b) {
+		t.Error("ReplyToAddrs() should not mutate receiver, failed")
+	}
+
 	a = enmime.Builder().ToAddrs(addrSlice).From("name", "foo").Subject("foo")
 	a = a.ReplyTo("one", "one@inbucket.org")
 	want := "\"one\" <one@inbucket.org>"
@@ -368,6 +380,21 @@ func TestBuilderReplyTo(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := p.Header.Get("Reply-To")
+	if got != want {
+		t.Errorf("Reply-To: %q, want: %q", got, want)
+	}
+
+	input := []mail.Address{
+		{Name: "one", Address: "one@inbucket.org"},
+		{Name: "two", Address: "two@inbucket.org"},
+	}
+	a = enmime.Builder().ReplyToAddrs(input).ToAddrs(input).From("name", "foo").Subject("foo")
+	want = "\"one\" <one@inbucket.org>, \"two\" <two@inbucket.org>"
+	p, err = a.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = p.Header.Get("Reply-To")
 	if got != want {
 		t.Errorf("Reply-To: %q, want: %q", got, want)
 	}
