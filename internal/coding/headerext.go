@@ -54,7 +54,7 @@ func RFC2047Decode(s string) string {
 
 		default:
 			if decoded {
-				keyValuePair := strings.SplitAfter(s, "=")
+				keyValuePair := strings.SplitAfterN(s, "=", 2)
 				if len(keyValuePair) < 2 {
 					return s
 				}
