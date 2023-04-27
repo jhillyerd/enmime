@@ -54,20 +54,20 @@ func RFC2047Decode(s string) string {
 
 		default:
 			if decoded {
-				keyValuePair := strings.SplitAfter(s, "=")
-				if len(keyValuePair) < 2 {
+				key, value, found := strings.Cut(s, "=")
+				if !found {
 					return s
 				}
 
 				// Add quotes as needed.
-				if !strings.HasPrefix(keyValuePair[1], "\"") {
-					keyValuePair[1] = fmt.Sprintf("\"%s", keyValuePair[1])
+				if !strings.HasPrefix(value, "\"") {
+					value = fmt.Sprintf("\"%s", value)
 				}
-				if !strings.HasSuffix(keyValuePair[1], "\"") {
-					keyValuePair[1] = fmt.Sprintf("%s\"", keyValuePair[1])
+				if !strings.HasSuffix(value, "\"") {
+					value = fmt.Sprintf("%s\"", value)
 				}
 
-				return strings.Join(keyValuePair, "")
+				return fmt.Sprintf("%s=%s", key, value)
 			}
 
 			return s

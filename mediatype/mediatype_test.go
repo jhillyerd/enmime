@@ -497,6 +497,12 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "multipart/alternative",
 			params: map[string]string{"boundary": "<myboundary>"},
 		},
+		{
+			label:  "encoded equal sign",
+			input:  "application/pdf; name=\"=?iso-8859-1?Q?key=3Dvalue?=\"",
+			mtype:  "application/pdf",
+			params: map[string]string{"name": "key=value"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
