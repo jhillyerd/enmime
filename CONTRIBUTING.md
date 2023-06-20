@@ -22,7 +22,7 @@ to provide validation and/or guidance on your suggested approach.
 
 ## Making Changes
 
-Create a topic branch based on our `master` branch.
+Create a topic branch based on our `main` branch.
 
 1. Make commits of logical units.
 2. Add unit tests to exercise your changes.
