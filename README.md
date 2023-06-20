@@ -1,8 +1,8 @@
 # enmime
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/jhillyerd/enmime)][Pkg Docs]
-[![Build Status](https://travis-ci.org/jhillyerd/enmime.svg?branch=master)][Build Status]
+[![Build Status](https://travis-ci.org/jhillyerd/enmime.svg?branch=main)][Build Status]
 [![Go Report Card](https://goreportcard.com/badge/github.com/jhillyerd/enmime)][Go Report Card]
-[![Coverage Status](https://coveralls.io/repos/github/jhillyerd/enmime/badge.svg?branch=master)][Coverage Status]
+[![Coverage Status](https://coveralls.io/repos/github/jhillyerd/enmime/badge.svg?branch=main)][Coverage Status]
 
 
 enmime is a MIME encoding and decoding library for Go, focused on generating and
@@ -35,7 +35,7 @@ version can be found at https://github.com/jhillyerd/enmime
 [Build Status]:    https://travis-ci.org/jhillyerd/enmime
 [Builder Usage]:   https://github.com/jhillyerd/enmime/wiki/Builder-Usage 
 [Coverage Status]: https://coveralls.io/github/jhillyerd/enmime
-[CONTRIBUTING.md]: https://github.com/jhillyerd/enmime/blob/master/CONTRIBUTING.md
+[CONTRIBUTING.md]: https://github.com/jhillyerd/enmime/blob/main/CONTRIBUTING.md
 [Inbucket]:        http://www.inbucket.org/
 [Golang]:          http://golang.org/
 [Go Report Card]:  https://goreportcard.com/report/github.com/jhillyerd/enmime
