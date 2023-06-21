@@ -1,6 +1,6 @@
 # enmime
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/jhillyerd/enmime)][Pkg Docs]
-[![Build Status](https://travis-ci.org/jhillyerd/enmime.svg?branch=main)][Build Status]
+[![Build and Test](https://github.com/jhillyerd/enmime/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/jhillyerd/enmime/actions/workflows/build-and-test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jhillyerd/enmime)][Go Report Card]
 [![Coverage Status](https://coveralls.io/repos/github/jhillyerd/enmime/badge.svg?branch=main)][Coverage Status]
 
