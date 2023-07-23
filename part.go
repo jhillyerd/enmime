@@ -44,9 +44,10 @@ type Part struct {
 	Charset           string            // The content charset encoding, may differ from charset in header.
 	OrigCharset       string            // The original content charset when a different charset was detected.
 
-	Errors   []*Error // Errors encountered while parsing this part.
-	Content  []byte   // Content after decoding, UTF-8 conversion if applicable.
-	Epilogue []byte   // Epilogue contains data following the closing boundary marker.
+	Errors        []*Error  // Errors encountered while parsing this part.
+	Content       []byte    // Content after decoding, UTF-8 conversion if applicable.
+	ContentReader io.Reader // Reader interface for pulling the content for encoding.
+	Epilogue      []byte    // Epilogue contains data following the closing boundary marker.
 
 	parser *Parser // Provides access to parsing options.
 

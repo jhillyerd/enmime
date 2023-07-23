@@ -2,6 +2,8 @@ package enmime_test
 
 import (
 	"bytes"
+	"io"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -102,6 +104,78 @@ func TestEncodePartQuotedPrintableHeaders(t *testing.T) {
 		t.Fatal(err)
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-printable-headers.golden")
+}
+
+type oneByOneReader struct {
+	content []byte
+	pos     int
+}
+
+func (r *oneByOneReader) Read(p []byte) (n int, err error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+	if r.pos >= len(r.content) {
+		return 0, io.EOF
+	}
+	p[0] = r.content[r.pos]
+	r.pos++
+	return 1, nil
+}
+
+func TestEncodePartContentReader(t *testing.T) {
+	contentLengths := []int{
+		0, 1, 2, 3, 4, // empty / nearly empty
+		55, 56, 57, 58, 59, 60, // lengths close to the length of a single line (57)
+		7294, 7295, 7296, 7297, 7298, // lengths close to the length of a single chunk (7296)
+	}
+
+	for _, oneByOne := range []bool{false, true} {
+		for _, contentLength := range contentLengths {
+			// create a part with random content
+			p := enmime.NewPart("application/zip")
+			p.Boundary = "enmime-abcdefg0123456789"
+			p.Charset = "binary"
+			p.ContentID = "mycontentid"
+			p.ContentTypeParams["param1"] = "myparameter1"
+			p.ContentTypeParams["param2"] = "myparameter2"
+			p.Disposition = "attachment"
+			p.FileName = "stuff.zip"
+			p.FileModDate, _ = time.Parse(time.RFC822, "01 Feb 03 04:05 GMT")
+
+			p.Content = make([]byte, contentLength)
+			_, err := rand.Read(p.Content)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// encode the part using byte slice
+			b1 := &bytes.Buffer{}
+			err = p.Encode(b1)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// encode the part using io.reader
+			if oneByOne {
+				p.ContentReader = &oneByOneReader{content: p.Content}
+			} else {
+				p.ContentReader = bytes.NewReader(p.Content)
+			}
+			p.Content = nil
+
+			b2 := &bytes.Buffer{}
+			err = p.Encode(b2)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// compare the results
+			if bytes.Compare(b1.Bytes(), b2.Bytes()) != 0 {
+				t.Errorf("[]byte encode and io.Reader encode produced different results for length %d", contentLength)
+			}
+		}
+	}
 }
 
 func TestEncodePartBinaryHeader(t *testing.T) {

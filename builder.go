@@ -3,6 +3,7 @@ package enmime
 import (
 	"bytes"
 	"errors"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"mime"
@@ -222,6 +223,16 @@ func (p *MailBuilder) GetHTML() []byte {
 func (p MailBuilder) AddAttachment(b []byte, contentType string, fileName string) MailBuilder {
 	part := NewPart(contentType)
 	part.Content = b
+	part.FileName = fileName
+	part.Disposition = cdAttachment
+	p.attachments = append(p.attachments, part)
+	return p
+}
+
+// AddAttachmentWithReader returns a copy of MailBuilder that includes the specified attachment, using an io.Reader to pull the content of the attachment.
+func (p MailBuilder) AddAttachmentWithReader(r io.Reader, contentType string, fileName string) MailBuilder {
+	part := NewPart(contentType)
+	part.ContentReader = r
 	part.FileName = fileName
 	part.Disposition = cdAttachment
 	p.attachments = append(p.attachments, part)
