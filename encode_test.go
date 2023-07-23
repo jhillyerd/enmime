@@ -171,7 +171,7 @@ func TestEncodePartContentReader(t *testing.T) {
 			}
 
 			// compare the results
-			if bytes.Compare(b1.Bytes(), b2.Bytes()) != 0 {
+			if !bytes.Equal(b1.Bytes(), b2.Bytes()) {
 				t.Errorf("[]byte encode and io.Reader encode produced different results for length %d", contentLength)
 			}
 		}
