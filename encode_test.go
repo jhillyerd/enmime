@@ -106,6 +106,8 @@ func TestEncodePartQuotedPrintableHeaders(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-printable-headers.golden")
 }
 
+// oneByOneReader implements io.Reader over a byte slice, returns a single byte on every Read request.
+// This object is used to validate that partial reads (=read calls that return n<len(p)) are handled correctly.
 type oneByOneReader struct {
 	content []byte
 	pos     int
@@ -149,7 +151,7 @@ func TestEncodePartContentReader(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// encode the part using byte slice
+			// encode the part using `Content` byte slice stored in the Part
 			b1 := &bytes.Buffer{}
 			err = p.Encode(b1)
 			if err != nil {

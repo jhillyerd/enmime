@@ -231,7 +231,7 @@ func (p *Part) encodeContentFromReader(b *bufio.Writer) error {
 	enc := base64.StdEncoding
 
 	chunk := make([]byte, readChunkSize) // contains a whole number of lines
-	copy(chunk, p.Content)
+	copy(chunk, p.Content)               // copy the data of the initial read that was issued by `Encode`
 	n := len(p.Content)
 
 	for {
