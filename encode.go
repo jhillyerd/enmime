@@ -26,12 +26,28 @@ const (
 	teBase64
 )
 
+const (
+	base64EncodedLineLen = 76
+	base64DecodedLineLen = base64EncodedLineLen * 3 / 4 // this is ok since lineLen is divisible by 4
+	linesPerChunk        = 128
+	readChunkSize        = base64DecodedLineLen * linesPerChunk
+)
+
 var crnl = []byte{'\r', '\n'}
 
 // Encode writes this Part and all its children to the specified writer in MIME format.
 func (p *Part) Encode(writer io.Writer) error {
 	if p.Header == nil {
 		p.Header = make(textproto.MIMEHeader)
+	}
+	if p.ContentReader != nil {
+		// read some data in order to check whether the content is empty
+		p.Content = make([]byte, readChunkSize)
+		n, err := p.ContentReader.Read(p.Content)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		p.Content = p.Content[:n]
 	}
 	cte := p.setupMIMEHeaders()
 	// Encode this part.
@@ -87,7 +103,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	cte := te7Bit
 	if len(p.Content) > 0 {
 		cte = teBase64
-		if p.TextContent() {
+		if p.TextContent() && p.ContentReader == nil {
 			cte = selectTransferEncoding(p.Content, false)
 			if p.Charset == "" {
 				p.Charset = utf8
@@ -174,11 +190,15 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 
 // encodeContent writes out the content in the selected encoding.
 func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) {
+	if p.ContentReader != nil {
+		return p.encodeContentFromReader(b)
+	}
+
 	switch cte {
 	case teBase64:
 		enc := base64.StdEncoding
 		text := make([]byte, enc.EncodedLen(len(p.Content)))
-		base64.StdEncoding.Encode(text, p.Content)
+		enc.Encode(text, p.Content)
 		// Wrap lines.
 		lineLen := 76
 		for len(text) > 0 {
@@ -203,6 +223,54 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 		_, err = b.Write(p.Content)
 	}
 	return err
+}
+
+// encodeContentFromReader writes out the content read from the reader using base64 encoding.
+func (p *Part) encodeContentFromReader(b *bufio.Writer) error {
+	text := make([]byte, base64EncodedLineLen) // a single base64 encoded line
+	enc := base64.StdEncoding
+
+	chunk := make([]byte, readChunkSize) // contains a whole number of lines
+	copy(chunk, p.Content)               // copy the data of the initial read that was issued by `Encode`
+	n := len(p.Content)
+
+	for {
+		// call read until we get a full chunk / error
+		for n < len(chunk) {
+			c, err := p.ContentReader.Read(chunk[n:])
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
+
+			n += c
+		}
+
+		for i := 0; i < n; i += base64DecodedLineLen {
+			size := n - i
+			if size > base64DecodedLineLen {
+				size = base64DecodedLineLen
+			}
+
+			enc.Encode(text, chunk[i:i+size])
+			if _, err := b.Write(text[:enc.EncodedLen(size)]); err != nil {
+				return err
+			}
+			if _, err := b.Write(crnl); err != nil {
+				return err
+			}
+		}
+
+		if n < len(chunk) {
+			break
+		}
+
+		n = 0
+	}
+
+	return nil
 }
 
 // selectTransferEncoding scans content for non-ASCII characters and selects 'b' or 'q' encoding.
