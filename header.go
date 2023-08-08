@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mime"
 	"net/mail"
+	nettp "net/textproto"
 	"strings"
 
 	"github.com/jhillyerd/enmime/internal/coding"
@@ -120,7 +121,7 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 
 // readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
 // Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
-func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
+func readHeader(r *bufio.Reader, p *Part) (nettp.MIMEHeader, error) {
 	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
 	buf := &bytes.Buffer{}
 	tp := textproto.NewReader(r)
@@ -194,7 +195,7 @@ line:
 	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadEmailMIMEHeader()
-	return header, errors.WithStack(err)
+	return nettp.MIMEHeader(header), errors.WithStack(err)
 }
 
 // decodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?

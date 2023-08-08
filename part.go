@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"mime/quotedprintable"
+	nettp "net/textproto"
 	"strconv"
 	"strings"
 	"time"
@@ -27,11 +28,11 @@ const (
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
 // are parsed out of the header for easier access.
 type Part struct {
-	PartID      string               // PartID labels this part's position within the tree.
-	Parent      *Part                // Parent of this part (can be nil.)
-	FirstChild  *Part                // FirstChild is the top most child of this part.
-	NextSibling *Part                // NextSibling of this part.
-	Header      textproto.MIMEHeader // Header for this part.
+	PartID      string           // PartID labels this part's position within the tree.
+	Parent      *Part            // Parent of this part (can be nil.)
+	FirstChild  *Part            // FirstChild is the top most child of this part.
+	NextSibling *Part            // NextSibling of this part.
+	Header      nettp.MIMEHeader // Header for this part.
 
 	Boundary          string            // Boundary marker used within this part.
 	ContentID         string            // ContentID header for cid URL scheme.
@@ -56,7 +57,7 @@ type Part struct {
 // NewPart creates a new Part object.
 func NewPart(contentType string) *Part {
 	return &Part{
-		Header:            make(textproto.MIMEHeader),
+		Header:            make(nettp.MIMEHeader),
 		ContentType:       contentType,
 		ContentTypeParams: make(map[string]string),
 		parser:            &defaultParser,
@@ -115,7 +116,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	if err != nil {
 		return err
 	}
-	p.Header = header
+	p.Header = nettp.MIMEHeader(header)
 	ctype := header.Get(hnContentType)
 	if ctype == "" {
 		if defaultContentType == "" {
@@ -146,8 +147,9 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
+	header := textproto.MIMEHeader(p.Header)
 	// Determine content disposition, filename, character set.
-	disposition, dparams, _, err := mediatype.Parse(p.Header.Get(hnContentDisposition))
+	disposition, dparams, _, err := mediatype.Parse(header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
@@ -269,12 +271,13 @@ func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
 // placing the result into Part.Content.  IO errors will be returned immediately; other errors
 // and warnings will be added to Part.Errors.
 func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) error {
+	header := textproto.MIMEHeader(p.Header)
 	// contentReader will point to the end of the content decoding pipeline.
 	contentReader := r
 	// b64cleaner aggregates errors, must maintain a reference to it to get them later.
 	var b64cleaner *coding.Base64Cleaner
 	// Build content decoding reader.
-	encoding := p.Header.Get(hnContentEncoding)
+	encoding := header.Get(hnContentEncoding)
 	validEncoding := true
 	switch strings.ToLower(encoding) {
 	case cteQuotedPrintable:

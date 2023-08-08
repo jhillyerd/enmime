@@ -5,6 +5,7 @@ import (
 	"io"
 	"mime"
 	"net/mail"
+	nettp "net/textproto"
 	"strings"
 	"time"
 
@@ -26,8 +27,8 @@ type Envelope struct {
 	// All non-text parts that were not placed in Attachments or Inlines, such as multipart/related
 	// content.
 	OtherParts []*Part
-	Errors     []*Error              // Errors encountered while parsing
-	header     *textproto.MIMEHeader // Header from original message
+	Errors     []*Error          // Errors encountered while parsing
+	header     *nettp.MIMEHeader // Header from original message
 }
 
 // GetHeaderKeys returns a list of header keys seen in this message. Get
