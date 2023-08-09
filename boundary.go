@@ -3,12 +3,11 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	stderrors "errors"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"unicode"
-
-	"github.com/pkg/errors"
 )
 
 // This constant needs to be at least 76 for this package to work correctly.  This is because
@@ -16,7 +15,7 @@ import (
 // from it.
 const peekBufferSize = 4096
 
-var errNoBoundaryTerminator = stderrors.New("expected boundary not present")
+var errNoBoundaryTerminator = errors.New("expected boundary not present")
 
 type boundaryReader struct {
 	finished    bool          // No parts remain when finished
@@ -84,7 +83,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		var cs []byte
 		cs, err = b.r.Peek(1)
 		if err != nil && err != io.EOF {
-			return 0, errors.WithStack(err)
+			return 0, fmt.Errorf("failed to read content: %w", err)
 		}
 		// Ensure that we can switch on the first byte of 'cs' without panic.
 		if len(cs) > 0 {
@@ -133,7 +132,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 							}
 							return n, io.EOF
 						default:
-							return 0, errors.WithStack(err)
+							return 0, fmt.Errorf("failed to read content: %w", err)
 						}
 					}
 				case io.EOF:
@@ -155,11 +154,11 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 				break
 			}
 
-			return 0, errors.WithStack(err)
+			return 0, fmt.Errorf("failed to read content: %w", err)
 		}
 
 		if err = b.buffer.WriteByte(next); err != nil {
-			return 0, errors.WithStack(err)
+			return 0, fmt.Errorf("failed to read content: %w", err)
 		}
 	}
 
@@ -196,7 +195,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			if err == nil || err == io.EOF {
 				break
 			} else if err != bufio.ErrBufferFull || len(segment) == 0 {
-				return false, errors.WithStack(err)
+				return false, fmt.Errorf("failed to move over the boundary: %w", err)
 			}
 		}
 
@@ -224,7 +223,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			continue
 		}
 		b.finished = true
-		return false, errors.WithMessagef(errNoBoundaryTerminator, "expecting boundary %q, got %q", string(b.prefix), string(line))
+		return false, fmt.Errorf("expecting boundary %q, got %q: %w", string(b.prefix), string(line), errNoBoundaryTerminator)
 	}
 }
 
