@@ -329,10 +329,6 @@ func IsBase64CorruptInputError(err error) bool {
 		return false
 	}
 	_, ok := err.(base64.CorruptInputError)
-	for !ok && err != nil {
-		err = errors.Unwrap(err)
-		_, ok = err.(base64.CorruptInputError)
-	}
 	return ok
 }
 
