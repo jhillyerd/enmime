@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -307,7 +306,7 @@ func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	}
 	input := bytes.NewReader(textBytes)
 	reader := transform.NewReader(input, csentry.e.NewDecoder())
-	output, err := ioutil.ReadAll(reader)
+	output, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}

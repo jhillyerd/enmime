@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"unicode"
 )
 
@@ -177,7 +176,7 @@ func (b *boundaryReader) Next() (bool, error) {
 	}
 	if b.partsRead > 0 {
 		// Exhaust the current part to prevent errors when moving to the next part.
-		_, _ = io.Copy(ioutil.Discard, b)
+		_, _ = io.Copy(io.Discard, b)
 	}
 	for {
 		var line []byte = nil

@@ -3,7 +3,6 @@ package enmime_test
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/mail"
 	"strings"
 	"testing"
@@ -39,7 +38,7 @@ func TestDecodeRFC2047(t *testing.T) {
 func TestDecodeHeaders(t *testing.T) {
 	t.Run("rfc2047 sample", func(t *testing.T) {
 		r := test.OpenTestData("mail", "qp-utf8-header.raw")
-		b, err := ioutil.ReadAll(r)
+		b, err := io.ReadAll(r)
 		if err != nil {
 			t.Errorf("%+v", err)
 		}
@@ -54,7 +53,7 @@ func TestDecodeHeaders(t *testing.T) {
 
 	t.Run("no break between headers and content", func(t *testing.T) {
 		r := test.OpenTestData("mail", "qp-utf8-header-no-break.raw")
-		b, err := ioutil.ReadAll(r)
+		b, err := io.ReadAll(r)
 		if err != nil {
 			t.Errorf("%+v", err)
 		}
@@ -69,7 +68,7 @@ func TestDecodeHeaders(t *testing.T) {
 
 	t.Run("textproto header read error", func(t *testing.T) {
 		r := test.OpenTestData("low-quality", "bad-header-start.raw")
-		b, err := ioutil.ReadAll(r)
+		b, err := io.ReadAll(r)
 		if err != nil {
 			t.Errorf("%+v", err)
 		}
@@ -84,7 +83,7 @@ func TestDecodeHeaders(t *testing.T) {
 
 	t.Run("rfc2047 recursive sample", func(t *testing.T) {
 		r := test.OpenTestData("mail", "qp-utf8-header-recursed.raw")
-		b, err := ioutil.ReadAll(r)
+		b, err := io.ReadAll(r)
 		if err != nil {
 			t.Errorf("%+v", err)
 		}
@@ -100,7 +99,7 @@ func TestDecodeHeaders(t *testing.T) {
 
 func BenchmarkHumanHeadersOnly(b *testing.B) {
 	r := test.OpenTestData("mail", "qp-utf8-header.raw")
-	eml, err := ioutil.ReadAll(r)
+	eml, err := io.ReadAll(r)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -123,7 +122,7 @@ func BenchmarkHumanHeadersOnly(b *testing.B) {
 
 func BenchmarkReadEnvelope(b *testing.B) {
 	r := test.OpenTestData("mail", "qp-utf8-header.raw")
-	eml, err := ioutil.ReadAll(r)
+	eml, err := io.ReadAll(r)
 	if err != nil {
 		b.Fatal(err)
 	}

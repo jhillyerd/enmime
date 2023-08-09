@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"mime"
 	"net/mail"
+	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -247,7 +247,7 @@ func (p MailBuilder) AddFileAttachment(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p
@@ -282,7 +282,7 @@ func (p MailBuilder) AddFileInline(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p
@@ -317,7 +317,7 @@ func (p MailBuilder) AddFileOtherPart(path string) MailBuilder {
 	if p.err != nil {
 		return p
 	}
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		p.err = err
 		return p

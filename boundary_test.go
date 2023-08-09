@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 )
@@ -74,7 +73,7 @@ func TestBoundaryReader(t *testing.T) {
 	for _, tt := range ttable {
 		ir := bufio.NewReader(strings.NewReader(tt.input))
 		br := newBoundaryReader(ir, tt.boundary)
-		output, err := ioutil.ReadAll(br)
+		output, err := io.ReadAll(br)
 		if err != nil {
 			t.Fatalf("Got error: %v\ninput: %q", err, tt.input)
 		}
@@ -86,7 +85,7 @@ func TestBoundaryReader(t *testing.T) {
 		}
 
 		// Test the data remaining in reader is correct
-		rest, err := ioutil.ReadAll(ir)
+		rest, err := io.ReadAll(ir)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -134,7 +133,7 @@ func TestBoundaryReaderEOF(t *testing.T) {
 
 	ir := bufio.NewReader(strings.NewReader(input))
 	br := newBoundaryReader(ir, boundary)
-	output, err := ioutil.ReadAll(br)
+	output, err := io.ReadAll(br)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +213,7 @@ func TestBoundaryReaderParts(t *testing.T) {
 			if !next {
 				t.Fatal("Next() = false, want: true")
 			}
-			output, err := ioutil.ReadAll(br)
+			output, err := io.ReadAll(br)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -354,7 +353,7 @@ func TestBoundaryReaderBufferBoundaryAbut(t *testing.T) {
 	if !next {
 		t.Fatal("Next() = false, want: true")
 	}
-	output, err := ioutil.ReadAll(br)
+	output, err := io.ReadAll(br)
 	if err != nil {
 		t.Fatalf("Got error: %v", err)
 	}
@@ -370,7 +369,7 @@ func TestBoundaryReaderBufferBoundaryAbut(t *testing.T) {
 	if !next {
 		t.Fatal("Next() = false, want: true")
 	}
-	output, err = ioutil.ReadAll(br)
+	output, err = io.ReadAll(br)
 	if err != nil {
 		t.Fatalf("Got error: %v", err)
 	}
@@ -410,7 +409,7 @@ func TestBoundaryReaderBufferBoundaryCross(t *testing.T) {
 	if !next {
 		t.Fatal("Next() = false, want: true")
 	}
-	output, err := ioutil.ReadAll(br)
+	output, err := io.ReadAll(br)
 	if err != nil {
 		t.Fatalf("Got error: %v", err)
 	}
@@ -426,7 +425,7 @@ func TestBoundaryReaderBufferBoundaryCross(t *testing.T) {
 	if !next {
 		t.Fatal("Next() = false, want: true")
 	}
-	output, err = ioutil.ReadAll(br)
+	output, err = io.ReadAll(br)
 	if err != nil {
 		t.Fatalf("Got error: %v", err)
 	}
@@ -548,7 +547,7 @@ func BenchmarkBoundaryReader(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ir := bufio.NewReader(strings.NewReader(input))
 		br := newBoundaryReader(ir, boundary)
-		_, err = io.Copy(ioutil.Discard, br)
+		_, err = io.Copy(io.Discard, br)
 		if err != nil {
 			b.Fatalf("Failed to read content: %+v", err)
 		}

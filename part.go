@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"mime/quotedprintable"
 	"strconv"
@@ -169,7 +168,7 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 }
 
 func (p *Part) readPartContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) ([]byte, error) {
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		if readPartErrorPolicy != nil && readPartErrorPolicy(p, err) {
 			p.addWarning(ErrorMalformedChildPart, "partial content: %s", err.Error())
@@ -467,7 +466,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	}
 
 	// Store any content following the closing boundary marker into the epilogue.
-	epilogue, err := ioutil.ReadAll(reader)
+	epilogue, err := io.ReadAll(reader)
 	if err != nil {
 		return fmt.Errorf("failed to parse parts: %w", err)
 	}

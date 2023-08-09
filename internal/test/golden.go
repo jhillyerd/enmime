@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,14 +129,14 @@ func DiffGolden(t *testing.T, got []byte, path ...string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden, err := ioutil.ReadAll(f)
+	golden, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(got, golden) {
 		if *update {
 			// Update golden file
-			if err := ioutil.WriteFile(pathstr, got, 0666); err != nil {
+			if err := os.WriteFile(pathstr, got, 0666); err != nil {
 				t.Fatal(err)
 			}
 		} else {
