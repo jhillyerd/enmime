@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -35,7 +34,7 @@ func newDefaultExtractor() *extractor {
 		stdOut:    os.Stdout,
 		exit:      os.Exit,
 		wd:        os.Getwd,
-		fileWrite: ioutil.WriteFile,
+		fileWrite: os.WriteFile,
 	}
 }
 

@@ -2,7 +2,7 @@ package coding_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
@@ -40,7 +40,7 @@ func TestCharsetReader(t *testing.T) {
 		if err != nil {
 			t.Error("err should be nil, got:", err)
 		}
-		result, err := ioutil.ReadAll(outputReader)
+		result, err := io.ReadAll(outputReader)
 		if err != nil {
 			t.Error("err should be nil, got:", err)
 		}

@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +20,7 @@ func TestExtractEmptyFilename(t *testing.T) {
 	b := &bytes.Buffer{}
 	testExtractor := &extractor{
 		errOut: b,
-		stdOut: ioutil.Discard,
+		stdOut: io.Discard,
 	}
 	exitCode := testExtractor.extract("", "")
 	if exitCode != 1 {
@@ -38,7 +38,7 @@ func TestExtractEmptyOutputDirectory(t *testing.T) {
 	}
 	testExtractor := &extractor{
 		errOut: b,
-		stdOut: ioutil.Discard,
+		stdOut: io.Discard,
 		wd:     workingDirectoryFn,
 	}
 	exitCode := testExtractor.extract("some.file", "")
@@ -54,7 +54,7 @@ func TestExtractFailedToOpenFile(t *testing.T) {
 	b := &bytes.Buffer{}
 	testExtractor := &extractor{
 		errOut: b,
-		stdOut: ioutil.Discard,
+		stdOut: io.Discard,
 		wd:     os.Getwd,
 	}
 	exitCode := testExtractor.extract("some.file", "")
@@ -70,7 +70,7 @@ func TestExtractFailedToParse(t *testing.T) {
 	s := &bytes.Buffer{}
 	testExtractor := &extractor{
 		errOut: s,
-		stdOut: ioutil.Discard,
+		stdOut: io.Discard,
 		wd:     os.Getwd,
 	}
 	exitCode := testExtractor.extract(filepath.Join("..", "..", "testdata", "mail", "erroneous.raw"), "")
@@ -88,7 +88,7 @@ func TestExtractAttachmentWriteFail(t *testing.T) {
 		return fmt.Errorf("AttachmentWriteFail")
 	}
 	testExtractor := &extractor{
-		errOut:    ioutil.Discard,
+		errOut:    io.Discard,
 		stdOut:    s,
 		wd:        os.Getwd,
 		fileWrite: fw,
@@ -111,7 +111,7 @@ func TestExtractSuccess(t *testing.T) {
 	}
 	testExtractor := &extractor{
 		errOut:    b,
-		stdOut:    ioutil.Discard,
+		stdOut:    io.Discard,
 		wd:        os.Getwd,
 		fileWrite: fw,
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -110,7 +109,7 @@ func TestQPCleanerLineBreak(t *testing.T) {
 	inbuf := bytes.NewBuffer(input)
 	qp := coding.NewQPCleaner(inbuf)
 
-	output, err := ioutil.ReadAll(qp)
+	output, err := io.ReadAll(qp)
 	if err != nil {
 		t.Fatal(err)
 	}

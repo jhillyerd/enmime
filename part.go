@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"mime/quotedprintable"
 	"strconv"
@@ -16,8 +17,6 @@ import (
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -169,7 +168,7 @@ func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 }
 
 func (p *Part) readPartContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) ([]byte, error) {
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		if readPartErrorPolicy != nil && readPartErrorPolicy(p, err) {
 			p.addWarning(ErrorMalformedChildPart, "partial content: %s", err.Error())
@@ -196,7 +195,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 
 	buf, err := p.readPartContent(r, readPartErrorPolicy)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	cs, err := cd.DetectBest(buf)
@@ -305,7 +304,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 	// Decode and store content.
 	content, err := p.readPartContent(contentReader, readPartErrorPolicy)
 	if err != nil {
-		return p.base64CorruptInputCheck(errors.WithStack(err))
+		return p.base64CorruptInputCheck(fmt.Errorf("failed to decode content: %w", err))
 	}
 	p.Content = content
 	// Collect base64 errors.
@@ -326,12 +325,11 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 //
 // It can be used to create ReadPartErrorPolicy functions.
 func IsBase64CorruptInputError(err error) bool {
-	switch errors.Cause(err).(type) {
-	case base64.CorruptInputError:
-		return true
-	default:
+	if err == nil {
 		return false
 	}
+	_, ok := err.(base64.CorruptInputError)
+	return ok
 }
 
 // base64CorruptInputCheck will avoid fatal failure on corrupt base64 input
@@ -408,7 +406,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	br := newBoundaryReader(reader, parent.Boundary)
 	for indexPartID := 1; true; indexPartID++ {
 		next, err := br.Next()
-		if err != nil && errors.Cause(err) != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			return err
 		}
 		if br.unbounded {
@@ -464,9 +462,9 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 	}
 
 	// Store any content following the closing boundary marker into the epilogue.
-	epilogue, err := ioutil.ReadAll(reader)
+	epilogue, err := io.ReadAll(reader)
 	if err != nil {
-		return errors.WithStack(err)
+		return fmt.Errorf("failed to parse parts: %w", err)
 	}
 	parent.Epilogue = epilogue
 

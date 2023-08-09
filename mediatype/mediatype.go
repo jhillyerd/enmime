@@ -8,7 +8,6 @@ import (
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/stringutil"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -44,7 +43,7 @@ func Parse(ctype string) (mtype string, params map[string]string, invalidParams 
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
 		}
-		return "", nil, nil, errors.WithStack(err)
+		return "", nil, nil, fmt.Errorf("parsing failed: %w", err)
 	}
 
 	if mtype == ctPlaceholder {
