@@ -3,11 +3,12 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"io"
 
 	"github.com/jhillyerd/enmime/internal/coding"
 	"github.com/jhillyerd/enmime/internal/textproto"
+
+	"github.com/pkg/errors"
 )
 
 var defaultHeadersList = []string{
@@ -39,9 +40,10 @@ func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, erro
 	b = ensureHeaderBoundary(b)
 	tr := textproto.NewReader(bufio.NewReader(bytes.NewReader(b)))
 	headers, err := tr.ReadMIMEHeader()
-
-	// io.EOF is expected
-	if err != nil && !errors.Is(err, io.EOF) {
+	switch errors.Cause(err) {
+	case nil, io.EOF:
+	// carry on, io.EOF is expected
+	default:
 		return nil, err
 	}
 	headerList := defaultHeadersList

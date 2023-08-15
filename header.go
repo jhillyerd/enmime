@@ -12,6 +12,8 @@ import (
 	"github.com/jhillyerd/enmime/internal/stringutil"
 	"github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -192,10 +194,7 @@ line:
 	buf.Write([]byte{'\r', '\n'})
 	tr := textproto.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadEmailMIMEHeader()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read header: %w", err)
-	}
-	return header, nil
+	return header, errors.WithStack(err)
 }
 
 // decodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?

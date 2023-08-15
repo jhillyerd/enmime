@@ -3,10 +3,11 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestBoundaryReader(t *testing.T) {
@@ -462,7 +463,7 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	if n != 0 {
 		t.Fatal("Read() should not have read any bytes, failed")
 	}
-	if !errors.Is(err, bufio.ErrBufferFull) {
+	if errors.Cause(err) != bufio.ErrBufferFull {
 		t.Fatal("Read() should have returned bufio.ErrBufferFull error, failed")
 	}
 	// Next method to return a non io.EOF error.
@@ -470,7 +471,7 @@ func TestBoundaryReaderReadErrors(t *testing.T) {
 	if next {
 		t.Fatal("Next() should have returned false, failed")
 	}
-	if !errors.Is(err, bufio.ErrBufferFull) {
+	if errors.Cause(err) != bufio.ErrBufferFull {
 		t.Fatal("Read() should have returned bufio.ErrBufferFull error, failed")
 	}
 }
