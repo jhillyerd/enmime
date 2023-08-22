@@ -5,13 +5,13 @@ import (
 	"io"
 	"mime"
 	"net/mail"
-	nettp "net/textproto"
+	"net/textproto"
 	"strings"
 	"time"
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/textproto"
+	inttp "github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
 
 	"github.com/pkg/errors"
@@ -27,8 +27,8 @@ type Envelope struct {
 	// All non-text parts that were not placed in Attachments or Inlines, such as multipart/related
 	// content.
 	OtherParts []*Part
-	Errors     []*Error          // Errors encountered while parsing
-	header     *nettp.MIMEHeader // Header from original message
+	Errors     []*Error              // Errors encountered while parsing
+	header     *textproto.MIMEHeader // Header from original message
 }
 
 // GetHeaderKeys returns a list of header keys seen in this message. Get
@@ -59,7 +59,7 @@ func (e *Envelope) GetHeaderValues(name string) []string {
 		return []string{}
 	}
 
-	rawValues := (*e.header)[textproto.CanonicalEmailMIMEHeaderKey(name)]
+	rawValues := (*e.header)[inttp.CanonicalEmailMIMEHeaderKey(name)]
 	values := make([]string, 0, len(rawValues))
 	for _, v := range rawValues {
 		values = append(values, coding.DecodeExtHeader(v))
