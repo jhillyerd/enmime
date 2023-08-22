@@ -7,13 +7,14 @@ import (
 	"io"
 	"math/rand"
 	"mime/quotedprintable"
+	"net/textproto"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/textproto"
+	inttp "github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
 
 	"github.com/pkg/errors"
@@ -115,7 +116,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	if err != nil {
 		return err
 	}
-	p.Header = header
+	p.Header = textproto.MIMEHeader(header)
 	ctype := header.Get(hnContentType)
 	if ctype == "" {
 		if defaultContentType == "" {
@@ -146,8 +147,9 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 // setupContentHeaders uses Content-Type media params and Content-Disposition headers to populate
 // the disposition, filename, and charset fields.
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
+	header := inttp.MIMEHeader(p.Header)
 	// Determine content disposition, filename, character set.
-	disposition, dparams, _, err := mediatype.Parse(p.Header.Get(hnContentDisposition))
+	disposition, dparams, _, err := mediatype.Parse(header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
@@ -269,12 +271,13 @@ func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
 // placing the result into Part.Content.  IO errors will be returned immediately; other errors
 // and warnings will be added to Part.Errors.
 func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolicy) error {
+	header := inttp.MIMEHeader(p.Header)
 	// contentReader will point to the end of the content decoding pipeline.
 	contentReader := r
 	// b64cleaner aggregates errors, must maintain a reference to it to get them later.
 	var b64cleaner *coding.Base64Cleaner
 	// Build content decoding reader.
-	encoding := p.Header.Get(hnContentEncoding)
+	encoding := header.Get(hnContentEncoding)
 	validEncoding := true
 	switch strings.ToLower(encoding) {
 	case cteQuotedPrintable:

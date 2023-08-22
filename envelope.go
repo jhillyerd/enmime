@@ -5,12 +5,13 @@ import (
 	"io"
 	"mime"
 	"net/mail"
+	"net/textproto"
 	"strings"
 	"time"
 
 	"github.com/jaytaylor/html2text"
 	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/textproto"
+	inttp "github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
 
 	"github.com/pkg/errors"
@@ -58,7 +59,7 @@ func (e *Envelope) GetHeaderValues(name string) []string {
 		return []string{}
 	}
 
-	rawValues := (*e.header)[textproto.CanonicalEmailMIMEHeaderKey(name)]
+	rawValues := (*e.header)[inttp.CanonicalEmailMIMEHeaderKey(name)]
 	values := make([]string, 0, len(rawValues))
 	for _, v := range rawValues {
 		values = append(values, coding.DecodeExtHeader(v))

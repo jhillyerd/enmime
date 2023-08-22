@@ -3,7 +3,7 @@ package enmime
 import (
 	"strings"
 
-	"github.com/jhillyerd/enmime/internal/textproto"
+	inttp "github.com/jhillyerd/enmime/internal/textproto"
 	"github.com/jhillyerd/enmime/mediatype"
 )
 
@@ -35,7 +35,7 @@ func detectMultipartMessage(root *Part, multipartWOBoundaryAsSinglepart bool) bo
 //   - Content-Disposition: attachment; filename="frog.jpg"
 //   - Content-Disposition: inline; filename="frog.jpg"
 //   - Content-Type: attachment; filename="frog.jpg"
-func detectAttachmentHeader(header textproto.MIMEHeader) bool {
+func detectAttachmentHeader(header inttp.MIMEHeader) bool {
 	mtype, params, _, _ := mediatype.Parse(header.Get(hnContentDisposition))
 	if strings.ToLower(mtype) == cdAttachment ||
 		(strings.ToLower(mtype) == cdInline && len(params) > 0) {
@@ -49,7 +49,7 @@ func detectAttachmentHeader(header textproto.MIMEHeader) bool {
 // detectTextHeader returns true, if the the MIME headers define a valid 'text/plain' or 'text/html'
 // part.  If the emptyContentTypeIsPlain argument is set to true, a missing Content-Type header will
 // result in a positive plain part detection.
-func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) bool {
+func detectTextHeader(header inttp.MIMEHeader, emptyContentTypeIsText bool) bool {
 	ctype := header.Get(hnContentType)
 	if ctype == "" && emptyContentTypeIsText {
 		return true
@@ -67,23 +67,24 @@ func detectTextHeader(header textproto.MIMEHeader, emptyContentTypeIsText bool) 
 
 // detectBinaryBody returns true if the mail header defines a binary body.
 func detectBinaryBody(root *Part) bool {
-	if detectTextHeader(root.Header, true) {
+	header := inttp.MIMEHeader(root.Header) // Use internal header methods.
+	if detectTextHeader(header, true) {
 		// It is text/plain, but an attachment.
 		// Content-Type: text/plain; name="test.csv"
 		// Content-Disposition: attachment; filename="test.csv"
 		// Check for attachment only, or inline body is marked
 		// as attachment, too.
-		mtype, _, _, _ := mediatype.Parse(root.Header.Get(hnContentDisposition))
+		mtype, _, _, _ := mediatype.Parse(header.Get(hnContentDisposition))
 		return strings.ToLower(mtype) == cdAttachment
 	}
 
-	isBin := detectAttachmentHeader(root.Header)
+	isBin := detectAttachmentHeader(header)
 	if !isBin {
 		// This must be an attachment, if the Content-Type is not
 		// 'text/plain' or 'text/html'.
 		// Example:
 		// Content-Type: application/pdf; name="doc.pdf"
-		mtype, _, _, _ := mediatype.Parse(root.Header.Get(hnContentType))
+		mtype, _, _, _ := mediatype.Parse(header.Get(hnContentType))
 		mtype = strings.ToLower(mtype)
 		if mtype != ctTextPlain && mtype != ctTextHTML {
 			return true
