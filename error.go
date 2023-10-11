@@ -84,3 +84,22 @@ func (p *Part) addProblem(err *Error) {
 		p.Errors = append(p.Errors, err)
 	}
 }
+
+// ErrorCollector is an interface for collecting errors and warnings during
+// parsing.
+type ErrorCollector interface {
+	AddError(name string, detailFmt string, args ...any)
+	AddWarning(name string, detailFmt string, args ...any)
+}
+
+type partErrorCollector struct {
+	part *Part
+}
+
+func (p *partErrorCollector) AddError(name string, detailFmt string, args ...any) {
+	p.part.addError(name, detailFmt, args...)
+}
+
+func (p *partErrorCollector) AddWarning(name string, detailFmt string, args ...any) {
+	p.part.addWarning(name, detailFmt, args...)
+}
