@@ -1,0 +1,9 @@
+Subject: Test subject
+From: me@me.com
+To: you@you.com
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html><html><body><h1>My First Heading</h1><p>My first paragraph.<=
+/p></body></html>
