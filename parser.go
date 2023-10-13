@@ -13,6 +13,9 @@ func AllowCorruptTextPartErrorPolicy(p *Part, err error) bool {
 	return false
 }
 
+// CustomParseMediaType parses media type. See ParseMediaType for more details
+type CustomParseMediaType func(ctype string) (mtype string, params map[string]string, invalidParams []string, err error)
+
 // Parser parses MIME.
 // Default parser is a valid one.
 type Parser struct {
@@ -21,6 +24,7 @@ type Parser struct {
 	readPartErrorPolicy             ReadPartErrorPolicy
 	skipMalformedParts              bool
 	rawContent                      bool
+	customParseMediaType            CustomParseMediaType
 }
 
 // defaultParser is a Parser with default configuration.
