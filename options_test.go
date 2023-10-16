@@ -60,40 +60,9 @@ func ExampleSetCustomParseMediaType() {
 		return ParseMediaType(modifiedStr)
 	}
 
-	invalidMessageContent := `Return-path: <enmime.one@parser.git>
-Envelope-to: info@parser.git
-Delivery-date: Mon, 09 Oct 2023 15:34:08 +0300
-From: "Enmime Parser One" <enmime.one@parser.git>
-To: "Enmime Parser Two" <enmime.two@parser.git>
-Cc: <info@parser.git>
-Subject: pamir attachment
-Date: Mon, 9 Oct 2023 15:34:05 +0300
-Message-ID: <0000000000000000000000000000000@parser.git>
-MIME-Version: 1.0
+	invalidMessageContent := `From: <enmime@parser.git>
 Content-Type: multipart/mixed;
 	boundary="----=_NextPart_000_000F_01D9FAC6.09EB3B60"
-X-Mailer: Microsoft Outlook 15.0
-X-Sender: enmime.one@parser.git
-X-Whitelist-IP: Yes
-
-This is a multipart message in MIME format.
-
-------=_NextPart_000_000F_01D9FAC6.09EB3B60
-Content-Type: multipart/related;
-	boundary="----=_NextPart_001_0010_01D9FAC6.09EB3B60"
-
-
-------=_NextPart_001_0010_01D9FAC6.09EB3B60
-Content-Type: multipart/alternative;
-	boundary="----=_NextPart_002_0011_01D9FAC6.09EB3B60"
-
-
-------=_NextPart_002_0011_01D9FAC6.09EB3B60
-Content-Type: text/plain;
-	charset="windows-1257"
-Content-Transfer-Encoding: quoted-printable
-
-testing invalid attachment content-type
 
 ------=_NextPart_000_000F_01D9FAC6.09EB3B60
 Content-Type: application/Pamir Viewer;
