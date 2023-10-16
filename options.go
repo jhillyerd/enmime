@@ -64,7 +64,8 @@ func (o rawContentOption) apply(p *Parser) {
 	p.rawContent = bool(o)
 }
 
-// SetCustomParseMediaType if provided, will be used to parse media type instead of default ParseMediaType
+// SetCustomParseMediaType if provided, will be used to parse media type instead of the default ParseMediaType
+// function.  This may be used to parse media type parameters that would otherwise be considered malformed.
 // By default parsing happens using ParseMediaType
 func SetCustomParseMediaType(customParseMediaType CustomParseMediaType) Option {
 	return parseMediaTypeOption(customParseMediaType)
