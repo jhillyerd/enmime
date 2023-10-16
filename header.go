@@ -119,9 +119,10 @@ func ParseMediaType(ctype string) (mtype string, params map[string]string, inval
 	return mediatype.Parse(ctype)
 }
 
-// readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
-// Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
-func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
+// ReadHeader reads a block of SMTP or MIME headers and returns a
+// textproto.MIMEHeader. Header parse warnings & errors will be added to
+// ErrorCollector, io errors will be returned directly.
+func ReadHeader(r *bufio.Reader, p ErrorCollector) (textproto.MIMEHeader, error) {
 	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
 	buf := &bytes.Buffer{}
 	tp := inttp.NewReader(r)
@@ -145,7 +146,7 @@ line:
 		}
 		if firstColon == 0 {
 			// Can't parse line starting with colon: skip
-			p.addError(ErrorMalformedHeader, "Header line %q started with a colon", s)
+			p.AddError(ErrorMalformedHeader, "Header line %q started with a colon", s)
 			continue
 		}
 		if firstColon > 0 {
@@ -162,7 +163,7 @@ line:
 			// in header keys are no longer allowed; https://github.com/golang/go/issues/53188
 			for _, c := range s[:firstColon] {
 				if c != ' ' && !inttp.ValidEmailHeaderFieldByte(c) {
-					p.addError(
+					p.AddError(
 						ErrorMalformedHeader, "Header name %q contains invalid character %q", s, c)
 					continue line
 				}
@@ -183,7 +184,7 @@ line:
 				// Attempt to detect and repair a non-indented continuation of previous line
 				buf.WriteByte(' ')
 				buf.Write(s)
-				p.addWarning(ErrorMalformedHeader, "Continued line %q was not indented", s)
+				p.AddWarning(ErrorMalformedHeader, "Continued line %q was not indented", s)
 			} else {
 				// Empty line, finish header parsing
 				buf.Write([]byte{'\r', '\n'})
@@ -196,6 +197,12 @@ line:
 	tr := inttp.NewReader(bufio.NewReader(buf))
 	header, err := tr.ReadEmailMIMEHeader()
 	return textproto.MIMEHeader(header), errors.WithStack(err)
+}
+
+// readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
+// Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
+func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
+	return ReadHeader(r, &partErrorCollector{p})
 }
 
 // decodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?
