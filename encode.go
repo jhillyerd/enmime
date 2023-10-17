@@ -24,6 +24,7 @@ const (
 	te7Bit transferEncoding = iota
 	teQuoted
 	teBase64
+	teRaw
 )
 
 const (
@@ -192,6 +193,10 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) {
 	if p.ContentReader != nil {
 		return p.encodeContentFromReader(b)
+	}
+
+	if p.parser != nil && p.parser.rawContent {
+		cte = teRaw
 	}
 
 	switch cte {

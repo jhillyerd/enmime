@@ -364,3 +364,31 @@ func TestEncodePartContentNonAsciiText(t *testing.T) {
 		}
 	}
 }
+
+func TestParseRawContentOptionTrue(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-option.raw")
+	p := enmime.NewParser(enmime.RawContent(true))
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-true.raw.golden")
+}
+
+func TestParseRawContentOptionFalse(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-option.raw")
+	p := enmime.NewParser()
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-false.raw.golden")
+}

@@ -20,6 +20,7 @@ type Parser struct {
 	multipartWOBoundaryAsSinglePart bool
 	readPartErrorPolicy             ReadPartErrorPolicy
 	skipMalformedParts              bool
+	rawContent                      bool
 }
 
 // defaultParser is a Parser with default configuration.

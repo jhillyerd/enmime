@@ -277,7 +277,10 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 	// b64cleaner aggregates errors, must maintain a reference to it to get them later.
 	var b64cleaner *coding.Base64Cleaner
 	// Build content decoding reader.
-	encoding := header.Get(hnContentEncoding)
+	encoding := ""
+	if p.parser != nil && !p.parser.rawContent {
+		encoding = header.Get(hnContentEncoding)
+	}
 	validEncoding := true
 	switch strings.ToLower(encoding) {
 	case cteQuotedPrintable:

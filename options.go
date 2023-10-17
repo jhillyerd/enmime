@@ -51,3 +51,15 @@ func (o maxStoredPartErrorsOption) apply(p *Parser) {
 	max := int(o)
 	p.maxStoredPartErrors = &max
 }
+
+// RawContent if set to true will not try to decode the CTE and return the raw part content.
+// Otherwise, will try to automatically decode the CTE.
+func RawContent(a bool) Option {
+	return rawContentOption(a)
+}
+
+type rawContentOption bool
+
+func (o rawContentOption) apply(p *Parser) {
+	p.rawContent = bool(o)
+}

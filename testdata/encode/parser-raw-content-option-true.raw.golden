@@ -1,0 +1,8 @@
+Content-Type: text/html; charset=utf-8
+From: me@me.com
+Mime-Version: 1.0
+Subject: Test subject
+To: you@you.com
+
+<!DOCTYPE html><html><body><h1>My First Heading</h1><p>My first paragraph.<=
+/p></body></html>
