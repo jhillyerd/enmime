@@ -376,7 +376,7 @@ func TestParseRawContentOptionTrue(t *testing.T) {
 	if err := e.Root.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-true.raw")
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-true.raw.golden")
 }
 
 func TestParseRawContentOptionFalse(t *testing.T) {
@@ -390,5 +390,5 @@ func TestParseRawContentOptionFalse(t *testing.T) {
 	if err := e.Root.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-false.raw")
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-false.raw.golden")
 }
