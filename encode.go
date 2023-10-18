@@ -99,7 +99,9 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 
 	// If we are encoding a part that previously had content-transfer-encoding set, unset it so
 	// the correct encoding detection can be done below.
-	p.Header.Del(hnContentEncoding)
+	if p.parser != nil && !p.parser.rawContent {
+		p.Header.Del(hnContentEncoding)
+	}
 
 	cte := te7Bit
 	if len(p.Content) > 0 {
