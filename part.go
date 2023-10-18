@@ -15,8 +15,6 @@ import (
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
 	inttp "github.com/jhillyerd/enmime/internal/textproto"
-	"github.com/jhillyerd/enmime/mediatype"
-
 	"github.com/pkg/errors"
 )
 
@@ -126,7 +124,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		ctype = defaultContentType
 	}
 	// Parse Content-Type header.
-	mtype, mparams, minvalidParams, err := mediatype.Parse(ctype)
+	mtype, mparams, minvalidParams, err := p.parseMediaType(ctype)
 	if err != nil {
 		return err
 	}
@@ -149,7 +147,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 func (p *Part) setupContentHeaders(mediaParams map[string]string) {
 	header := inttp.MIMEHeader(p.Header)
 	// Determine content disposition, filename, character set.
-	disposition, dparams, _, err := mediatype.Parse(header.Get(hnContentDisposition))
+	disposition, dparams, _, err := p.parseMediaType(header.Get(hnContentDisposition))
 	if err == nil {
 		// Disposition is optional
 		p.Disposition = disposition
@@ -325,6 +323,15 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 			ErrorMissingContentType, "content-type is empty for part id: %s", p.PartID)
 	}
 	return nil
+}
+
+// parses media type using custom or default media type parser
+func (p *Part) parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+	if p.parser == nil || p.parser.customParseMediaType == nil {
+		return ParseMediaType(ctype)
+	}
+
+	return p.parser.customParseMediaType(ctype)
 }
 
 // IsBase64CorruptInputError returns true when err is of type base64.CorruptInputError.

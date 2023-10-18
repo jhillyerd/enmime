@@ -141,8 +141,10 @@ func TestDetectAttachmentHeader(t *testing.T) {
 		},
 	}
 
+	root := &Part{parser: &defaultParser}
+
 	for _, s := range htests {
-		got := detectAttachmentHeader(s.header)
+		got := detectAttachmentHeader(root, s.header)
 		if got != s.want {
 			t.Errorf("detectAttachmentHeader(%v) == %v, want: %v", s.header, got, s.want)
 		}
@@ -192,8 +194,10 @@ func TestDetectTextHeader(t *testing.T) {
 		},
 	}
 
+	root := &Part{parser: &defaultParser}
+
 	for _, s := range htests {
-		got := detectTextHeader(s.header, s.emptyIsPlain)
+		got := detectTextHeader(root, s.header, s.emptyIsPlain)
 		if got != s.want {
 			t.Errorf("detectTextHeader(%v, %v) == %v, want: %v",
 				s.header, s.emptyIsPlain, got, s.want)
