@@ -298,7 +298,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 			encoding)
 	}
 	// Build charset decoding reader.
-	if validEncoding && strings.HasPrefix(p.ContentType, "text/") {
+	if validEncoding && strings.HasPrefix(p.ContentType, "text/") && !p.parser.rawContent {
 		var err error
 		contentReader, err = p.convertFromDetectedCharset(contentReader, readPartErrorPolicy)
 		if err != nil {

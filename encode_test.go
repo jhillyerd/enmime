@@ -365,8 +365,8 @@ func TestEncodePartContentNonAsciiText(t *testing.T) {
 	}
 }
 
-func TestParseRawContentOptionTrue(t *testing.T) {
-	r := test.OpenTestData("encode", "parser-raw-content-option.raw")
+func TestParseRawContentHTMLOptionTrue(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-html-option.raw")
 	p := enmime.NewParser(enmime.RawContent(true))
 	e, err := p.ReadEnvelope(r)
 	if err != nil {
@@ -376,11 +376,11 @@ func TestParseRawContentOptionTrue(t *testing.T) {
 	if err := e.Root.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-true.raw.golden")
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-html-option-true.raw.golden")
 }
 
-func TestParseRawContentOptionFalse(t *testing.T) {
-	r := test.OpenTestData("encode", "parser-raw-content-option.raw")
+func TestParseRawContentHTMLOptionFalse(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-html-option.raw")
 	p := enmime.NewParser()
 	e, err := p.ReadEnvelope(r)
 	if err != nil {
@@ -390,5 +390,33 @@ func TestParseRawContentOptionFalse(t *testing.T) {
 	if err := e.Root.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-false.raw.golden")
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-html-option-false.raw.golden")
+}
+
+func TestParseRawContentTextOptionTrue(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-text-option.raw")
+	p := enmime.NewParser(enmime.RawContent(true))
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-true.raw.golden")
+}
+
+func TestParseRawContentTextOptionFalse(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-text-option.raw")
+	p := enmime.NewParser()
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-false.raw.golden")
 }
