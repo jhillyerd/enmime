@@ -365,6 +365,7 @@ func TestEncodePartContentNonAsciiText(t *testing.T) {
 	}
 }
 
+// TestParseRawContentHTMLOptionTrue tests the RawContent Parser option with an HTML part only if the content isn't changed.
 func TestParseRawContentHTMLOptionTrue(t *testing.T) {
 	r := test.OpenTestData("encode", "parser-raw-content-html-option.raw")
 	p := enmime.NewParser(enmime.RawContent(true))
@@ -379,6 +380,7 @@ func TestParseRawContentHTMLOptionTrue(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-html-option-true.raw.golden")
 }
 
+// TestParseRawContentHTMLOptionFalse tests without the RawContent Parser option and an HTML part only if the content is normally parsed.
 func TestParseRawContentHTMLOptionFalse(t *testing.T) {
 	r := test.OpenTestData("encode", "parser-raw-content-html-option.raw")
 	p := enmime.NewParser()
@@ -393,6 +395,8 @@ func TestParseRawContentHTMLOptionFalse(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-html-option-false.raw.golden")
 }
 
+// TestParseRawContentTextOptionTrue tests the RawContent Parser option with a TEXT part only if the content isn't changed.
+// This test uses Japanese characters to also ensure that the charset isn't altered.
 func TestParseRawContentTextOptionTrue(t *testing.T) {
 	r := test.OpenTestData("encode", "parser-raw-content-text-option.raw")
 	p := enmime.NewParser(enmime.RawContent(true))
@@ -407,6 +411,7 @@ func TestParseRawContentTextOptionTrue(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-true.raw.golden")
 }
 
+// TestParseRawContentTextOptionFalse tests without the RawContent Parser option and a TEXT part only if the content is normally parsed.
 func TestParseRawContentTextOptionFalse(t *testing.T) {
 	r := test.OpenTestData("encode", "parser-raw-content-text-option.raw")
 	p := enmime.NewParser()
