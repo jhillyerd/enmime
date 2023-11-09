@@ -365,8 +365,9 @@ func TestEncodePartContentNonAsciiText(t *testing.T) {
 	}
 }
 
-func TestParseRawContentOptionTrue(t *testing.T) {
-	r := test.OpenTestData("encode", "parser-raw-content-option.raw")
+// TestParseRawContentHTMLOptionTrue tests the RawContent Parser option with an HTML part only if the content isn't changed.
+func TestParseRawContentHTMLOptionTrue(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-html-option.raw")
 	p := enmime.NewParser(enmime.RawContent(true))
 	e, err := p.ReadEnvelope(r)
 	if err != nil {
@@ -376,11 +377,12 @@ func TestParseRawContentOptionTrue(t *testing.T) {
 	if err := e.Root.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-true.raw.golden")
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-html-option-true.raw.golden")
 }
 
-func TestParseRawContentOptionFalse(t *testing.T) {
-	r := test.OpenTestData("encode", "parser-raw-content-option.raw")
+// TestParseRawContentHTMLOptionFalse tests without the RawContent Parser option and an HTML part only if the content is normally parsed.
+func TestParseRawContentHTMLOptionFalse(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-html-option.raw")
 	p := enmime.NewParser()
 	e, err := p.ReadEnvelope(r)
 	if err != nil {
@@ -390,5 +392,36 @@ func TestParseRawContentOptionFalse(t *testing.T) {
 	if err := e.Root.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-option-false.raw.golden")
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-html-option-false.raw.golden")
+}
+
+// TestParseRawContentTextOptionTrue tests the RawContent Parser option with a TEXT part only if the content isn't changed.
+// This test uses Japanese characters to also ensure that the charset isn't altered.
+func TestParseRawContentTextOptionTrue(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-text-option.raw")
+	p := enmime.NewParser(enmime.RawContent(true))
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-true.raw.golden")
+}
+
+// TestParseRawContentTextOptionFalse tests without the RawContent Parser option and a TEXT part only if the content is normally parsed.
+func TestParseRawContentTextOptionFalse(t *testing.T) {
+	r := test.OpenTestData("encode", "parser-raw-content-text-option.raw")
+	p := enmime.NewParser()
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-false.raw.golden")
 }
