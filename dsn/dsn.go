@@ -30,7 +30,7 @@ type Explanation struct {
 
 // DeliveryStatus provides a machine-readable description of the condition(s) that caused the report to be generated.
 type DeliveryStatus struct {
-	// RecipientDSN is Delivery Status Notification per message.
+	// MessageDSN is Delivery Status Notification per message.
 	MessageDSNs []textproto.MIMEHeader
 	// RecipientDSN is Delivery Status Notification per recipient.
 	RecipientDSNs []textproto.MIMEHeader
