@@ -122,6 +122,12 @@ func fixMangledMediaType(mtype string, sep rune) string {
 			p = coding.RFC2047Decode(p)
 
 			pair := strings.SplitAfter(p, "=")
+
+			if strings.TrimSpace(pair[0]) == "=" {
+				// Ignore unnamed parameters.
+				continue
+			}
+
 			if strings.Contains(mtype, strings.TrimSpace(pair[0])) {
 				// Ignore repeated parameters.
 				continue
