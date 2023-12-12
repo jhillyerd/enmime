@@ -49,8 +49,8 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			// Removes empty parameters in the middle
 			input: `Content-Type: text/html; =""; charset=""`,
-			sep: ';',
-			want: `Content-Type: text/html; charset=""`,
+			sep:   ';',
+			want:  `Content-Type: text/html; charset=""`,
 		},
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
