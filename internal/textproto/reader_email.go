@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"math"
+	"net/textproto"
 )
 
 // ReadEmailMIMEHeader reads a MIME-style header from r.
@@ -32,7 +33,7 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		if err != nil {
 			return m, err
 		}
-		return m, ProtocolError("malformed MIME header initial line: " + string(line))
+		return m, textproto.ProtocolError("malformed MIME header initial line: " + string(line))
 	}
 
 	for {
@@ -44,11 +45,11 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		// Key ends at first colon.
 		k, v, ok := bytes.Cut(kv, colon)
 		if !ok {
-			return m, ProtocolError("malformed MIME header line: " + string(kv))
+			return m, textproto.ProtocolError("malformed MIME header line: " + string(kv))
 		}
 		key, ok := canonicalEmailMIMEHeaderKey(k)
 		if !ok {
-			return m, ProtocolError("malformed MIME header line: " + string(kv))
+			return m, textproto.ProtocolError("malformed MIME header line: " + string(kv))
 		}
 		// for _, c := range v {
 		// 	if !validHeaderValueByte(c) {

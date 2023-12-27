@@ -26,28 +26,9 @@ package textproto
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net"
 )
-
-// An Error represents a numeric error response from a server.
-type Error struct {
-	Code int
-	Msg  string
-}
-
-func (e *Error) Error() string {
-	return fmt.Sprintf("%03d %s", e.Code, e.Msg)
-}
-
-// A ProtocolError describes a protocol violation such
-// as an invalid response or a hung-up connection.
-type ProtocolError string
-
-func (p ProtocolError) Error() string {
-	return string(p)
-}
 
 // A Conn represents a textual network protocol connection.
 // It consists of a Reader and Writer to manage I/O
