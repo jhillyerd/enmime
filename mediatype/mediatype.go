@@ -84,6 +84,8 @@ func fixMangledMediaType(mtype string, sep rune) string {
 				// The content type is completely missing. Put in a placeholder.
 				p = ctPlaceholder
 			}
+			// Remove invalid characters (specials)
+			p = removeTypeSpecials(p)
 			// Check for missing token after slash.
 			if strings.HasSuffix(p, "/") {
 				switch p {
@@ -521,6 +523,14 @@ loop:
 
 	if tagStart != 0 {
 		return value[0:tagStart]
+	}
+
+	return value
+}
+
+func removeTypeSpecials(value string) string {
+	for _, r := range []string{"(", ")", "<", ">", "@", ",", ":", "\\", "\"", "[", "]", "?", "="} {
+		value = strings.ReplaceAll(value, r, "")
 	}
 
 	return value

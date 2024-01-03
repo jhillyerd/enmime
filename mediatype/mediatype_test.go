@@ -48,9 +48,9 @@ func TestFixMangledMediaType(t *testing.T) {
 		},
 		{
 			// Removes empty parameters in the middle
-			input: `Content-Type: text/html; =""; charset=""`,
+			input: `text/html; =""; charset=""`,
 			sep:   ';',
-			want:  `Content-Type: text/html; charset=""`,
+			want:  `text/html; charset=""`,
 		},
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
@@ -132,6 +132,12 @@ func TestFixMangledMediaType(t *testing.T) {
 			input: `application/pdf/pdf/pdf; name=1337.pdf`,
 			sep:   ';',
 			want:  `application/pdf; name=1337.pdf`,
+		},
+		// invalid media type characters
+		{
+			input: `text/html>`,
+			sep:   ';',
+			want:  `text/html`,
 		},
 	}
 	for _, tc := range testCases {
