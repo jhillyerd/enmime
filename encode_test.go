@@ -425,3 +425,19 @@ func TestParseRawContentTextOptionFalse(t *testing.T) {
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-false.raw.golden")
 }
+
+// TestRawContentUTF8Headers test if not encoded UTF8 headers are not edited with the rawContent parser option.
+func TestRawContentUTF8Headers(t *testing.T) {
+	r := test.OpenTestData("encode", "utf8-to.raw.golden")
+	p := enmime.NewParser(enmime.RawContent(true))
+	e, err := p.ReadEnvelope(r)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	b := &bytes.Buffer{}
+	if err := e.Root.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "utf8-to.raw.golden")
+}

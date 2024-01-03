@@ -170,15 +170,19 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	for k := range p.Header {
 		keys = append(keys, k)
 	}
+	rawContent := p.parser != nil && p.parser.rawContent
+
 	sort.Strings(keys)
 	for _, k := range keys {
 		for _, v := range p.Header[k] {
 			encv := v
-			switch selectTransferEncoding([]byte(v), true) {
-			case teBase64:
-				encv = mime.BEncoding.Encode(utf8, v)
-			case teQuoted:
-				encv = mime.QEncoding.Encode(utf8, v)
+			if !rawContent {
+				switch selectTransferEncoding([]byte(v), true) {
+				case teBase64:
+					encv = mime.BEncoding.Encode(utf8, v)
+				case teQuoted:
+					encv = mime.QEncoding.Encode(utf8, v)
+				}
 			}
 			// _ used to prevent early wrapping
 			wb := stringutil.Wrap(76, k, ":_", encv, "\r\n")
