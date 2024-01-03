@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"io"
 	"net"
+	"net/textproto"
 	"reflect"
 	"strings"
 	"sync"
@@ -69,7 +70,7 @@ func TestReadCodeLine(t *testing.T) {
 	if code != 345 || msg != "no way" || err == nil {
 		t.Fatalf("Line 3: %d, %s, %v", code, msg, err)
 	}
-	if e, ok := err.(*Error); !ok || e.Code != code || e.Msg != msg {
+	if e, ok := err.(*textproto.Error); !ok || e.Code != code || e.Msg != msg {
 		t.Fatalf("Line 3: wrong error %v\n", err)
 	}
 	code, msg, err = r.ReadCodeLine(1)
