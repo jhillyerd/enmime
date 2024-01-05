@@ -426,7 +426,7 @@ func TestParseRawContentTextOptionFalse(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-false.raw.golden")
 }
 
-// TestRawContentUTF8Headers test if not encoded UTF8 headers are not edited with the rawContent parser option.
+// TestRawContentUTF8Headers verifies plain-text headers are unmodified with the rawContent parser option.
 func TestRawContentUTF8Headers(t *testing.T) {
 	r := test.OpenTestData("encode", "utf8-to.raw.golden")
 	p := enmime.NewParser(enmime.RawContent(true))
