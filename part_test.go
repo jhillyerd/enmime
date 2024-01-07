@@ -1317,5 +1317,4 @@ func TestCtypeInvlidCharacters(t *testing.T) {
 	}
 
 	test.ComparePart(t, p, wantp)
-} 
-
+}
