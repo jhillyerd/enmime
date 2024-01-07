@@ -17,7 +17,7 @@ build:
 	go build
 
 test:
-	go test -race ./...
+	TZ=Europe/London go test -race ./...
 
 fmt:
 	@gofmt -l -w $(SRC)
