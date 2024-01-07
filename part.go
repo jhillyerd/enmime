@@ -15,6 +15,7 @@ import (
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/internal/coding"
 	inttp "github.com/jhillyerd/enmime/internal/textproto"
+	"github.com/jhillyerd/enmime/mediatype"
 	"github.com/pkg/errors"
 )
 
@@ -328,7 +329,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 // parses media type using custom or default media type parser
 func (p *Part) parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	if p.parser == nil || p.parser.customParseMediaType == nil {
-		return ParseMediaType(ctype)
+		return ParseMediaType(ctype, mediatype.MediaTypeParseOptions{StripMediaTypeInvalidCharacters: p.parser.stripMediaTypeInvalidCharacters})
 	}
 
 	return p.parser.customParseMediaType(ctype)

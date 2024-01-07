@@ -76,3 +76,15 @@ type parseMediaTypeOption CustomParseMediaType
 func (o parseMediaTypeOption) apply(p *Parser) {
 	p.customParseMediaType = CustomParseMediaType(o)
 }
+
+type stripMediaTypeInvalidCharactersOption bool
+
+func (o stripMediaTypeInvalidCharactersOption) apply(p *Parser) {
+	p.stripMediaTypeInvalidCharacters = bool(o)
+}
+
+// StripMediaTypeInvalidCharacters sets stripMediaTypeInvalidCharacters option. If true, invalid characters
+// will be removed from media type during parsing.
+func StripMediaTypeInvalidCharacters(stripMediaTypeInvalidCharacters bool) Option {
+	return stripMediaTypeInvalidCharactersOption(stripMediaTypeInvalidCharacters)
+}

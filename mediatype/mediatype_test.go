@@ -6,9 +6,10 @@ import (
 
 func TestFixMangledMediaType(t *testing.T) {
 	testCases := []struct {
-		input string
-		sep   rune
-		want  string
+		input   string
+		sep     rune
+		want    string
+		options MediaTypeParseOptions
 	}{
 		{
 			input: "",
@@ -137,12 +138,19 @@ func TestFixMangledMediaType(t *testing.T) {
 		{
 			input: `text/html>`,
 			sep:   ';',
-			want:  `text/html`,
+			want:  `text/html>`,
+		},
+		// invalid media type characters with stripping invalid characters sanitation enabled
+		{
+			input:   `text/html>`,
+			sep:     ';',
+			want:    `text/html`,
+			options: MediaTypeParseOptions{StripMediaTypeInvalidCharacters: true},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := fixMangledMediaType(tc.input, tc.sep)
+			got := fixMangledMediaType(tc.input, tc.sep, tc.options)
 			if got != tc.want {
 				t.Errorf("got %q, want %q", got, tc.want)
 			}
@@ -384,10 +392,11 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 
 func TestParseMediaType(t *testing.T) {
 	testCases := []struct {
-		label  string            // Test case label.
-		input  string            // Content type to parse.
-		mtype  string            // Expected media type returned.
-		params map[string]string // Expected params returned.
+		label   string            // Test case label.
+		input   string            // Content type to parse.
+		mtype   string            // Expected media type returned.
+		params  map[string]string // Expected params returned.
+		options MediaTypeParseOptions
 	}{
 		{
 			label:  "basic filename",
@@ -518,7 +527,7 @@ func TestParseMediaType(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
-			mtype, params, _, err := Parse(tc.input)
+			mtype, params, _, err := Parse(tc.input, tc.options)
 
 			if err != nil {
 				t.Errorf("got err %v, want nil", err)

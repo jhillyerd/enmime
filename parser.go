@@ -25,6 +25,7 @@ type Parser struct {
 	skipMalformedParts              bool
 	rawContent                      bool
 	customParseMediaType            CustomParseMediaType
+	stripMediaTypeInvalidCharacters bool
 }
 
 // defaultParser is a Parser with default configuration.
