@@ -154,7 +154,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		param := make(map[string]string)
 		setParamValue(param, hpFilename, fileName)
 		if !p.FileModDate.IsZero() {
-			setParamValue(param, hpModDate, p.FileModDate.Format(time.RFC822))
+			setParamValue(param, hpModDate, p.FileModDate.UTC().Format(time.RFC822))
 		}
 		if mt := mime.FormatMediaType(p.Disposition, param); mt != "" {
 			p.Disposition = mt
