@@ -2,22 +2,74 @@ run:
   timeout: 5m
 linters:
   enable:
+    - asasalint
     - asciicheck
+    - bidichk
     - bodyclose
-    - deadcode
+    - containedctx
+    - contextcheck
+    - decorder
+    # - dupl
+    # - dupword
+    - durationcheck
+    - errchkjson
+    - errname
+    # - errorlint
+    - execinquery
+    # - exhaustive
     - exportloopref
-    - errcheck
+    # - forcetypeassert
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    # - gochecknoinits
+    - gochecksumtype
+    - gocritic
+    # - godot
+    # - goerr113
     - gofmt
+    # - gofumpt
+    - goheader
     - goimports
-    - gosimple
-    - govet
-    - ineffassign
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    # - gosec
+    - gosmopolitan
+    - grouper
+    - importas
+    - inamedparam
+    - interfacebloat
+    - loggercheck
+    - makezero
+    - mirror
     - misspell
-    - megacheck
+    - musttag
+    - nilerr
+    # - nilnil
+    # - nlreturn
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - perfsprint
     - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    # - revive
     - rowserrcheck
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unused
-    - varcheck
+    - sloglint
+    - stylecheck
+    - tagalign
+    - tagliatelle
+    - tenv
+    - testableexamples
+    - testifylint
+    - thelper
+    - tparallel
+    # - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    - zerologlint
