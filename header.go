@@ -113,10 +113,12 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 //   - Missing ';' between content-type and media parameters
 //   - Repeating media parameters
 //   - Unquoted values in media parameters containing 'tspecials' characters
-func ParseMediaType(ctype string, options mediatype.MediaTypeParseOptions) (mtype string, params map[string]string, invalidParams []string,
+//
+// Deprecated: Use mediaType.Parse instead
+func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string,
 	err error) {
 	// Export of internal function.
-	return mediatype.Parse(ctype, options)
+	return mediatype.Parse(ctype, &mediatype.MediaTypeParseOptions{})
 }
 
 // ReadHeader reads a block of SMTP or MIME headers and returns a

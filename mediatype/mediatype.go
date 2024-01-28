@@ -41,7 +41,12 @@ type MediaTypeParseOptions struct {
 //   - Repeating media parameters
 //   - Unquoted values in media parameters containing 'tspecials' characters
 //   - Newline characters
-func Parse(ctype string, options MediaTypeParseOptions) (mtype string, params map[string]string, invalidParams []string, err error) {
+func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+	return ParseWithOptions(ctype, MediaTypeParseOptions{})
+}
+
+// Parse method with additional options controlling the parsing behavior
+func ParseWithOptions(ctype string, options MediaTypeParseOptions) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
 		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';', options)))))
 	if err != nil {

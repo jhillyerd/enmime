@@ -396,7 +396,6 @@ func TestParseMediaType(t *testing.T) {
 		input   string            // Content type to parse.
 		mtype   string            // Expected media type returned.
 		params  map[string]string // Expected params returned.
-		options MediaTypeParseOptions
 	}{
 		{
 			label:  "basic filename",
@@ -527,7 +526,7 @@ func TestParseMediaType(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
-			mtype, params, _, err := Parse(tc.input, tc.options)
+			mtype, params, _, err := Parse(tc.input)
 
 			if err != nil {
 				t.Errorf("got err %v, want nil", err)
