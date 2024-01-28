@@ -118,7 +118,7 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string,
 	err error) {
 	// Export of internal function.
-	return mediatype.Parse(ctype, &mediatype.MediaTypeParseOptions{})
+	return mediatype.Parse(ctype)
 }
 
 // ReadHeader reads a block of SMTP or MIME headers and returns a

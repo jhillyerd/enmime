@@ -392,10 +392,10 @@ func TestFixUnEscapedQuotes(t *testing.T) {
 
 func TestParseMediaType(t *testing.T) {
 	testCases := []struct {
-		label   string            // Test case label.
-		input   string            // Content type to parse.
-		mtype   string            // Expected media type returned.
-		params  map[string]string // Expected params returned.
+		label  string            // Test case label.
+		input  string            // Content type to parse.
+		mtype  string            // Expected media type returned.
+		params map[string]string // Expected params returned.
 	}{
 		{
 			label:  "basic filename",
