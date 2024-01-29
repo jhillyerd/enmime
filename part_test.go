@@ -1303,7 +1303,7 @@ func TestChardetSuccess(t *testing.T) {
 	})
 }
 
-func TestCtypeInvlidCharacters(t *testing.T) {
+func TestCtypeInvalidCharacters(t *testing.T) {
 	r := test.OpenTestData("parts", "ctype-invalid-characters.raw")
 	parser := enmime.NewParser(enmime.StripMediaTypeInvalidCharacters(true))
 	p, err := parser.ReadParts(r)
