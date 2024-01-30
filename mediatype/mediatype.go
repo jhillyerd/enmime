@@ -30,6 +30,10 @@ const (
 	utf8 = "utf-8"
 )
 
+type MediaTypeParseOptions struct {
+	StripMediaTypeInvalidCharacters bool
+}
+
 // Parse is a more tolerant implementation of Go's mime.ParseMediaType function.
 //
 // Tolerances accounted for:
@@ -38,8 +42,13 @@ const (
 //   - Unquoted values in media parameters containing 'tspecials' characters
 //   - Newline characters
 func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+	return ParseWithOptions(ctype, MediaTypeParseOptions{})
+}
+
+// ParseWithOptions parses media-type with additional options controlling the parsing behavior.
+func ParseWithOptions(ctype string, options MediaTypeParseOptions) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
-		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';')))))
+		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';', options)))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
@@ -63,7 +72,7 @@ func Parse(ctype string) (mtype string, params map[string]string, invalidParams 
 
 // fixMangledMediaType is used to insert ; separators into media type strings that lack them, and
 // remove repeated parameters.
-func fixMangledMediaType(mtype string, sep rune) string {
+func fixMangledMediaType(mtype string, sep rune, options MediaTypeParseOptions) string {
 	strsep := string([]rune{sep})
 	if mtype == "" {
 		return ""
@@ -83,6 +92,10 @@ func fixMangledMediaType(mtype string, sep rune) string {
 			if p == "" {
 				// The content type is completely missing. Put in a placeholder.
 				p = ctPlaceholder
+			}
+			// Remove invalid characters (specials)
+			if options.StripMediaTypeInvalidCharacters {
+				p = removeTypeSpecials(p)
 			}
 			// Check for missing token after slash.
 			if strings.HasSuffix(p, "/") {
@@ -521,6 +534,14 @@ loop:
 
 	if tagStart != 0 {
 		return value[0:tagStart]
+	}
+
+	return value
+}
+
+func removeTypeSpecials(value string) string {
+	for _, r := range []string{"(", ")", "<", ">", "@", ",", ":", "\\", "\"", "[", "]", "?", "="} {
+		value = strings.ReplaceAll(value, r, "")
 	}
 
 	return value

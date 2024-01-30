@@ -6,9 +6,10 @@ import (
 
 func TestFixMangledMediaType(t *testing.T) {
 	testCases := []struct {
-		input string
-		sep   rune
-		want  string
+		input   string
+		sep     rune
+		want    string
+		options MediaTypeParseOptions
 	}{
 		{
 			input: "",
@@ -48,9 +49,9 @@ func TestFixMangledMediaType(t *testing.T) {
 		},
 		{
 			// Removes empty parameters in the middle
-			input: `Content-Type: text/html; =""; charset=""`,
+			input: `text/html; =""; charset=""`,
 			sep:   ';',
-			want:  `Content-Type: text/html; charset=""`,
+			want:  `text/html; charset=""`,
 		},
 		{
 			input: "application/octet-stream;=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=You've got a new voice miss call.msg",
@@ -133,10 +134,23 @@ func TestFixMangledMediaType(t *testing.T) {
 			sep:   ';',
 			want:  `application/pdf; name=1337.pdf`,
 		},
+		// invalid media type characters
+		{
+			input: `text/html>`,
+			sep:   ';',
+			want:  `text/html>`,
+		},
+		// invalid media type characters with stripping invalid characters sanitation enabled
+		{
+			input:   `text/html>`,
+			sep:     ';',
+			want:    `text/html`,
+			options: MediaTypeParseOptions{StripMediaTypeInvalidCharacters: true},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := fixMangledMediaType(tc.input, tc.sep)
+			got := fixMangledMediaType(tc.input, tc.sep, tc.options)
 			if got != tc.want {
 				t.Errorf("got %q, want %q", got, tc.want)
 			}

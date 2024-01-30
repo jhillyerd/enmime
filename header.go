@@ -113,6 +113,8 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 //   - Missing ';' between content-type and media parameters
 //   - Repeating media parameters
 //   - Unquoted values in media parameters containing 'tspecials' characters
+//
+// Deprecated: Use mediaType.Parse instead
 func ParseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string,
 	err error) {
 	// Export of internal function.

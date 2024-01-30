@@ -1302,3 +1302,19 @@ func TestChardetSuccess(t *testing.T) {
 		test.ComparePart(t, p, wantp)
 	})
 }
+
+func TestCtypeInvalidCharacters(t *testing.T) {
+	r := test.OpenTestData("parts", "ctype-invalid-characters.raw")
+	parser := enmime.NewParser(enmime.StripMediaTypeInvalidCharacters(true))
+	p, err := parser.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantp := &enmime.Part{
+		PartID:      "0",
+		ContentType: "text/plain",
+	}
+
+	test.ComparePart(t, p, wantp)
+}
