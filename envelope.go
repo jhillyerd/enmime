@@ -191,9 +191,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 			}
 		} else {
 			// Only text, no attachments
-			if err := parseTextOnlyBody(root, e); err != nil {
-				return nil, err
-			}
+			parseTextOnlyBody(root, e)
 		}
 	}
 
@@ -225,7 +223,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 
 // parseTextOnlyBody parses a plain text message in root that has MIME-like headers, but
 // only contains a single part - no boundaries, etc.  The result is placed in e.
-func parseTextOnlyBody(root *Part, e *Envelope) error {
+func parseTextOnlyBody(root *Part, e *Envelope) {
 	// Determine character set
 	var charset string
 	var isHTML bool
@@ -255,14 +253,10 @@ func parseTextOnlyBody(root *Part, e *Envelope) error {
 					root.addWarning(ErrorCharsetConversion, err.Error())
 				}
 			}
-			// Converted from charset in HTML
-			return nil
 		}
 	} else {
 		e.Text = string(root.Content)
 	}
-
-	return nil
 }
 
 // parseMultiPartBody parses a multipart message in root.  The result is placed in e.
