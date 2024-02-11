@@ -30,6 +30,7 @@ const (
 	utf8 = "utf-8"
 )
 
+// MediaTypeParseOptions controls the parsing of content-type and media-type strings.
 type MediaTypeParseOptions struct {
 	StripMediaTypeInvalidCharacters bool
 }
