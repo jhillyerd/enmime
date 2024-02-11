@@ -1,22 +1,28 @@
 package enmime_test
 
 import (
+	"bytes"
 	"fmt"
-	"net/smtp"
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jhillyerd/enmime"
 )
 
 // ExampleBuilder illustrates how to build and send a MIME encoded message.
 func ExampleBuilder() {
-	// Create an SMTP Sender which relies on Go's built-in net/smtp package.  Advanced users
-	// may provide their own Sender, or mock it in unit tests.
-	smtpHost := "smtp.relay.host:25"
-	smtpAuth := smtp.PlainAuth("", "user", "pw", "host")
-	sender := enmime.NewSMTP(smtpHost, smtpAuth)
+	// Create an `SMTPSender` which relies on Go's built-in net/smtp package. Advanced users may
+	// provide their own implementation of `Sender`, or mock it in unit tests.
+	// For example:
+	//
+	// smtpHost := "smtp.relay.host:25"
+	// smtpAuth := smtp.PlainAuth("", "user", "pw", "host")
+	// sender := enmime.NewSMTP(smtpHost, smtpAuth)
+
+	// Instead, we use a fake sender which prints to stdout:
+	sender := &stdoutSender{}
 
 	// MailBuilder is (mostly) immutable, each method below returns a new MailBuilder without
 	// modifying the original.
@@ -26,7 +32,9 @@ func ExampleBuilder() {
 		Text([]byte("Text body")).
 		HTML([]byte("<p>HTML body</p>"))
 
-	// master is immutable, causing each msg below to have a single recipient.
+	// Force stable output for testing; not needed in production.
+	master = master.RandSeed(1).Date(time.Date(2024, 1, 1, 13, 14, 15, 16, time.UTC))
+
 	msg := master.To("Esteemed Customer", "user1@inbucket.org")
 	err := msg.Send(sender)
 	if err != nil {
@@ -38,6 +46,49 @@ func ExampleBuilder() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Output:
+	// MAIL FROM:<noreply@inbucket.org>
+	// RCPT TO:<user1@inbucket.org>
+	// DATA
+	// Content-Type: multipart/alternative;
+	//  boundary=enmime-52fdfc07-2182-454f-963f-5f0f9a621d72
+	// Date: Mon, 01 Jan 2024 13:14:15 +0000
+	// From: "Do Not Reply" <noreply@inbucket.org>
+	// Mime-Version: 1.0
+	// Subject: Inbucket Newsletter
+	// To: "Esteemed Customer" <user1@inbucket.org>
+	//
+	// --enmime-52fdfc07-2182-454f-963f-5f0f9a621d72
+	// Content-Type: text/plain; charset=utf-8
+	//
+	// Text body
+	// --enmime-52fdfc07-2182-454f-963f-5f0f9a621d72
+	// Content-Type: text/html; charset=utf-8
+	//
+	// <p>HTML body</p>
+	// --enmime-52fdfc07-2182-454f-963f-5f0f9a621d72--
+	//
+	// MAIL FROM:<noreply@inbucket.org>
+	// RCPT TO:<user2@inbucket.org>
+	// DATA
+	// Content-Type: multipart/alternative;
+	//  boundary=enmime-037c4d7b-bb04-47d1-a2c6-4981855ad868
+	// Date: Mon, 01 Jan 2024 13:14:15 +0000
+	// From: "Do Not Reply" <noreply@inbucket.org>
+	// Mime-Version: 1.0
+	// Subject: Inbucket Newsletter
+	// To: "Another Customer" <user2@inbucket.org>
+	//
+	// --enmime-037c4d7b-bb04-47d1-a2c6-4981855ad868
+	// Content-Type: text/plain; charset=utf-8
+	//
+	// Text body
+	// --enmime-037c4d7b-bb04-47d1-a2c6-4981855ad868
+	// Content-Type: text/html; charset=utf-8
+	//
+	// <p>HTML body</p>
+	// --enmime-037c4d7b-bb04-47d1-a2c6-4981855ad868--
 }
 
 func ExampleReadEnvelope() {
@@ -223,4 +274,22 @@ func ExampleEnvelope_GetHeaderKeys() {
 	// Subject: MIME UTF8 Test ¢ More Text
 	// To: "Mirosław Marczak" <marczak@inbucket.com>
 	// User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+}
+
+type stdoutSender struct{}
+
+func (s *stdoutSender) Send(from string, tos []string, msg []byte) error {
+	fmt.Printf("MAIL FROM:<%v>\n", from)
+	for _, to := range tos {
+		fmt.Printf("RCPT TO:<%v>\n", to)
+	}
+
+	fmt.Println("DATA")
+	lines := bytes.Split(msg, []byte{'\r'})
+	for _, line := range lines {
+		line = bytes.Trim(line, "\r\n")
+		fmt.Println(string(line))
+	}
+
+	return nil
 }
