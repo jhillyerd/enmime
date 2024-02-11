@@ -51,9 +51,9 @@ func TestQPCleanerOverflow(t *testing.T) {
 	qp := coding.NewQPCleaner(inbuf)
 
 	offset := 0
-	for len := 1000; len > 0; len -= 100 {
-		p := make([]byte, len)
-		n, err := qp.Read(p)
+	for size := 1000; size > 0; size -= 100 {
+		buf := make([]byte, size)
+		n, err := qp.Read(buf)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,8 +61,8 @@ func TestQPCleanerOverflow(t *testing.T) {
 			t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
 		}
 		for i := 0; i < n; i++ {
-			if p[i] != want[offset] {
-				t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
+			if buf[i] != want[offset] {
+				t.Errorf("p[%v] = %q, want: %q (want[%v])", i, buf[i], want[offset], offset)
 			}
 			offset++
 		}

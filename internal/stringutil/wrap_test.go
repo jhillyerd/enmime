@@ -75,7 +75,6 @@ func TestWrap(t *testing.T) {
 			if got != tc.want {
 				t.Errorf("got: %q, want: %q", got, tc.want)
 			}
-
 		})
 	}
 }
