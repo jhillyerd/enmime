@@ -32,7 +32,6 @@ func FindUnquoted(s string, v rune, quote rune) []int {
 		default:
 			escaped = false
 		}
-
 	}
 
 	return append(indexes, quotedIndexes...)
