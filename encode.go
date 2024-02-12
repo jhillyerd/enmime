@@ -50,7 +50,10 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 		p.Content = p.Content[:n]
 	}
-	cte := p.setupMIMEHeaders()
+	cte := teRaw
+	if p.parser == nil || !p.parser.rawContent {
+		cte = p.setupMIMEHeaders()
+	}
 	// Encode this part.
 	b := bufio.NewWriter(writer)
 	if err := p.encodeHeader(b); err != nil {
@@ -99,9 +102,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 
 	// If we are encoding a part that previously had content-transfer-encoding set, unset it so
 	// the correct encoding detection can be done below.
-	if p.parser != nil && !p.parser.rawContent {
-		p.Header.Del(hnContentEncoding)
-	}
+	p.Header.Del(hnContentEncoding)
 
 	cte := te7Bit
 	if len(p.Content) > 0 {
