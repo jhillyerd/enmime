@@ -69,7 +69,7 @@ func (e *Envelope) GetHeaderValues(name string) []string {
 // If the header exists already, all existing values are replaced.
 func (e *Envelope) SetHeader(name string, value []string) error {
 	if name == "" {
-		return fmt.Errorf("provide non-empty header name")
+		return errors.New("provide non-empty header name")
 	}
 
 	for i, v := range value {
@@ -86,7 +86,7 @@ func (e *Envelope) SetHeader(name string, value []string) error {
 // If the header does not exist already, it will be created.
 func (e *Envelope) AddHeader(name string, value string) error {
 	if name == "" {
-		return fmt.Errorf("provide non-empty header name")
+		return errors.New("provide non-empty header name")
 	}
 
 	e.header.Add(name, mime.BEncoding.Encode("utf-8", value))
@@ -96,7 +96,7 @@ func (e *Envelope) AddHeader(name string, value string) error {
 // DeleteHeader deletes given header.
 func (e *Envelope) DeleteHeader(name string) error {
 	if name == "" {
-		return fmt.Errorf("provide non-empty header name")
+		return errors.New("provide non-empty header name")
 	}
 
 	e.header.Del(name)
@@ -106,7 +106,7 @@ func (e *Envelope) DeleteHeader(name string) error {
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
 func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 	if e.header == nil {
-		return nil, fmt.Errorf("no headers available")
+		return nil, errors.New("no headers available")
 	}
 	if !AddressHeaders[strings.ToLower(key)] {
 		return nil, fmt.Errorf("%s is not an address header", key)
@@ -272,7 +272,7 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	}
 	boundary := params[hpBoundary]
 	if boundary == "" {
-		return fmt.Errorf("unable to locate boundary param in Content-Type header")
+		return errors.New("unable to locate boundary param in Content-Type header")
 	}
 
 	// Locate text body

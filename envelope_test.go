@@ -30,7 +30,7 @@ func TestParseHeaderOnly(t *testing.T) {
 		t.Errorf("Expected no HTML body, got %q", e.HTML)
 	}
 	if e.Root == nil {
-		t.Errorf("Expected a root part")
+		t.Error("Expected a root part")
 	}
 	if len(e.Root.Header) != 7 {
 		t.Errorf("Expected 7 headers, got %d", len(e.Root.Header))
@@ -998,11 +998,11 @@ func TestAttachmentOnly(t *testing.T) {
 		}
 		// Check, if root header is set
 		if len(e.Root.Header) < 1 {
-			t.Errorf("No root header defined, but must be set from binary only part.")
+			t.Error("No root header defined, but must be set from binary only part.")
 		}
 		// Check, that the root part has content
 		if len(e.Root.Content) == 0 {
-			t.Errorf("Root part of envelope has no content.")
+			t.Error("Root part of envelope has no content.")
 		}
 	}
 }

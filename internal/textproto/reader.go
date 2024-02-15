@@ -127,7 +127,7 @@ func (r *Reader) ReadContinuedLineBytes() ([]byte, error) {
 // error is returned from readContinuedLineSlice.
 func (r *Reader) readContinuedLineSlice(validateFirstLine func([]byte) error) ([]byte, error) {
 	if validateFirstLine == nil {
-		return nil, fmt.Errorf("missing validateFirstLine func")
+		return nil, errors.New("missing validateFirstLine func")
 	}
 
 	// Read the first line.

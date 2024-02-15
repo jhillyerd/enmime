@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -85,7 +85,7 @@ func TestExtractFailedToParse(t *testing.T) {
 func TestExtractAttachmentWriteFail(t *testing.T) {
 	s := &bytes.Buffer{}
 	fw := func(filename string, data []byte, perm os.FileMode) error {
-		return fmt.Errorf("AttachmentWriteFail")
+		return errors.New("AttachmentWriteFail")
 	}
 	testExtractor := &extractor{
 		errOut:    io.Discard,
