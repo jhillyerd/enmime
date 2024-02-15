@@ -345,19 +345,19 @@ func TestEncodePartContentNonAsciiText(t *testing.T) {
 		threshold + 1,
 	}
 
-	for _, numNonAscii := range cases {
-		nonAscii := bytes.Repeat([]byte{byte(0x10)}, numNonAscii)
-		ascii := bytes.Repeat([]byte{0x41}, 100-numNonAscii)
+	for _, numNonASCII := range cases {
+		nonASCII := bytes.Repeat([]byte{byte(0x10)}, numNonASCII)
+		ascii := bytes.Repeat([]byte{0x41}, 100-numNonASCII)
+		nonASCII = append(nonASCII, ascii...)
 
-		p.Content = append(nonAscii, ascii[:]...)
-
+		p.Content = nonASCII
 		b := &bytes.Buffer{}
 		err := p.Encode(b)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if numNonAscii < threshold {
+		if numNonASCII < threshold {
 			test.DiffStrings(t, []string{p.Header.Get("Content-Transfer-Encoding")}, []string{"quoted-printable"})
 		} else {
 			test.DiffStrings(t, []string{p.Header.Get("Content-Transfer-Encoding")}, []string{"base64"})
