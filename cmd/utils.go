@@ -168,7 +168,7 @@ func FormatPart(w io.Writer, p *enmime.Part, indent string) {
 	}
 	disposition := ""
 	if p.Disposition != "" {
-		disposition = fmt.Sprintf(", disposition: %s", p.Disposition)
+		disposition = ", disposition: " + p.Disposition
 	}
 	filename := ""
 	if p.FileName != "" {

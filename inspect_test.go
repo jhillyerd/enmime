@@ -16,21 +16,21 @@ func TestDecodeRFC2047(t *testing.T) {
 	t.Run("rfc2047 basic", func(t *testing.T) {
 		s := enmime.DecodeRFC2047("=?UTF-8?Q?Miros=C5=82aw_Marczak?=")
 		if s != "Mirosław Marczak" {
-			t.Errorf("Wrong decoded result")
+			t.Error("Wrong decoded result")
 		}
 	})
 
 	t.Run("rfc2047 unknown", func(t *testing.T) {
 		s := enmime.DecodeRFC2047("=?ABC-1?Q?FooBar?=")
 		if s != "=?ABC-1?Q?FooBar?=" {
-			t.Errorf("Expected unmodified result for unknown charset")
+			t.Error("Expected unmodified result for unknown charset")
 		}
 	})
 
 	t.Run("rfc2047 pass-through", func(t *testing.T) {
 		s := enmime.DecodeRFC2047("Hello World")
 		if s != "Hello World" {
-			t.Errorf("Expected unmodified result")
+			t.Error("Expected unmodified result")
 		}
 	})
 }
@@ -47,7 +47,7 @@ func TestDecodeHeaders(t *testing.T) {
 			t.Errorf("%+v", err)
 		}
 		if !strings.Contains(h.Get("To"), "Mirosław Marczak") {
-			t.Errorf("Error decoding RFC2047 header value")
+			t.Error("Error decoding RFC2047 header value")
 		}
 	})
 
@@ -62,7 +62,7 @@ func TestDecodeHeaders(t *testing.T) {
 			t.Errorf("%+v", err)
 		}
 		if !strings.Contains(h.Get("To"), "Mirosław Marczak") {
-			t.Errorf("Error decoding RFC2047 header value")
+			t.Error("Error decoding RFC2047 header value")
 		}
 	})
 
@@ -92,7 +92,7 @@ func TestDecodeHeaders(t *testing.T) {
 			t.Errorf("%+v", err)
 		}
 		if !strings.Contains(h.Get("From"), "WirelessCaller (203) 402-5984 WirelessCaller (203) 402-5984 WirelessCaller (203) 402-5984") {
-			t.Errorf("Error decoding recursive RFC2047 header value")
+			t.Error("Error decoding recursive RFC2047 header value")
 		}
 	})
 }

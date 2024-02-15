@@ -61,10 +61,10 @@ func RFC2047Decode(s string) string {
 
 				// Add quotes as needed.
 				if !strings.HasPrefix(value, "\"") {
-					value = fmt.Sprintf("\"%s", value)
+					value = `"` + value
 				}
 				if !strings.HasSuffix(value, "\"") {
-					value = fmt.Sprintf("%s\"", value)
+					value += `"`
 				}
 
 				return fmt.Sprintf("%s=%s", key, value)
