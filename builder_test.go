@@ -902,7 +902,7 @@ func TestBuilderAddFileOtherPart(t *testing.T) {
 
 	a = enmime.Builder().From("name", "from")
 	_ = a.AddFileOtherPart("zzzDOESNOTEXIST")
-	assert.NoError(t, a.Error(), "AddFileOtherPart error mutated receiver")
+	require.NoError(t, a.Error(), "AddFileOtherPart error mutated receiver")
 
 	a = enmime.Builder().AddFileOtherPart(filepath.Join("testdata", "attach", "fake.png"))
 	require.NoError(t, a.Error())
