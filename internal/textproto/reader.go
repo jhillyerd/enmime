@@ -168,6 +168,8 @@ func (r *Reader) readContinuedLineSlice(validateFirstLine func([]byte) error) ([
 		r.buf = append(r.buf, ' ')
 		r.buf = append(r.buf, trim(line)...)
 	}
+
+	//lint:ignore nilerr to maintain go stdlib compatibility.
 	return r.buf, nil
 }
 
