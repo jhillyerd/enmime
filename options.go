@@ -88,3 +88,15 @@ func (o stripMediaTypeInvalidCharactersOption) apply(p *Parser) {
 func StripMediaTypeInvalidCharacters(stripMediaTypeInvalidCharacters bool) Option {
 	return stripMediaTypeInvalidCharactersOption(stripMediaTypeInvalidCharacters)
 }
+
+type skipHTML2TextDownConversionOption bool
+
+func (o skipHTML2TextDownConversionOption) apply(p *Parser) {
+	p.skipHTML2TextDownConversion = bool(o)
+}
+
+// SkipHTML2TextDownConversion sets skipHTML2TextDownConversion option. If true, there will be no automatic down conversion
+// of HTML 2 Text.
+func SkipHTML2TextDownConversion(skipHTML2TextDownConversion bool) Option {
+	return skipHTML2TextDownConversionOption(skipHTML2TextDownConversion)
+}

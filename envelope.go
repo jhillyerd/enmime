@@ -196,7 +196,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 	}
 
 	// Down-convert HTML to text if necessary
-	if e.Text == "" && e.HTML != "" {
+	if e.Text == "" && e.HTML != "" && !p.skipHTML2TextDownConversion {
 		// We always warn when this happens
 		e.Root.addWarning(
 			ErrorPlainTextFromHTML,
