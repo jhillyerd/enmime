@@ -201,11 +201,14 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 		e.Root.addWarning(
 			ErrorPlainTextFromHTML,
 			"Message did not contain a text/plain part")
-		var err error
-		if e.Text, err = html2text.FromString(e.HTML); err != nil {
-			e.Text = "" // Down-conversion shouldn't fail
-			p := e.Root.BreadthMatchFirst(matchHTMLBodyPart)
-			p.addError(ErrorPlainTextFromHTML, "Failed to downconvert HTML: %v", err)
+
+		if !p.disableTextConversion {
+			var err error
+			if e.Text, err = html2text.FromString(e.HTML); err != nil {
+				e.Text = "" // Down-conversion shouldn't fail
+				p := e.Root.BreadthMatchFirst(matchHTMLBodyPart)
+				p.addError(ErrorPlainTextFromHTML, "Failed to downconvert HTML: %v", err)
+			}
 		}
 	}
 

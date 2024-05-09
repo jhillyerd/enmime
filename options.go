@@ -88,3 +88,15 @@ func (o stripMediaTypeInvalidCharactersOption) apply(p *Parser) {
 func StripMediaTypeInvalidCharacters(stripMediaTypeInvalidCharacters bool) Option {
 	return stripMediaTypeInvalidCharactersOption(stripMediaTypeInvalidCharacters)
 }
+
+type disableTextConversionOption bool
+
+func (o disableTextConversionOption) apply(p *Parser) {
+	p.disableTextConversion = bool(o)
+}
+
+// DisableTextConversion sets the disableTextConversion option. When true, there will be no
+// automated down conversion of HTML to text when a plain/text body is missing.
+func DisableTextConversion(disableTextConversion bool) Option {
+	return disableTextConversionOption(disableTextConversion)
+}
