@@ -17,9 +17,8 @@ See our [Pkg Docs] for examples and API usage information.
 
 ## Development Status
 
-enmime is near production quality: it works but struggles to parse a small
-percentage of emails.  It's possible the API will evolve slightly before the 1.0
-release.
+enmime is production quality, but there are many buggy MIME encoders in the
+wild, so you may still encounter messages it cannot parse.
 
 See [CONTRIBUTING.md] for more information.
 
@@ -32,11 +31,10 @@ enmime is open source software released under the MIT License.  The latest
 version can be found at https://github.com/jhillyerd/enmime
 
 
-[Build Status]:    https://travis-ci.org/jhillyerd/enmime
-[Builder Usage]:   https://github.com/jhillyerd/enmime/wiki/Builder-Usage 
+[Builder Usage]:   https://github.com/jhillyerd/enmime/wiki/Builder-Usage
 [Coverage Status]: https://coveralls.io/github/jhillyerd/enmime
 [CONTRIBUTING.md]: https://github.com/jhillyerd/enmime/blob/main/CONTRIBUTING.md
-[Inbucket]:        http://www.inbucket.org/
-[Golang]:          http://golang.org/
+[Inbucket]:        https://www.inbucket.org/
+[Golang]:          https://go.dev/
 [Go Report Card]:  https://goreportcard.com/report/github.com/jhillyerd/enmime
 [Pkg Docs]:        https://pkg.go.dev/github.com/jhillyerd/enmime
