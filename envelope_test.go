@@ -516,6 +516,51 @@ func TestParseHTMLOnlyInline(t *testing.T) {
 	}
 }
 
+func TestParseHTMLOnlyInlineTextDisabled(t *testing.T) {
+	msg := test.OpenTestData("mail", "html-only-inline.raw")
+
+	parser := enmime.NewParser(enmime.DisableTextConversion(true))
+	e, err := parser.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	if len(e.Errors) == 1 {
+		want := enmime.ErrorPlainTextFromHTML
+		got := e.Errors[0].Name
+		if got != want {
+			t.Errorf("e.Errors[0] got: %v, want: %v", got, want)
+		}
+	} else {
+		t.Errorf("len(e.Errors) got: %v, want: 1", len(e.Errors))
+	}
+
+	if e.Text != "" {
+		t.Errorf("Downconverted Text was %q, should be empty", e.Text)
+	}
+
+	want := ">Test of HTML section<"
+	if !strings.Contains(e.HTML, want) {
+		t.Errorf("HTML: %q should contain %q", e.HTML, want)
+	}
+
+	if len(e.Inlines) != 1 {
+		t.Error("Should one inline, got:", len(e.Inlines))
+	}
+	if len(e.Attachments) > 0 {
+		t.Fatal("Should have no attachments, got:", len(e.Attachments))
+	}
+
+	want = "favicon.png"
+	got := e.Inlines[0].FileName
+	if got != want {
+		t.Error("FileName got:", got, "want:", want)
+	}
+	if !bytes.HasPrefix(e.Inlines[0].Content, []byte{0x89, 'P', 'N', 'G'}) {
+		t.Error("Inline should have correct content")
+	}
+}
+
 func TestParseInlineMultipart(t *testing.T) {
 	msg := test.OpenTestData("mail", "inlinemultipart.raw")
 	e, err := enmime.ReadEnvelope(msg)

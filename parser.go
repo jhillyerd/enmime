@@ -26,7 +26,7 @@ type Parser struct {
 	rawContent                      bool
 	customParseMediaType            CustomParseMediaType
 	stripMediaTypeInvalidCharacters bool
-	skipHTML2TextDownConversion     bool
+	disableTextConversion           bool
 }
 
 // defaultParser is a Parser with default configuration.
