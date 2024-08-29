@@ -210,7 +210,8 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 	// Restore r.
 	r = bytes.NewReader(buf)
 
-	if cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < minCharsetRuneLength {
+	if (p.parser.disableCharacterDetection && p.Charset != "") ||
+		(cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < minCharsetRuneLength) {
 		// Low confidence or not enough characters, use declared character set.
 		return p.convertFromStatedCharset(r), nil
 	}

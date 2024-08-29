@@ -100,3 +100,15 @@ func (o disableTextConversionOption) apply(p *Parser) {
 func DisableTextConversion(disableTextConversion bool) Option {
 	return disableTextConversionOption(disableTextConversion)
 }
+
+type disableCharacterDetectionOption bool
+
+func (o disableCharacterDetectionOption) apply(p *Parser) {
+	p.disableCharacterDetection = bool(o)
+}
+
+// DisableCharacterDetection sets the disableCharacterDetection option. When true, the parser will use the
+// defined character set if it is defined in the message part.
+func DisableCharacterDetection(disableCharacterDetection bool) Option {
+	return disableCharacterDetectionOption(disableCharacterDetection)
+}
