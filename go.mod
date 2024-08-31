@@ -1,6 +1,6 @@
 module github.com/jhillyerd/enmime
 
-go 1.18
+go 1.20
 
 require (
 	github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a
