@@ -9,7 +9,7 @@ func TestFixMangledMediaType(t *testing.T) {
 		input   string
 		sep     rune
 		want    string
-		options MediaTypeParseOptions
+		options ParseOptions
 	}{
 		{
 			input: "",
@@ -145,7 +145,7 @@ func TestFixMangledMediaType(t *testing.T) {
 			input:   `text/html>`,
 			sep:     ';',
 			want:    `text/html`,
-			options: MediaTypeParseOptions{StripMediaTypeInvalidCharacters: true},
+			options: ParseOptions{StripMediaTypeInvalidCharacters: true},
 		},
 	}
 	for _, tc := range testCases {

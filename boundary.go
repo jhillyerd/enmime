@@ -180,7 +180,7 @@ func (b *boundaryReader) Next() (bool, error) {
 		_, _ = io.Copy(io.Discard, b)
 	}
 	for {
-		var line []byte = nil
+		var line []byte
 		var err error
 		for {
 			// Read whole line, handle extra long lines in cycle

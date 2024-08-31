@@ -333,7 +333,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 // parses media type using custom or default media type parser
 func (p *Part) parseMediaType(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 	if p.parser == nil || p.parser.customParseMediaType == nil {
-		return mediatype.ParseWithOptions(ctype, mediatype.MediaTypeParseOptions{StripMediaTypeInvalidCharacters: p.parser.stripMediaTypeInvalidCharacters})
+		return mediatype.ParseWithOptions(ctype, mediatype.ParseOptions{StripMediaTypeInvalidCharacters: p.parser.stripMediaTypeInvalidCharacters})
 	}
 
 	return p.parser.customParseMediaType(ctype)
