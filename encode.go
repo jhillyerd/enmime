@@ -8,6 +8,7 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/jhillyerd/enmime/internal/coding"
@@ -22,6 +23,7 @@ type transferEncoding byte
 
 const (
 	te7Bit transferEncoding = iota
+	te8Bit
 	teQuoted
 	teBase64
 	teRaw
@@ -106,21 +108,33 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 
 	cte := te7Bit
 	if len(p.Content) > 0 {
-		cte = teBase64
-		if p.TextContent() && p.ContentReader == nil {
-			cte = selectTransferEncoding(p.Content, false)
-			if p.Charset == "" {
-				p.Charset = utf8
+		if strings.Index(strings.ToLower(p.ContentType), "message/") == 0 {
+			// RFC 1341: `message` types must have no encoding other than "7bit", "8bit", or
+			// "binary". The message header fields are always US-ASCII in any case, and data within
+			// the body can still be encoded, in which case the Content-Transfer-Encoding header
+			// field in the encapsulated message will reflect this.
+			cte = te8Bit
+		} else {
+			cte = teBase64
+			if p.TextContent() && p.ContentReader == nil {
+				cte = selectTransferEncoding(p.Content, false)
+				if p.Charset == "" {
+					p.Charset = utf8
+				}
 			}
 		}
+
 		// RFC 2045: 7bit is assumed if CTE header not present.
 		switch cte {
+		case te8Bit:
+			p.Header.Set(hnContentEncoding, cte8Bit)
 		case teBase64:
 			p.Header.Set(hnContentEncoding, cteBase64)
 		case teQuoted:
 			p.Header.Set(hnContentEncoding, cteQuotedPrintable)
 		}
 	}
+
 	// Setup headers.
 	if p.FirstChild != nil && p.Boundary == "" {
 		// Multipart, generate random boundary marker.
@@ -136,6 +150,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	case teQuoted:
 		fileName = mime.QEncoding.Encode(utf8, p.FileName)
 	}
+
 	if p.ContentType != "" {
 		// Build content type header.
 		param := make(map[string]string)
@@ -150,6 +165,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		}
 		p.Header.Set(hnContentType, p.ContentType)
 	}
+
 	if p.Disposition != "" {
 		// Build disposition header.
 		param := make(map[string]string)
@@ -162,6 +178,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		}
 		p.Header.Set(hnContentDisposition, p.Disposition)
 	}
+
 	return cte
 }
 

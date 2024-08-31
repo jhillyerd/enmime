@@ -106,6 +106,26 @@ func TestEncodePartQuotedPrintableHeaders(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-printable-headers.golden")
 }
 
+func TestEncodePartMessageType(t *testing.T) {
+	p := enmime.NewPart("MeSSaGe/rfc822")
+	p.Boundary = "enmime-abcdefg0123456789"
+
+	c := make([]byte, 2000)
+	for i := range c {
+		c[i] = byte(i % 256)
+	}
+	p.Content = c
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Expects the binary content to be written without any additional transfer encoding.
+	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-message-rfc822.golden")
+}
+
 // oneByOneReader implements io.Reader over a byte slice, returns a single byte on every Read request.
 // This object is used to validate that partial reads (=read calls that return n<len(p)) are handled correctly.
 type oneByOneReader struct {
