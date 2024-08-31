@@ -517,12 +517,12 @@ func TestReadLenNotCap(t *testing.T) {
 
 		var out []byte
 		b := make([]byte, 6, 20) // Ensure the capacity is greater than the length.
-		max := len(b)
+		maxb := len(b)
 		var c int
 		for err == nil {
 			c, err = br.Read(b)
-			if c > max {
-				t.Errorf("Per the docuemtation for io.Reader, should not have read more than %d bytes, but read %d", max, c)
+			if c > maxb {
+				t.Errorf("Per the docuemtation for io.Reader, should not have read more than %d bytes, but read %d", maxb, c)
 			}
 
 			out = append(out, b[0:c]...)
