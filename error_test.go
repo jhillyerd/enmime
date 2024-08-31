@@ -37,7 +37,7 @@ func TestErrorStringConversion(t *testing.T) {
 
 func TestErrorAddError(t *testing.T) {
 	p := NewPart("text/plain")
-	p.addError(ErrorMalformedHeader, "1 %v %q", 2, "three")
+	p.addErrorf(ErrorMalformedHeader, "1 %v %q", 2, "three")
 
 	if len(p.Errors) != 1 {
 		t.Fatal("len(p.Errors) ==", len(p.Errors), ", want: 1")
@@ -58,7 +58,7 @@ func TestErrorAddError(t *testing.T) {
 
 func TestErrorAddWarning(t *testing.T) {
 	p := NewPart("text/plain")
-	p.addWarning(ErrorMalformedHeader, "1 %v %q", 2, "three")
+	p.addWarningf(ErrorMalformedHeader, "1 %v %q", 2, "three")
 
 	if len(p.Errors) != 1 {
 		t.Fatal("len(p.Errors) ==", len(p.Errors), ", want: 1")

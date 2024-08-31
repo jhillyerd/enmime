@@ -54,8 +54,13 @@ func (e *Error) String() string {
 	return e.Error()
 }
 
-// addWarning builds a severe Error and appends to the Part error slice.
-func (p *Part) addError(name string, detailFmt string, args ...interface{}) {
+// addError builds a severe Error and appends to the Part error slice.
+func (p *Part) addError(name string, detail string) {
+	p.addProblem(&Error{name, detail, true})
+}
+
+// addErrorf builds a severe Error and appends to the Part error slice.
+func (p *Part) addErrorf(name string, detailFmt string, args ...interface{}) {
 	p.addProblem(&Error{
 		name,
 		fmt.Sprintf(detailFmt, args...),
@@ -64,7 +69,12 @@ func (p *Part) addError(name string, detailFmt string, args ...interface{}) {
 }
 
 // addWarning builds a non-severe Error and appends to the Part error slice.
-func (p *Part) addWarning(name string, detailFmt string, args ...interface{}) {
+func (p *Part) addWarning(name string, detail string) {
+	p.addProblem(&Error{name, detail, false})
+}
+
+// addWarningf builds a non-severe Error and appends to the Part error slice.
+func (p *Part) addWarningf(name string, detailFmt string, args ...interface{}) {
 	p.addProblem(&Error{
 		name,
 		fmt.Sprintf(detailFmt, args...),
@@ -97,9 +107,9 @@ type partErrorCollector struct {
 }
 
 func (p *partErrorCollector) AddError(name string, detailFmt string, args ...any) {
-	p.part.addError(name, detailFmt, args...)
+	p.part.addErrorf(name, detailFmt, args...)
 }
 
 func (p *partErrorCollector) AddWarning(name string, detailFmt string, args ...any) {
-	p.part.addWarning(name, detailFmt, args...)
+	p.part.addWarningf(name, detailFmt, args...)
 }
