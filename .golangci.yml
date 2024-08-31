@@ -8,15 +8,14 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
     - decorder
     # - dupl
     - durationcheck
     - errchkjson
     - errname
     # - errorlint
-    - execinquery
     # - exhaustive
-    - exportloopref
     # - forcetypeassert
     - ginkgolinter
     - gocheckcompilerdirectives

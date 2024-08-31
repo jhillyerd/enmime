@@ -2,8 +2,8 @@ package enmime_test
 
 import (
 	"bytes"
+	"crypto/rand"
 	"io"
-	"math/rand"
 	"testing"
 	"time"
 
