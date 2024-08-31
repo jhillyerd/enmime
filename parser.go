@@ -16,8 +16,7 @@ func AllowCorruptTextPartErrorPolicy(p *Part, err error) bool {
 // CustomParseMediaType parses media type. See ParseMediaType for more details
 type CustomParseMediaType func(ctype string) (mtype string, params map[string]string, invalidParams []string, err error)
 
-// Parser parses MIME.
-// Default parser is a valid one.
+// Parser parses MIME.  Create with NewParser to inherit recommended defaults.
 type Parser struct {
 	maxStoredPartErrors             *int // TODO: Pointer until global var removed.
 	multipartWOBoundaryAsSinglePart bool
@@ -28,14 +27,18 @@ type Parser struct {
 	stripMediaTypeInvalidCharacters bool
 	disableTextConversion           bool
 	disableCharacterDetection       bool
+	minCharsetDetectRunes           int
 }
 
 // defaultParser is a Parser with default configuration.
-var defaultParser = Parser{}
+var defaultParser = *NewParser()
 
 // NewParser creates new parser with given options.
 func NewParser(ops ...Option) *Parser {
-	p := Parser{}
+	// Construct parser with default options.
+	p := Parser{
+		minCharsetDetectRunes: 100,
+	}
 
 	for _, o := range ops {
 		o.apply(&p)

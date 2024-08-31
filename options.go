@@ -112,3 +112,16 @@ func (o disableCharacterDetectionOption) apply(p *Parser) {
 func DisableCharacterDetection(disableCharacterDetection bool) Option {
 	return disableCharacterDetectionOption(disableCharacterDetection)
 }
+
+type minCharsetDetectRunesOption int
+
+func (o minCharsetDetectRunesOption) apply(p *Parser) {
+	p.minCharsetDetectRunes = int(o)
+}
+
+// MinCharsetDetectRunes sets the minimum length of a MIME part before enmime will attempt to
+// detect its character set.  The shorter the text, the more likely an incorrect character set
+// will be chosen.  The default is 100.
+func MinCharsetDetectRunes(minCharsetDetectRunes int) Option {
+	return minCharsetDetectRunesOption(minCharsetDetectRunes)
+}
