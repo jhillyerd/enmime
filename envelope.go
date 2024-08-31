@@ -198,16 +198,14 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 	// Down-convert HTML to text if necessary
 	if e.Text == "" && e.HTML != "" {
 		// We always warn when this happens
-		e.Root.addWarning(
-			ErrorPlainTextFromHTML,
-			"Message did not contain a text/plain part")
+		e.Root.addWarning(ErrorPlainTextFromHTML, "Message did not contain a text/plain part")
 
 		if !p.disableTextConversion {
 			var err error
 			if e.Text, err = html2text.FromString(e.HTML); err != nil {
 				e.Text = "" // Down-conversion shouldn't fail
 				p := e.Root.BreadthMatchFirst(matchHTMLBodyPart)
-				p.addError(ErrorPlainTextFromHTML, "Failed to downconvert HTML: %v", err)
+				p.addErrorf(ErrorPlainTextFromHTML, "Failed to downconvert HTML: %v", err)
 			}
 		}
 	}

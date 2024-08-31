@@ -129,7 +129,7 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		return err
 	}
 	for i := range minvalidParams {
-		p.addWarning(
+		p.addWarningf(
 			ErrorMalformedHeader,
 			"Content-Type header has malformed parameter %q",
 			minvalidParams[i])
@@ -171,7 +171,7 @@ func (p *Part) readPartContent(r io.Reader, readPartErrorPolicy ReadPartErrorPol
 	buf, err := io.ReadAll(r)
 	if err != nil {
 		if readPartErrorPolicy != nil && readPartErrorPolicy(p, err) {
-			p.addWarning(ErrorMalformedChildPart, "partial content: %s", err.Error())
+			p.addWarningf(ErrorMalformedChildPart, "partial content: %s", err.Error())
 			return buf, nil
 		}
 		return nil, err
@@ -211,7 +211,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 	case nil:
 		// Carry on
 	default:
-		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
+		p.addWarningf(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	}
 
 	if cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < p.parser.minCharsetDetectRunes {
@@ -221,7 +221,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 
 	// Confidence exceeded our threshold, use detected character set.
 	if p.Charset != "" && !strings.EqualFold(cs.Charset, p.Charset) {
-		p.addWarning(ErrorCharsetDeclaration,
+		p.addWarningf(ErrorCharsetDeclaration,
 			"declared charset %q, detected %q, confidence %d",
 			p.Charset, cs.Charset, cs.Confidence)
 	}
@@ -247,7 +247,7 @@ func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
 	reader, err := coding.NewCharsetReader(p.Charset, r)
 	if err != nil {
 		// Failed to get a conversion reader.
-		p.addWarning(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
+		p.addWarningf(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
 	} else {
 		return reader
 	}
@@ -261,7 +261,7 @@ func (p *Part) convertFromStatedCharset(r io.Reader) io.Reader {
 		reader, err = coding.NewCharsetReader(p.Charset, r)
 		if err != nil {
 			// Failed to get a conversion reader.
-			p.addWarning(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
+			p.addWarningf(ErrorCharsetConversion, "failed to get reader for charset %q: %v", p.Charset, err)
 		} else {
 			return reader
 		}
@@ -297,7 +297,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 	default:
 		// Unknown encoding.
 		validEncoding = false
-		p.addWarning(
+		p.addWarningf(
 			ErrorContentEncoding,
 			"Unrecognized Content-Transfer-Encoding type %q",
 			encoding)
@@ -324,7 +324,7 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 	}
 	// Set empty content-type error.
 	if p.ContentType == "" {
-		p.addWarning(
+		p.addWarningf(
 			ErrorMissingContentType, "content-type is empty for part id: %s", p.PartID)
 	}
 	return nil
@@ -429,7 +429,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			return err
 		}
 		if br.unbounded {
-			parent.addWarning(ErrorMissingBoundary, "Boundary %q was not closed correctly",
+			parent.addWarningf(ErrorMissingBoundary, "Boundary %q was not closed correctly",
 				parent.Boundary)
 		}
 		if !next {
@@ -448,7 +448,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		bbr := bufio.NewReader(br)
 		if err = p.setupHeaders(bbr, ""); err != nil {
 			if p.parser.skipMalformedParts {
-				parent.addError(ErrorMalformedChildPart, "read header: %s", err.Error())
+				parent.addErrorf(ErrorMalformedChildPart, "read header: %s", err.Error())
 				continue
 			}
 
@@ -460,7 +460,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			// Content is text or data, decode it.
 			if err = p.decodeContent(bbr, p.parser.readPartErrorPolicy); err != nil {
 				if p.parser.skipMalformedParts {
-					parent.addError(ErrorMalformedChildPart, "decode content: %s", err.Error())
+					parent.addErrorf(ErrorMalformedChildPart, "decode content: %s", err.Error())
 					continue
 				}
 				return err
@@ -473,7 +473,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		// Content is another multipart.
 		if err = parseParts(p, bbr); err != nil {
 			if p.parser.skipMalformedParts {
-				parent.addError(ErrorMalformedChildPart, "parse parts: %s", err.Error())
+				parent.addErrorf(ErrorMalformedChildPart, "parse parts: %s", err.Error())
 				continue
 			}
 			return err
