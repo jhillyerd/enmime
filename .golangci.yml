@@ -10,7 +10,6 @@ linters:
     - contextcheck
     - decorder
     # - dupl
-    # - dupword
     - durationcheck
     - errchkjson
     - errname
@@ -56,7 +55,7 @@ linters:
     - promlinter
     - protogetter
     - reassign
-    # - revive
+    - revive
     - rowserrcheck
     - sloglint
     - stylecheck

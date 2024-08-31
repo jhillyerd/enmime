@@ -37,7 +37,7 @@ func TestPlainTextPart(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
-func TestAddChildInfiniteLoops(t *testing.T) {
+func TestAddChildInfiniteLoops(_ *testing.T) {
 	// Part adds itself
 	parentPart := &enmime.Part{
 		ContentType: "text/plain",
@@ -440,7 +440,7 @@ func TestReadPartErrorPolicy(t *testing.T) {
 	})
 
 	// example policy 3: always recover the partial content read, no matter the error
-	examplePolicy3 := enmime.ReadPartErrorPolicy(func(p *enmime.Part, err error) bool {
+	examplePolicy3 := enmime.ReadPartErrorPolicy(func(_ *enmime.Part, _ error) bool {
 		return true
 	})
 

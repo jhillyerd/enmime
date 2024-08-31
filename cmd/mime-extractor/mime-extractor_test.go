@@ -84,7 +84,7 @@ func TestExtractFailedToParse(t *testing.T) {
 
 func TestExtractAttachmentWriteFail(t *testing.T) {
 	s := &bytes.Buffer{}
-	fw := func(filename string, data []byte, perm os.FileMode) error {
+	fw := func(_ string, _ []byte, _ os.FileMode) error {
 		return errors.New("AttachmentWriteFail")
 	}
 	testExtractor := &extractor{
@@ -105,7 +105,7 @@ func TestExtractAttachmentWriteFail(t *testing.T) {
 func TestExtractSuccess(t *testing.T) {
 	b := &bytes.Buffer{}
 	attachmentCount := 0
-	fw := func(filename string, data []byte, perm os.FileMode) error {
+	fw := func(_ string, _ []byte, _ os.FileMode) error {
 		attachmentCount++
 		return nil
 	}

@@ -30,8 +30,8 @@ const (
 	utf8 = "utf-8"
 )
 
-// MediaTypeParseOptions controls the parsing of content-type and media-type strings.
-type MediaTypeParseOptions struct {
+// ParseOptions controls the parsing of content-type and media-type strings.
+type ParseOptions struct {
 	StripMediaTypeInvalidCharacters bool
 }
 
@@ -43,11 +43,11 @@ type MediaTypeParseOptions struct {
 //   - Unquoted values in media parameters containing 'tspecials' characters
 //   - Newline characters
 func Parse(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
-	return ParseWithOptions(ctype, MediaTypeParseOptions{})
+	return ParseWithOptions(ctype, ParseOptions{})
 }
 
 // ParseWithOptions parses media-type with additional options controlling the parsing behavior.
-func ParseWithOptions(ctype string, options MediaTypeParseOptions) (mtype string, params map[string]string, invalidParams []string, err error) {
+func ParseWithOptions(ctype string, options ParseOptions) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
 		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';', options)))))
 	if err != nil {
@@ -73,7 +73,7 @@ func ParseWithOptions(ctype string, options MediaTypeParseOptions) (mtype string
 
 // fixMangledMediaType is used to insert ; separators into media type strings that lack them, and
 // remove repeated parameters.
-func fixMangledMediaType(mtype string, sep rune, options MediaTypeParseOptions) string {
+func fixMangledMediaType(mtype string, sep rune, options ParseOptions) string {
 	strsep := string([]rune{sep})
 	if mtype == "" {
 		return ""

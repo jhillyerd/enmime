@@ -592,7 +592,7 @@ func TestBuilderAddAttachment(t *testing.T) {
 		"text/html",
 		"image/jpeg",
 	}
-	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotParts := root.DepthMatchAll(func(_ *enmime.Part) bool { return true })
 	gotTypes := make([]string, 0)
 	for _, p := range gotParts {
 		gotTypes = append(gotTypes, p.ContentType)
@@ -734,7 +734,7 @@ func TestBuilderAddInline(t *testing.T) {
 		"text/html",
 		"image/jpeg",
 	}
-	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotParts := root.DepthMatchAll(func(_ *enmime.Part) bool { return true })
 	gotTypes := make([]string, 0)
 	for _, p := range gotParts {
 		gotTypes = append(gotTypes, p.ContentType)
@@ -878,7 +878,7 @@ func TestBuilderAddOtherPart(t *testing.T) {
 		"text/html",
 		"image/jpeg",
 	}
-	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotParts := root.DepthMatchAll(func(_ *enmime.Part) bool { return true })
 	gotTypes := make([]string, 0)
 	for _, p := range gotParts {
 		contentType := p.ContentType
@@ -1016,7 +1016,7 @@ func TestBuilderFullStructure(t *testing.T) {
 		"multipart/related > image/png",
 		"multipart/mixed > image/jpeg",
 	}
-	gotParts := root.DepthMatchAll(func(p *enmime.Part) bool { return true })
+	gotParts := root.DepthMatchAll(func(_ *enmime.Part) bool { return true })
 	gotTypes := make([]string, 0)
 	for _, p := range gotParts {
 		pct := ""

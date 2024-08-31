@@ -7,7 +7,7 @@ import (
 )
 
 func TestSetCustomParseMediaType(t *testing.T) {
-	alwaysReturnHTML := func(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
+	alwaysReturnHTML := func(_ string) (mtype string, params map[string]string, invalidParams []string, err error) {
 		return "text/html", nil, nil, err
 	}
 	changeAndUtilizeDefault := func(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
