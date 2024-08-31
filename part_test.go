@@ -1321,6 +1321,8 @@ func TestCtypeInvalidCharacters(t *testing.T) {
 
 func TestDisableCharacterDetectionPart(t *testing.T) {
 	var wantp *enmime.Part
+
+	// chardet considers this test file to be ISO-8859-1.
 	r := test.OpenTestData("parts", "chardet-detection.raw")
 	parser := enmime.NewParser(enmime.DisableCharacterDetection(true))
 	p, err := parser.ReadParts(r)
