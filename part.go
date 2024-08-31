@@ -21,7 +21,6 @@ import (
 
 const (
 	minCharsetConfidence = 85
-	minCharsetRuneLength = 100
 )
 
 // Part represents a node in the MIME multipart tree.  The Content-Type, Disposition and File Name
@@ -199,6 +198,14 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 		return nil, errors.WithStack(err)
 	}
 
+	// Restore r.
+	r = bytes.NewReader(buf)
+
+	if p.parser.disableCharacterDetection && p.Charset != "" {
+		// Charset detection is disabled, use declared charset.
+		return p.convertFromStatedCharset(r), nil
+	}
+
 	cs, err := cd.DetectBest(buf)
 	switch err {
 	case nil:
@@ -207,11 +214,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 		p.addWarning(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	}
 
-	// Restore r.
-	r = bytes.NewReader(buf)
-
-	if (p.parser.disableCharacterDetection && p.Charset != "") ||
-		(cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < minCharsetRuneLength) {
+	if cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < p.parser.minCharsetDetectRunes {
 		// Low confidence or not enough characters, use declared character set.
 		return p.convertFromStatedCharset(r), nil
 	}

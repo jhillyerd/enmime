@@ -1343,3 +1343,30 @@ func TestDisableCharacterDetectionPart(t *testing.T) {
 
 	test.ComparePart(t, p, wantp)
 }
+
+func TestCharacterDetectionRunes(t *testing.T) {
+	var wantp *enmime.Part
+
+	// chardet considers this test file to be ISO-8859-1.
+	r := test.OpenTestData("parts", "chardet-detection.raw")
+
+	// Set minimum higher than test file length.
+	parser := enmime.NewParser(enmime.MinCharsetDetectRunes(150))
+	p, err := parser.ReadParts(r)
+
+	// Examine root
+	if err != nil {
+		t.Fatalf("Unexpected parse error: %+v", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	wantp = &enmime.Part{
+		ContentType: "text/plain",
+		PartID:      "0",
+		Charset:     "utf-8",
+	}
+
+	test.ComparePart(t, p, wantp)
+}
