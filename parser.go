@@ -18,7 +18,7 @@ type CustomParseMediaType func(ctype string) (mtype string, params map[string]st
 
 // Parser parses MIME.  Create with NewParser to inherit recommended defaults.
 type Parser struct {
-	maxStoredPartErrors             *int // TODO: Pointer until global var removed.
+	maxStoredPartErrors             int
 	multipartWOBoundaryAsSinglePart bool
 	readPartErrorPolicy             ReadPartErrorPolicy
 	skipMalformedParts              bool

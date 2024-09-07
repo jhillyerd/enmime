@@ -133,53 +133,7 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 	}
 }
 
-// Deprecated.
-func TestErrorLimit(t *testing.T) {
-	// Backup global variable
-	originalMaxPartErros := MaxPartErrors
-	defer func() {
-		MaxPartErrors = originalMaxPartErros
-	}()
-
-	addThreeErrors := func() int {
-		part := NewPart("text/plain")
-		part.addError("test1", "test1")
-		part.addError("test2", "test2")
-		part.addError("test3", "test3")
-
-		return len(part.Errors)
-	}
-
-	// Check unlimited
-	var errCount int
-	MaxPartErrors = 0
-	errCount = addThreeErrors()
-	if errCount != 3 {
-		t.Errorf("Expected unlimited errors (3), got %d", errCount)
-	}
-
-	// Check limit
-	MaxPartErrors = 1
-	errCount = addThreeErrors()
-	if errCount != 1 {
-		t.Errorf("Expected limited errors (1), got %d", errCount)
-	}
-
-	// Check limit matching count
-	MaxPartErrors = 3
-	errCount = addThreeErrors()
-	if errCount != 3 {
-		t.Errorf("Expected limited errors (3), got %d", errCount)
-	}
-}
-
 func TestErrorLimitOption(t *testing.T) {
-	// Backup global variable
-	originalMaxPartErros := MaxPartErrors
-	defer func() {
-		MaxPartErrors = originalMaxPartErros
-	}()
-
 	addThreeErrors := func(parser *Parser) int {
 		part := NewPart("text/plain")
 		if parser != nil {
@@ -204,13 +158,6 @@ func TestErrorLimitOption(t *testing.T) {
 	want = 3
 	got = addThreeErrors(NewParser())
 	assert.Equal(t, want, got, "expected unlimited errors")
-
-	// Check the default actually comes from deprecated MaxPartErrors global.
-	want = 1
-	MaxPartErrors = want
-	got = addThreeErrors(nil)
-	assert.Equal(t, want, got, "expected limited errors")
-	MaxPartErrors = 0
 
 	// Check limit.
 	want = 1

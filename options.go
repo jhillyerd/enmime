@@ -48,8 +48,7 @@ func MaxStoredPartErrors(n int) Option {
 type maxStoredPartErrorsOption int
 
 func (o maxStoredPartErrorsOption) apply(p *Parser) {
-	n := int(o)
-	p.maxStoredPartErrors = &n
+	p.maxStoredPartErrors = int(o)
 }
 
 // RawContent if set to true will not try to decode the CTE and return the raw part content.
