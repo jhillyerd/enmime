@@ -43,11 +43,6 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("[%s] %s: %s", sev, e.Name, e.Detail)
 }
 
-// String formats the enmime.Error as a string. DEPRECATED; use Error() instead.
-func (e *Error) String() string {
-	return e.Error()
-}
-
 // addError builds a severe Error and appends to the Part error slice.
 func (p *Part) addError(name string, detail string) {
 	p.addProblem(&Error{name, detail, true})
