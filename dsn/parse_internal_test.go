@@ -3,8 +3,8 @@ package dsn
 import (
 	"testing"
 
-	"github.com/jhillyerd/enmime"
-	"github.com/jhillyerd/enmime/internal/textproto"
+	"github.com/jhillyerd/enmime/v2"
+	"github.com/jhillyerd/enmime/v2/internal/textproto"
 
 	"github.com/stretchr/testify/assert"
 )

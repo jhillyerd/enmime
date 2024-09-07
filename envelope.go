@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/jaytaylor/html2text"
-	"github.com/jhillyerd/enmime/internal/coding"
-	inttp "github.com/jhillyerd/enmime/internal/textproto"
+	"github.com/jhillyerd/enmime/v2/internal/coding"
+	inttp "github.com/jhillyerd/enmime/v2/internal/textproto"
 	"github.com/pkg/errors"
 )
 

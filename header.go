@@ -9,10 +9,10 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/stringutil"
-	inttp "github.com/jhillyerd/enmime/internal/textproto"
-	"github.com/jhillyerd/enmime/mediatype"
+	"github.com/jhillyerd/enmime/v2/internal/coding"
+	"github.com/jhillyerd/enmime/v2/internal/stringutil"
+	inttp "github.com/jhillyerd/enmime/v2/internal/textproto"
+	"github.com/jhillyerd/enmime/v2/mediatype"
 
 	"github.com/pkg/errors"
 )

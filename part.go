@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/gogs/chardet"
-	"github.com/jhillyerd/enmime/internal/coding"
-	inttp "github.com/jhillyerd/enmime/internal/textproto"
-	"github.com/jhillyerd/enmime/mediatype"
+	"github.com/jhillyerd/enmime/v2/internal/coding"
+	inttp "github.com/jhillyerd/enmime/v2/internal/textproto"
+	"github.com/jhillyerd/enmime/v2/mediatype"
 	"github.com/pkg/errors"
 )
 

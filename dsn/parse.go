@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jhillyerd/enmime"
-	"github.com/jhillyerd/enmime/internal/textproto"
+	"github.com/jhillyerd/enmime/v2"
+	"github.com/jhillyerd/enmime/v2/internal/textproto"
 )
 
 // ParseReport parses p as a "container" for delivery status report (per rfc6522) if p is "multipart/report".

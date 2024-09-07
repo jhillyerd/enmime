@@ -5,7 +5,7 @@ package dsn
 import (
 	"strings"
 
-	"github.com/jhillyerd/enmime/internal/textproto"
+	"github.com/jhillyerd/enmime/v2/internal/textproto"
 )
 
 // Report represents delivery status report as per https://datatracker.ietf.org/doc/html/rfc6522.

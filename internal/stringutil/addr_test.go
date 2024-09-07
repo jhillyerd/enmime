@@ -4,7 +4,7 @@ import (
 	"net/mail"
 	"testing"
 
-	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/v2/internal/stringutil"
 )
 
 func TestJoinAddressEmpty(t *testing.T) {
