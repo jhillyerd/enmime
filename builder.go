@@ -13,7 +13,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/jhillyerd/enmime/internal/stringutil"
+	"github.com/jhillyerd/enmime/v2/internal/stringutil"
 )
 
 // MailBuilder facilitates the easy construction of a MIME message.  Each manipulation method

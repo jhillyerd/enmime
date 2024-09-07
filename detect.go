@@ -3,7 +3,7 @@ package enmime
 import (
 	"strings"
 
-	inttp "github.com/jhillyerd/enmime/internal/textproto"
+	inttp "github.com/jhillyerd/enmime/v2/internal/textproto"
 )
 
 // detectMultipartMessage returns true if the message has a recognized multipart Content-Type header

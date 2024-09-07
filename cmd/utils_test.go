@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/v2"
 )
 
 func TestMarkdownH1(t *testing.T) {

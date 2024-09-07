@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/v2"
 )
 
 // ExampleBuilder illustrates how to build and send a MIME encoded message.

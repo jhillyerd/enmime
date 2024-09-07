@@ -1,4 +1,4 @@
-module github.com/jhillyerd/enmime
+module github.com/jhillyerd/enmime/v2
 
 go 1.20
 

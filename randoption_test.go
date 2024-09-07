@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/v2"
 	"github.com/stretchr/testify/assert"
 )
 

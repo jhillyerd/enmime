@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/jhillyerd/enmime/internal/coding"
-	"github.com/jhillyerd/enmime/internal/textproto"
+	"github.com/jhillyerd/enmime/v2/internal/coding"
+	"github.com/jhillyerd/enmime/v2/internal/textproto"
 
 	"github.com/pkg/errors"
 )
