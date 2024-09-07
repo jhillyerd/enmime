@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/jhillyerd/enmime/v2/mediatype"
 )
 
 func TestSetCustomParseMediaType(t *testing.T) {
@@ -12,7 +14,7 @@ func TestSetCustomParseMediaType(t *testing.T) {
 	}
 	changeAndUtilizeDefault := func(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 		modifiedStr := strings.ReplaceAll(ctype, "application/Pamir Viewer", "application/PamirViewer")
-		return ParseMediaType(modifiedStr)
+		return mediatype.Parse(modifiedStr)
 	}
 	tcases := []struct {
 		ctype                string
@@ -57,7 +59,7 @@ func ExampleSetCustomParseMediaType() {
 	replaceSpecificContentType := func(ctype string) (mtype string, params map[string]string, invalidParams []string, err error) {
 		modifiedStr := strings.ReplaceAll(ctype, "application/Pamir Viewer", "application/PamirViewer")
 
-		return ParseMediaType(modifiedStr)
+		return mediatype.Parse(modifiedStr)
 	}
 
 	invalidMessageContent := `From: <enmime@parser.git>
