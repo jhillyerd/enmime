@@ -77,6 +77,7 @@ func buildEmail(t *testing.T, mode ReproducibilityMode) string {
 		b = enmime.Builder()
 	case TimestampSource:
 		b = enmime.Builder().RandSeed(time.Now().UTC().UnixNano())
+		time.Sleep(time.Microsecond)
 	default:
 		panic(fmt.Errorf("illegal mode: %d", mode))
 	}
