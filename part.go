@@ -50,6 +50,8 @@ type Part struct {
 	parser *Parser // Provides access to parsing options.
 
 	randSource rand.Source // optional rand for uuid boundary generation
+
+	encoder *Encoder // provides encoding options
 }
 
 // NewPart creates a new Part object.
@@ -493,4 +495,11 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		parent.PartID += ".0"
 	}
 	return nil
+}
+
+func (p *Part) WithEncoder(e *Encoder) *Part {
+	if e != nil {
+		p.encoder = e
+	}
+	return p
 }
