@@ -117,7 +117,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		} else {
 			cte = teBase64
 			if p.TextContent() && p.ContentReader == nil {
-				cte = selectTransferEncoding(p.Content, false)
+				cte = p.selectTransferEncoding(p.Content, false)
 				if p.Charset == "" {
 					p.Charset = utf8
 				}
@@ -144,7 +144,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		p.Header.Set(hnContentID, coding.ToIDHeader(p.ContentID))
 	}
 	fileName := p.FileName
-	switch selectTransferEncoding([]byte(p.FileName), true) {
+	switch p.selectTransferEncoding([]byte(p.FileName), true) {
 	case teBase64:
 		fileName = mime.BEncoding.Encode(utf8, p.FileName)
 	case teQuoted:
@@ -195,7 +195,7 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 		for _, v := range p.Header[k] {
 			encv := v
 			if !rawContent {
-				switch selectTransferEncoding([]byte(v), true) {
+				switch p.selectTransferEncoding([]byte(v), true) {
 				case teBase64:
 					encv = mime.BEncoding.Encode(utf8, v)
 				case teQuoted:
@@ -303,12 +303,18 @@ func (p *Part) encodeContentFromReader(b *bufio.Writer) error {
 }
 
 // selectTransferEncoding scans content for non-ASCII characters and selects 'b' or 'q' encoding.
-func selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncoding {
+func (p *Part) selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncoding {
 	if len(content) == 0 {
 		return te7Bit
 	}
+
 	// Binary chars remaining before we choose b64 encoding.
-	threshold := b64Percent * len(content) / 100
+	var threshold int
+	if p.encoder != nil && p.encoder.enforceQuotedCte {
+		threshold = 100
+	} else {
+		threshold = b64Percent * len(content) / 100
+	}
 	bincount := 0
 	for _, b := range content {
 		if (b < ' ' || '~' < b) && b != '\t' {
