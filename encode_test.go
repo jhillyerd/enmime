@@ -340,6 +340,18 @@ func TestEncodePartContentBinary(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-bin-content.golden")
 }
 
+func TestEncodePartWithForceQuotedPrintableCte(t *testing.T) {
+	nonASCIIcontent := bytes.Repeat([]byte{byte(0x10)}, 10)
+	p := enmime.NewPart("text/plain").WithEncoder(enmime.NewEncoder(enmime.ForceQuotedPrintableCte(true)))
+	p.Content = nonASCIIcontent
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.DiffStrings(t, []string{p.Header.Get("Content-Transfer-Encoding")}, []string{"quoted-printable"})
+}
+
 func TestEncodeFileModDate(t *testing.T) {
 	p := enmime.NewPart("text/plain")
 	p.Content = []byte("¡Hola, señor! Welcome to MIME")
