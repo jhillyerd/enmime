@@ -6,24 +6,23 @@ type EncoderOption interface {
 
 // Encoder implements MIME part encoding options
 type Encoder struct {
-	// Enforce Quoted encoding when selecting Content Transfer Encoding
-	enforceQuotedCte bool
+	forceQuotedPrintableCteOption bool
 }
 
-// EnforceQuotedPrintableCte enforces "quoted-printable" transfer encoding when selecting Content Transfer Encoding.
-func EnforceQuotedPrintableCte(b bool) EncoderOption {
-	return enforceQuotedCteOption(b)
+// ForceQuotedPrintableCte forces "quoted-printable" transfer encoding when selecting Content Transfer Encoding, preventing the use of base64.
+func ForceQuotedPrintableCte(b bool) EncoderOption {
+	return forceQuotedPrintableCteOption(b)
 }
 
-type enforceQuotedCteOption bool
+type forceQuotedPrintableCteOption bool
 
-func (o enforceQuotedCteOption) apply(p *Encoder) {
-	p.enforceQuotedCte = bool(o)
+func (o forceQuotedPrintableCteOption) apply(p *Encoder) {
+	p.forceQuotedPrintableCteOption = bool(o)
 }
 
 func NewEncoder(ops ...EncoderOption) *Encoder {
 	e := Encoder{
-		enforceQuotedCte: false,
+		forceQuotedPrintableCteOption: false,
 	}
 
 	for _, o := range ops {
