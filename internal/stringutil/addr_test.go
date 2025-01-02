@@ -108,6 +108,22 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 			have: `"Joe @ Company" <joe@company.com>;<other@company.com>`,
 			want: `"Joe @ Company" <joe@company.com>,<other@company.com>`,
 		},
+		{
+			have: `"Joe @ Company" <joe@company.com >;<other@company.com>`,
+			want: `"Joe @ Company" <joe@company.com>,<other@company.com>`,
+		},
+		{
+			have: `"Joe @ Company" <joe@company.com>;<other@company.com     >`,
+			want: `"Joe @ Company" <joe@company.com>,<other@company.com>`,
+		},
+		{
+			have: `"Joe @ Company" <joe@company.com>;<  other@company.com>`,
+			want: `"Joe @ Company" <joe@company.com>,<other@company.com>`,
+		},
+		{
+			have: `"Joe @ Company" <  joe@company.com  >;< other@company.com     >`,
+			want: `"Joe @ Company" <joe@company.com>,<other@company.com>`,
+		},
 	}
 	for _, tt := range testData {
 		t.Run(tt.have, func(t *testing.T) {

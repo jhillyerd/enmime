@@ -34,6 +34,7 @@ func EnsureCommaDelimitedAddresses(s string) string {
 	inQuotes := false
 	inDomain := false
 	escapeSequence := false
+	inAngles := false
 	sb := strings.Builder{}
 	for i, r := range s {
 		if escapeSequence {
@@ -46,6 +47,19 @@ func EnsureCommaDelimitedAddresses(s string) string {
 			sb.WriteRune(r)
 			continue
 		}
+
+		if r == '<' {
+			inAngles = true
+			sb.WriteRune(r)
+			continue
+		}
+
+		if r == '>' {
+			inAngles = false
+			sb.WriteRune(r)
+			continue
+		}
+
 		if inQuotes {
 			if r == '\\' {
 				escapeSequence = true
@@ -74,12 +88,16 @@ func EnsureCommaDelimitedAddresses(s string) string {
 					sb.WriteRune(r)
 					continue
 				}
-				if r == ' ' {
+				if r == ' ' && !inAngles {
 					inDomain = false
 					sb.WriteRune(',')
 					sb.WriteRune(r)
 					continue
 				}
+			}
+
+			if inAngles && r == ' ' {
+				continue
 			}
 		}
 		sb.WriteRune(r)
