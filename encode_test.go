@@ -9,6 +9,7 @@ import (
 
 	"github.com/jhillyerd/enmime/v2"
 	"github.com/jhillyerd/enmime/v2/internal/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEncodePartEmpty(t *testing.T) {
@@ -349,7 +350,10 @@ func TestEncodePartWithForceQuotedPrintableCte(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	test.DiffStrings(t, []string{p.Header.Get("Content-Transfer-Encoding")}, []string{"quoted-printable"})
+
+	// Verify output is QP encoded.
+	assert.Equal(t, "quoted-printable", p.Header.Get("Content-Transfer-Encoding"))
+	assert.Contains(t, b.String(), "=10=10=10")
 }
 
 func TestEncodeFileModDate(t *testing.T) {
