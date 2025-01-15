@@ -6,6 +6,7 @@ require (
 	github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a
 	github.com/go-test/deep v1.1.1
 	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f
+	github.com/huangshaokun/mimequotedprintable v0.0.0-20230626102010-a5b2166f9691
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0

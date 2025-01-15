@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"io"
 	"mime"
-	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/huangshaokun/mimequotedprintable"
 	"github.com/jhillyerd/enmime/v2/internal/coding"
 	"github.com/jhillyerd/enmime/v2/internal/stringutil"
 )
@@ -243,7 +243,7 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 			text = text[lineLen:]
 		}
 	case teQuoted:
-		qp := quotedprintable.NewWriter(b)
+		qp := mimequotedprintable.NewWriter(b)
 		if _, err = qp.Write(p.Content); err != nil {
 			return err
 		}
