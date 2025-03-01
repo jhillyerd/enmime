@@ -8,8 +8,8 @@ require (
 	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.9.0
-	golang.org/x/text v0.17.0
+	github.com/stretchr/testify v1.10.0
+	golang.org/x/text v0.22.0
 )
 
 require (
@@ -19,6 +19,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
-	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
