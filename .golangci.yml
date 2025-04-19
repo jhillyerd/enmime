@@ -1,5 +1,4 @@
-run:
-  timeout: 5m
+version: "2"
 linters:
   enable:
     - asasalint
@@ -10,28 +9,17 @@ linters:
     - contextcheck
     - copyloopvar
     - decorder
-    # - dupl
     - durationcheck
     - errchkjson
     - errname
-    # - errorlint
-    # - exhaustive
-    # - forcetypeassert
     - ginkgolinter
     - gocheckcompilerdirectives
-    # - gochecknoinits
     - gochecksumtype
     - gocritic
-    # - godot
-    # - goerr113
-    - gofmt
-    # - gofumpt
     - goheader
-    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
-    # - gosec
     - gosmopolitan
     - grouper
     - importas
@@ -43,8 +31,6 @@ linters:
     - misspell
     - musttag
     - nilerr
-    # - nilnil
-    # - nlreturn
     - noctx
     - nolintlint
     - nosprintfhostport
@@ -57,17 +43,41 @@ linters:
     - revive
     - rowserrcheck
     - sloglint
-    - stylecheck
+    - staticcheck
     - tagalign
     - tagliatelle
-    - tenv
     - testableexamples
     - testifylint
     - thelper
     - tparallel
-    # - unconvert
     - unparam
     - usestdlibvars
     - wastedassign
     - whitespace
     - zerologlint
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+    rules:
+      # Exclude specific linters from test files.
+      - path: _test\.go
+        linters:
+          - gosmopolitan
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
