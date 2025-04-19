@@ -69,7 +69,7 @@ func TestSuccess(t *testing.T) {
 	if b.Len() > 0 {
 		t.Fatal("Should not have produced any errors, failed")
 	}
-	if !(s.Len() > 0) {
+	if s.Len() == 0 {
 		t.Fatal("Should have printed markdown document, failed")
 	}
 }

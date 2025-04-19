@@ -867,7 +867,7 @@ func TestBuilderAddOtherPart(t *testing.T) {
 
 	p := root.DepthMatchFirst(func(p *enmime.Part) bool { return p.ContentID == cid })
 	require.NotNil(t, p)
-	assert.Equal(t, "", p.Disposition)
+	assert.Empty(t, p.Disposition)
 	assert.Equal(t, want, string(p.Content))
 
 	// Check structure
