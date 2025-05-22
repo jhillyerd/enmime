@@ -159,7 +159,18 @@ func (p Parser) ReadEnvelope(r io.Reader) (*Envelope, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to ReadParts")
 	}
-	return p.EnvelopeFromPart(root)
+
+	e, err := p.EnvelopeFromPart(root)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to EnvelopeFromPart")
+	}
+
+	err = e.GatherNestedErrors()
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to GatherNestedErrors")
+	}
+
+	return e, nil
 }
 
 // EnvelopeFromPart uses the provided Part tree to build an Envelope, downconverting HTML to plain
@@ -210,6 +221,13 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 		}
 	}
 
+	e.Errors = append(e.Errors, root.Errors...)
+
+	return e, nil
+}
+
+// GatherNestedErrors gathers nested errors
+func (e *Envelope) GatherNestedErrors() error {
 	// Copy part errors into Envelope.
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
@@ -219,7 +237,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 		})
 	}
 
-	return e, nil
+	return nil
 }
 
 // parseTextOnlyBody parses a plain text message in root that has MIME-like headers, but
