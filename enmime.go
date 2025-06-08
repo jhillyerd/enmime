@@ -53,5 +53,5 @@
 // enmime is open source software released under the MIT License.  The latest version can be found
 // at https://github.com/jhillyerd/enmime/v2
 //
-// [1]: https://github.com/jaytaylor/html2text
+// [1]: https://github.com/inbucket/html2text
 package enmime // import "github.com/jhillyerd/enmime/v2"

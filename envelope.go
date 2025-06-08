@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jaytaylor/html2text"
+	"github.com/inbucket/html2text"
 	"github.com/jhillyerd/enmime/v2/internal/coding"
 	inttp "github.com/jhillyerd/enmime/v2/internal/textproto"
 	"github.com/pkg/errors"
