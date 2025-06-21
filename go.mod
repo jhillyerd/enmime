@@ -1,14 +1,12 @@
 module github.com/jhillyerd/enmime/v2
 
-go 1.24.3
-
-toolchain go1.24.4
+go 1.23.9
 
 require (
 	github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a
 	github.com/go-test/deep v1.1.1
 	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f
-	github.com/inbucket/html2text v1.0.0
+	github.com/inbucket/html2text v0.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/text v0.26.0
