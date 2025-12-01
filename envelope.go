@@ -305,12 +305,12 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 
 	// Locate attachments
 	e.Attachments = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition == cdAttachment || p.ContentType == ctAppOctetStream
+		return (p.Disposition == cdAttachment || p.ContentType == ctAppOctetStream) && p.ContentID == "" && p.FileName != ""
 	})
 
 	// Locate inlines
 	e.Inlines = root.BreadthMatchAll(func(p *Part) bool {
-		return p.Disposition == cdInline && !strings.HasPrefix(p.ContentType, ctMultipartPrefix)
+		return p.Disposition == cdInline && !strings.HasPrefix(p.ContentType, ctMultipartPrefix) && p.ContentID != ""
 	})
 
 	// Locate others parts not considered in attachments or inlines

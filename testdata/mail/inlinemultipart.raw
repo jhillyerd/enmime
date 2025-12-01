@@ -30,9 +30,9 @@ cmNlIChXZUpYRnh
 
 --0__=4EBB0828DFD318FF8f9e8a93df938690918c4EBB0828DFD318FF
 Content-Type: text/plain; name="test.txt"; name="test.txt"
-Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="test.txt"
+Content-Disposition: inline; filename="test.txt"
+Content-Id: <8B8481A2-25CA-4886-9B5A-8EB9115DD064@skynet>
 
 Text attachment.
 
