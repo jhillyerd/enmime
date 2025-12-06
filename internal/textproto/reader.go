@@ -273,6 +273,8 @@ func (r *Reader) ReadCodeLine(expectCode int) (code int, message string, err err
 func (r *Reader) ReadResponse(expectCode int) (code int, message string, err error) {
 	code, continued, message, err := r.readCodeLine(expectCode)
 	multi := continued
+	var messageBuilder strings.Builder
+	messageBuilder.WriteString(message)
 	for continued {
 		line, err := r.ReadLine()
 		if err != nil {
@@ -283,12 +285,15 @@ func (r *Reader) ReadResponse(expectCode int) (code int, message string, err err
 		var moreMessage string
 		code2, continued, moreMessage, err = parseCodeLine(line, 0)
 		if err != nil || code2 != code {
-			message += "\n" + strings.TrimRight(line, "\r\n")
+			messageBuilder.WriteString("\n")
+			messageBuilder.WriteString(strings.TrimRight(line, "\r\n"))
 			continued = true
 			continue
 		}
-		message += "\n" + moreMessage
+		messageBuilder.WriteString("\n")
+		messageBuilder.WriteString(moreMessage)
 	}
+	message = messageBuilder.String()
 	if err != nil && multi && message != "" {
 		// replace one line error message with all lines (full message)
 		err = &textproto.Error{Code: code, Msg: message}

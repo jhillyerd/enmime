@@ -3,6 +3,7 @@ package enmime
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,16 +118,16 @@ func TestErrorEnvelopeWarnings(t *testing.T) {
 				}
 			}
 			if !satisfied {
-				var errorList string
+				var errorList strings.Builder
 				for _, perr := range e.Errors {
-					errorList += perr.Error()
-					errorList += "\n"
+					errorList.WriteString(perr.Error())
+					errorList.WriteString("\n")
 				}
 				t.Errorf(
 					"File %q should have error of type %q, got these instead:\n%s",
 					tt.filename,
 					tt.perror,
-					errorList)
+					errorList.String())
 			}
 		})
 	}
