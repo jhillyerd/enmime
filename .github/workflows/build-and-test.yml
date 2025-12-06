@@ -1,16 +1,17 @@
 name: Build and Test
+
 on:
   push:
   pull_request:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         go:
-          - 1.21.x
-          - 1.22.x
-          - 1.23.x
+          - 1.24.x
+          - 1.25.x
     name: Go ${{ matrix.go }} build
     steps:
       - uses: actions/checkout@v6
