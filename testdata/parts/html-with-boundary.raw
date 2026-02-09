@@ -1,0 +1,12 @@
+Content-Type: multipart/mixed; boundary="outer-boundary"
+
+--outer-boundary
+Content-Type: text/html;
+	boundary="_001_boundary_";
+	charset="UTF-8";
+	type="multipart/alternative"
+Content-Transfer-Encoding: quoted-printable
+
+<p>An HTML section</p>
+
+--outer-boundary--

@@ -25,6 +25,8 @@ const (
 	ErrorMissingRecipient = "no recipients (to, cc, bcc) set"
 	// ErrorMalformedChildPart name.
 	ErrorMalformedChildPart = "Malformed child part"
+	// ErrorDataHasBoundary name.
+	ErrorDataHasBoundary = "Data contains boundary marker"
 )
 
 // Error describes an error encountered while parsing.

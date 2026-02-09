@@ -469,6 +469,20 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 			}
 			parent.AddChild(p)
 			continue
+		} else if detectTextHeader(p, inttp.MIMEHeader(p.Header), false) {
+			// Some parts are data but for some reason have a boundary header field so do not treat them
+			// as multipart and add an error
+			parent.addErrorf(ErrorDataHasBoundary, "content is text or data but has a boundary marker")
+			// Content is text or data, decode it.
+			if err = p.decodeContent(bbr, p.parser.readPartErrorPolicy); err != nil {
+				if p.parser.skipMalformedParts {
+					parent.addErrorf(ErrorMalformedChildPart, "decode content: %s", err.Error())
+					continue
+				}
+				return err
+			}
+			parent.AddChild(p)
+			continue
 		}
 
 		parent.AddChild(p)
