@@ -989,6 +989,41 @@ func TestClonePart(t *testing.T) {
 	test.ComparePart(t, clone, p)
 }
 
+func TestHtmlPartHasBoundary(t *testing.T) {
+	var want string
+	var wantp *enmime.Part
+	r := test.OpenTestData("parts", "html-with-boundary.raw")
+	p, err := enmime.ReadParts(r)
+
+	if err != nil {
+		t.Fatalf("Unexpected parse error: %+v", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+
+	// Examine root
+	wantp = &enmime.Part{
+		FirstChild:  test.PartExists,
+		ContentType: "multipart/mixed",
+		PartID:      "0",
+	}
+	test.ComparePart(t, p, wantp)
+
+	// Examine first child
+	p = p.FirstChild
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		ContentType: "text/html",
+		Charset:     "UTF-8",
+		PartID:      "1",
+	}
+	test.ComparePart(t, p, wantp)
+
+	want = "An HTML section"
+	test.ContentContainsString(t, p.Content, want)
+}
+
 func TestBarrenContentType(t *testing.T) {
 	r := test.OpenTestData("parts", "barren-content-type.raw")
 	p, err := enmime.ReadParts(r)
