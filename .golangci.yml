@@ -63,14 +63,14 @@ linters:
       - legacy
       - std-error-handling
     paths:
-      - third_party$
-      - builtin$
-      - examples$
+      # Mostly just imported from Go stdlib, don't chase lints.
+      - internal/textproto/
     rules:
       # Exclude specific linters from test files.
-      - path: _test\.go
+      - path: '_test\.go'
         linters:
           - gosmopolitan
+          - prealloc
 formatters:
   enable:
     - gofmt

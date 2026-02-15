@@ -99,7 +99,7 @@ func (p MailBuilder) ToAddrs(to []mail.Address) MailBuilder {
 
 // GetTo returns a copy of the stored to addresses.
 func (p *MailBuilder) GetTo() []mail.Address {
-	var to []mail.Address
+	to := make([]mail.Address, 0, len(p.to))
 	to = append(to, p.to...)
 	return to
 }
@@ -121,7 +121,7 @@ func (p MailBuilder) CCAddrs(cc []mail.Address) MailBuilder {
 
 // GetCC returns a copy of the stored cc addresses.
 func (p *MailBuilder) GetCC() []mail.Address {
-	var cc []mail.Address
+	cc := make([]mail.Address, 0, len(p.cc))
 	cc = append(cc, p.cc...)
 	return cc
 }
@@ -146,7 +146,7 @@ func (p MailBuilder) BCCAddrs(bcc []mail.Address) MailBuilder {
 
 // GetBCC returns a copy of the stored bcc addresses.
 func (p *MailBuilder) GetBCC() []mail.Address {
-	var bcc []mail.Address
+	bcc := make([]mail.Address, 0, len(p.bcc))
 	bcc = append(bcc, p.bcc...)
 	return bcc
 }
@@ -201,7 +201,7 @@ func (p MailBuilder) Text(body []byte) MailBuilder {
 
 // GetText returns a copy of the stored text/plain part.
 func (p *MailBuilder) GetText() []byte {
-	var text []byte
+	text := make([]byte, 0, len(p.text))
 	text = append(text, p.text...)
 	return text
 }
@@ -214,7 +214,7 @@ func (p MailBuilder) HTML(body []byte) MailBuilder {
 
 // GetHTML returns a copy of the stored text/html part.
 func (p *MailBuilder) GetHTML() []byte {
-	var html []byte
+	html := make([]byte, 0, len(p.html))
 	html = append(html, p.html...)
 	return html
 }
