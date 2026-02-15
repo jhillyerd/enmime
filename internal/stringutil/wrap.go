@@ -2,15 +2,23 @@ package stringutil
 
 // Wrap builds a byte slice from strs, wrapping on word boundaries before maxLen chars
 func Wrap(maxLen int, strs ...string) []byte {
-	input := make([]byte, 0)
-	output := make([]byte, 0)
+	total := 0
+	for _, s := range strs {
+		total += len(s)
+	}
+	input := make([]byte, 0, total)
 	for _, s := range strs {
 		input = append(input, []byte(s)...)
 	}
-	if len(input) < maxLen {
+
+	if total < maxLen {
 		// Doesn't need to be wrapped
 		return input
 	}
+
+	margin := (total / maxLen) * 6
+	output := make([]byte, 0, total+margin)
+
 	ls := -1 // Last seen space index
 	lw := -1 // Last written byte index
 	ll := 0  // Length of current line
@@ -32,5 +40,6 @@ func Wrap(maxLen int, strs ...string) []byte {
 			}
 		}
 	}
+
 	return append(output, input[lw+1:]...)
 }
