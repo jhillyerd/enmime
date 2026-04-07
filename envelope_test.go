@@ -74,11 +74,6 @@ func TestParseNonMimeHTML(t *testing.T) {
 			t.Errorf("e.Errors[0] got: %v, want: %v", got, want)
 		}
 	} else {
-		for _, err = range e.Errors {
-			fmt.Println(err.Error())
-			fmt.Println(enmime.ErrorPlainTextFromHTML)
-
-		}
 		t.Errorf("len(e.Errors) got: %v, want: 1", len(e.Errors))
 	}
 
