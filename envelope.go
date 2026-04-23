@@ -175,7 +175,7 @@ func (p Parser) ReadEnvelope(r io.Reader) (*Envelope, error) {
 
 // EnvelopeFromPart uses the provided Part tree to build an Envelope, downconverting HTML to plain
 // text if needed, and sorting the attachments, inlines and other parts into their respective
-// slices.  Errors are collected from all Parts and placed into the Envelopes Errors slice.
+// slices.  Gather errors from all parts with Envelope.GatherNestedErrors().
 func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	return defaultParser.EnvelopeFromPart(root)
 }
