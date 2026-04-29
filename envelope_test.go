@@ -61,6 +61,7 @@ func TestParseNonMime(t *testing.T) {
 
 func TestParseNonMimeHTML(t *testing.T) {
 	msg := test.OpenTestData("mail", "non-mime-html.raw")
+
 	e, err := enmime.ReadEnvelope(msg)
 
 	if err != nil {
@@ -84,6 +85,57 @@ func TestParseNonMimeHTML(t *testing.T) {
 	want = "<span>This</span>"
 	if !strings.Contains(e.HTML, want) {
 		t.Errorf("Expected %q to contain %q", e.HTML, want)
+	}
+}
+
+// TestEnvelopeFromPartDoesNotGatherErrors verifies that EnvelopeFromPart does not collect errors,
+// while GatherNestedErrors does. This enforces the separation of concerns: EnvelopeFromPart builds
+// the envelope structure, and GatherNestedErrors is responsible for error collection.
+func TestEnvelopeFromPartDoesNotGatherErrors(t *testing.T) {
+	// Use a message that generates errors (HTML without plain text)
+	msg := test.OpenTestData("mail", "non-mime-html.raw")
+	parser := enmime.NewParser()
+	root, err := parser.ReadParts(msg)
+	if err != nil {
+		t.Fatalf("Failed to read parts: %v", err)
+	}
+
+	// Call EnvelopeFromPart directly (not ReadEnvelope)
+	e, err := parser.EnvelopeFromPart(root)
+	if err != nil {
+		t.Fatalf("Failed to create envelope from part: %v", err)
+	}
+
+	// EnvelopeFromPart should NOT have collected errors
+	if len(e.Errors) != 0 {
+		t.Errorf("EnvelopeFromPart should not gather errors, but got %d errors:", len(e.Errors))
+		for _, err := range e.Errors {
+			t.Logf("  - %v", err)
+		}
+	}
+
+	// Verify that the envelope structure was built correctly
+	if e.HTML == "" {
+		t.Error("Expected HTML content from envelope structure building")
+	}
+
+	// Now call GatherNestedErrors
+	err = e.GatherNestedErrors()
+	if err != nil {
+		t.Fatalf("GatherNestedErrors failed: %v", err)
+	}
+
+	// GatherNestedErrors SHOULD have collected the error
+	if len(e.Errors) != 1 {
+		t.Errorf("GatherNestedErrors should collect exactly 1 error, got %d", len(e.Errors))
+	} else if e.Errors[0].Name != enmime.ErrorPlainTextFromHTML {
+		t.Errorf("Expected error %q, got %q", enmime.ErrorPlainTextFromHTML, e.Errors[0].Name)
+	}
+
+	// Verify text was downconverted from HTML
+	want := "This is *a* *test* mailing"
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Expected %q to contain %q", e.Text, want)
 	}
 }
 

@@ -159,12 +159,23 @@ func (p Parser) ReadEnvelope(r io.Reader) (*Envelope, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to ReadParts")
 	}
-	return p.EnvelopeFromPart(root)
+
+	e, err := p.EnvelopeFromPart(root)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to EnvelopeFromPart")
+	}
+
+	err = e.GatherNestedErrors()
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to GatherNestedErrors")
+	}
+
+	return e, nil
 }
 
 // EnvelopeFromPart uses the provided Part tree to build an Envelope, downconverting HTML to plain
 // text if needed, and sorting the attachments, inlines and other parts into their respective
-// slices.  Errors are collected from all Parts and placed into the Envelopes Errors slice.
+// slices.  Gather errors from all parts with Envelope.GatherNestedErrors().
 func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	return defaultParser.EnvelopeFromPart(root)
 }
@@ -210,7 +221,12 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 		}
 	}
 
-	// Copy part errors into Envelope.
+	return e, nil
+}
+
+// GatherNestedErrors gathers errors from the entire part tree (including the root) and adds them to the Envelope.
+func (e *Envelope) GatherNestedErrors() error {
+	// Copy part errors from all nested/child/sibling parts into Envelope.
 	if e.Root != nil {
 		_ = e.Root.DepthMatchAll(func(part *Part) bool {
 			// Using DepthMatchAll to traverse all parts, don't care about result.
@@ -219,7 +235,7 @@ func (p Parser) EnvelopeFromPart(root *Part) (*Envelope, error) {
 		})
 	}
 
-	return e, nil
+	return nil
 }
 
 // parseTextOnlyBody parses a plain text message in root that has MIME-like headers, but
