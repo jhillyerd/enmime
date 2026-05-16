@@ -7,5 +7,6 @@ pkgs.mkShell {
     gopls
   ];
 
+  GOTOOLCHAIN = "go1.25.5";
   hardeningDisable = [ "fortify" ];
 }
