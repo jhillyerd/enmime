@@ -3,11 +3,8 @@ package enmime
 import (
 	"bufio"
 	"bytes"
-	"fmt"
-	"mime"
 	"net/mail"
 	"net/textproto"
-	"strings"
 
 	"github.com/jhillyerd/enmime/v2/internal/coding"
 	"github.com/jhillyerd/enmime/v2/internal/stringutil"
@@ -184,61 +181,4 @@ line:
 // Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
 func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
 	return ReadHeader(r, &partErrorCollector{p})
-}
-
-// decodeToUTF8Base64Header decodes a MIME header per RFC 2047, reencoding to =?utf-8b?
-func decodeToUTF8Base64Header(input string) string {
-	if !strings.Contains(input, "=?") {
-		// Don't scan if there is nothing to do here
-		return input
-	}
-
-	// The standard lib performs an incremental inspection of this string, where the
-	// "skipSpace" method only strings.trimLeft for spaces and tabs. Here we have a
-	// hard dependency on space existing and not on next expected rune.
-	//
-	// For resolving #112 with the least change, I will implement the
-	// "quoted display-name" detector, which will resolve the case specific
-	// issue stated in #112, but only in the case of a quoted display-name
-	// followed, without whitespace, by addr-spec.
-	tokens := strings.FieldsFunc(quotedDisplayName(input), whiteSpaceRune)
-	output := make([]string, len(tokens))
-
-	for i, token := range tokens {
-		if len(token) > 4 && strings.Contains(token, "=?") {
-			// Stash parenthesis, they should not be encoded
-			prefix := ""
-			suffix := ""
-			if token[0] == '(' {
-				prefix = "("
-				token = token[1:]
-			}
-			if token[len(token)-1] == ')' {
-				suffix = ")"
-				token = token[:len(token)-1]
-			}
-			// Base64 encode token
-			output[i] = prefix +
-				mime.BEncoding.Encode("UTF-8", coding.DecodeExtHeader(token)) +
-				suffix
-		} else {
-			output[i] = token
-		}
-	}
-
-	// Return space separated tokens
-	return strings.Join(output, " ")
-}
-
-func quotedDisplayName(s string) string {
-	if !strings.HasPrefix(s, "\"") {
-		return s
-	}
-	idx := strings.LastIndex(s, "\"")
-	return fmt.Sprintf("%s %s", s[:idx+1], s[idx+1:])
-}
-
-// Detects a RFC-822 linear-white-space, passed to strings.FieldsFunc.
-func whiteSpaceRune(r rune) bool {
-	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
 }

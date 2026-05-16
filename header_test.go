@@ -9,31 +9,6 @@ import (
 	"github.com/jhillyerd/enmime/v2/internal/textproto"
 )
 
-// Test re-encoding to base64
-func TestDecodeToUTF8Base64Header(t *testing.T) {
-	var testTable = []struct {
-		in, want string
-	}{
-		{"no encoding", "no encoding"},
-		{"=?utf-8?q?abcABC_=24_=c2=a2_=e2=82=ac?=", "=?UTF-8?b?YWJjQUJDICQgwqIg4oKs?="},
-		{"=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=", "=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?="},
-		{"=?big5?q?=a1=5d_=a1=61_=a1=71?=", "=?UTF-8?b?77yIIO+9myDjgIg=?="},
-		// Must respect separate tokens
-		{"=?UTF-8?Q?Miros=C5=82aw?= <u@h>", "=?UTF-8?b?TWlyb3PFgmF3?= <u@h>"},
-		{"First Last <u@h> (=?iso-8859-1?q?#=a3_c=a9_r=ae_u=b5?=)",
-			"First Last <u@h> (=?UTF-8?b?I8KjIGPCqSBywq4gdcK1?=)"},
-		// Quoted display name without space before angle-addr spec, issue #112
-		{"\"=?UTF-8?b?TWlyb3PFgmF3?=\"<u@h>", "=?UTF-8?b?Ik1pcm9zxYJhdyI=?= <u@h>"},
-	}
-
-	for _, tt := range testTable {
-		got := decodeToUTF8Base64Header(tt.in)
-		if got != tt.want {
-			t.Errorf("DecodeHeader(%q) == %q, want: %q", tt.in, got, tt.want)
-		}
-	}
-}
-
 func TestParseAddressListNoFailures(t *testing.T) {
 	testStrings := []string{
 		"user@example.com",
