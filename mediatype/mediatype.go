@@ -3,6 +3,7 @@ package mediatype
 import (
 	"fmt"
 	"mime"
+	"slices"
 	"strings"
 	_utf8 "unicode/utf8"
 
@@ -272,11 +273,8 @@ findValueStart:
 		param.WriteString(`""`)
 	} else {
 		// The beginning of the value is not at the end of the string.
-		for _, v := range []byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='} {
-			if s[0] == v {
-				quoteIfUnquoted()
-				break
-			}
+		if slices.Contains([]byte{'(', ')', '<', '>', '@', ',', ':', '/', '[', ']', '?', '='}, s[0]) {
+			quoteIfUnquoted()
 		}
 
 		_, runeLength := _utf8.DecodeRuneInString(s[i:])

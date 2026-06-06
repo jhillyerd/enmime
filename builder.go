@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"maps"
 	"math/rand"
 	"mime"
 	"net/mail"
@@ -180,9 +181,7 @@ func (p *MailBuilder) GetReplyTo() []mail.Address {
 func (p MailBuilder) Header(name, value string) MailBuilder {
 	// Copy existing header map
 	h := textproto.MIMEHeader{}
-	for k, v := range p.header {
-		h[k] = v
-	}
+	maps.Copy(h, p.header)
 	h.Add(name, value)
 	p.header = h
 	return p

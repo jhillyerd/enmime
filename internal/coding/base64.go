@@ -42,13 +42,10 @@ func NewBase64Cleaner(r io.Reader) *Base64Cleaner {
 // Read method for io.Reader interface.
 func (bc *Base64Cleaner) Read(p []byte) (n int, err error) {
 	// Size our buf to smallest of len(p) or len(bc.buffer).
-	size := len(bc.buffer)
-	if size > len(p) {
-		size = len(p)
-	}
+	size := min(len(bc.buffer), len(p))
 	buf := bc.buffer[:size]
 	bn, err := bc.r.Read(buf)
-	for i := 0; i < bn; i++ {
+	for i := range bn {
 		switch base64CleanerTable[buf[i]&0x7f] {
 		case -2:
 			// Strip these silently: tab, \n, \r, space, equals sign.

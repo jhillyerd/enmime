@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/base64"
 	"io"
+	"maps"
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
@@ -154,9 +155,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	if p.ContentType != "" {
 		// Build content type header.
 		param := make(map[string]string)
-		for k, v := range p.ContentTypeParams {
-			param[k] = v
-		}
+		maps.Copy(param, p.ContentTypeParams)
 		setParamValue(param, hpCharset, p.Charset)
 		setParamValue(param, hpName, fileName)
 		setParamValue(param, hpBoundary, p.Boundary)
@@ -278,10 +277,7 @@ func (p *Part) encodeContentFromReader(b *bufio.Writer) error {
 		}
 
 		for i := 0; i < n; i += base64DecodedLineLen {
-			size := n - i
-			if size > base64DecodedLineLen {
-				size = base64DecodedLineLen
-			}
+			size := min(n-i, base64DecodedLineLen)
 
 			enc.Encode(text, chunk[i:i+size])
 			if _, err := b.Write(text[:enc.EncodedLen(size)]); err != nil {

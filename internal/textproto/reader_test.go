@@ -141,7 +141,7 @@ func TestReadMIMEHeaderNoKey(t *testing.T) {
 
 func TestLargeReadMIMEHeader(t *testing.T) {
 	data := make([]byte, 16*1024)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		data[i] = 'x'
 	}
 	sdata := string(data)
