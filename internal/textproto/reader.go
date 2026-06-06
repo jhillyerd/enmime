@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net/textproto"
 	"strconv"
 	"strings"
 	"sync"
@@ -200,20 +199,20 @@ func (r *Reader) readCodeLine(expectCode int) (code int, continued bool, message
 
 func parseCodeLine(line string, expectCode int) (code int, continued bool, message string, err error) {
 	if len(line) < 4 || line[3] != ' ' && line[3] != '-' {
-		err = textproto.ProtocolError("short response: " + line)
+		err = ProtocolError("short response: " + line)
 		return
 	}
 	continued = line[3] == '-'
 	code, err = strconv.Atoi(line[0:3])
 	if err != nil || code < 100 {
-		err = textproto.ProtocolError("invalid response code: " + line)
+		err = ProtocolError("invalid response code: " + line)
 		return
 	}
 	message = line[4:]
 	if 1 <= expectCode && expectCode < 10 && code/100 != expectCode ||
 		10 <= expectCode && expectCode < 100 && code/10 != expectCode ||
 		100 <= expectCode && expectCode < 1000 && code != expectCode {
-		err = &textproto.Error{Code: code, Msg: message}
+		err = &Error{Code: code, Msg: message}
 	}
 	return
 }
@@ -238,7 +237,7 @@ func parseCodeLine(line string, expectCode int) (code int, continued bool, messa
 func (r *Reader) ReadCodeLine(expectCode int) (code int, message string, err error) {
 	code, continued, message, err := r.readCodeLine(expectCode)
 	if err == nil && continued {
-		err = textproto.ProtocolError("unexpected multi-line response: " + message)
+		err = ProtocolError("unexpected multi-line response: " + message)
 	}
 	return
 }
@@ -295,7 +294,7 @@ func (r *Reader) ReadResponse(expectCode int) (code int, message string, err err
 	message = messageBuilder.String()
 	if err != nil && multi && message != "" {
 		// replace one line error message with all lines (full message)
-		err = &textproto.Error{Code: code, Msg: message}
+		err = &Error{Code: code, Msg: message}
 	}
 	return
 }
@@ -513,7 +512,7 @@ func readMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		if err != nil {
 			return m, err
 		}
-		return m, textproto.ProtocolError("malformed MIME header initial line: " + string(line))
+		return m, ProtocolError("malformed MIME header initial line: " + string(line))
 	}
 
 	for {
@@ -525,15 +524,15 @@ func readMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		// Key ends at first colon.
 		k, v, ok := bytes.Cut(kv, colon)
 		if !ok {
-			return m, textproto.ProtocolError("malformed MIME header line: " + string(kv))
+			return m, ProtocolError("malformed MIME header line: " + string(kv))
 		}
 		key, ok := canonicalMIMEHeaderKey(k)
 		if !ok {
-			return m, textproto.ProtocolError("malformed MIME header line: " + string(kv))
+			return m, ProtocolError("malformed MIME header line: " + string(kv))
 		}
 		for _, c := range v {
 			if !validHeaderValueByte(c) {
-				return m, textproto.ProtocolError("malformed MIME header line: " + string(kv))
+				return m, ProtocolError("malformed MIME header line: " + string(kv))
 			}
 		}
 
@@ -585,7 +584,7 @@ func noValidation(_ []byte) error { return nil }
 // contain a colon.
 func mustHaveFieldNameColon(line []byte) error {
 	if bytes.IndexByte(line, ':') < 0 {
-		return textproto.ProtocolError(fmt.Sprintf("malformed MIME header: missing colon: %q", line))
+		return ProtocolError(fmt.Sprintf("malformed MIME header: missing colon: %q", line))
 	}
 	return nil
 }
