@@ -3,6 +3,7 @@ package textproto
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -32,7 +33,7 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		if err != nil {
 			return m, err
 		}
-		return m, ProtocolError("malformed MIME header initial line: " + string(line))
+		return m, ProtocolError(fmt.Sprintf("malformed MIME header initial line: %q", line))
 	}
 
 	for {
@@ -44,11 +45,11 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		// Key ends at first colon.
 		k, v, ok := bytes.Cut(kv, colon)
 		if !ok {
-			return m, ProtocolError("malformed MIME header line: " + string(kv))
+			return m, ProtocolError(fmt.Sprintf("malformed MIME header line: %q", kv))
 		}
 		key, ok := canonicalEmailMIMEHeaderKey(k)
 		if !ok {
-			return m, ProtocolError("malformed MIME header line: " + string(kv))
+			return m, ProtocolError(fmt.Sprintf("malformed MIME header line: %q", kv))
 		}
 		// for _, c := range v {
 		// 	if !validHeaderValueByte(c) {
