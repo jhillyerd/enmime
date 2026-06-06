@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"io"
 	"net/mail"
-	"net/textproto"
 	"strings"
 	"testing"
 
 	"github.com/jhillyerd/enmime/v2"
 	"github.com/jhillyerd/enmime/v2/internal/test"
+	"github.com/jhillyerd/enmime/v2/internal/textproto"
 )
 
 func TestDecodeRFC2047(t *testing.T) {
