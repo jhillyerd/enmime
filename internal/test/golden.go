@@ -77,7 +77,7 @@ func DiffStrings(t *testing.T, got []string, want []string) {
 	for _, s := range sections {
 		if s.ctype == ' ' && len(s.s) > 5 {
 			// Omit excess unchanged lines
-			for i := 0; i < 2; i++ {
+			for i := range 2 {
 				t.Logf("|%c%s", s.ctype, s.s[i])
 			}
 			t.Log("...")
@@ -103,7 +103,7 @@ func DiffLines(t *testing.T, got []byte, want []byte) {
 		for _, s := range sections {
 			if s.ctype == ' ' && len(s.s) > 5 {
 				// Omit excess unchanged lines
-				for i := 0; i < 2; i++ {
+				for i := range 2 {
 					fmt.Fprintf(b, "|%c%s\n", s.ctype, s.s[i])
 				}
 				b.WriteString("...\n")

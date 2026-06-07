@@ -285,8 +285,8 @@ func (s *stdoutSender) Send(from string, tos []string, msg []byte) error {
 	}
 
 	fmt.Println("DATA")
-	lines := bytes.Split(msg, []byte{'\r'})
-	for _, line := range lines {
+	lines := bytes.SplitSeq(msg, []byte{'\r'})
+	for line := range lines {
 		line = bytes.Trim(line, "\r\n")
 		fmt.Println(string(line))
 	}

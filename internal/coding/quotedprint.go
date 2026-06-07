@@ -128,7 +128,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		// Invalid characters, render as quoted-printable.
 		case b < ' ' || '~' < b:
 			ensureLineLen(2)
-			writeBytes([]byte(fmt.Sprintf("=%02X", b)))
+			writeBytes(fmt.Appendf(nil, "=%02X", b))
 
 		// Acceptable characters.
 		default:

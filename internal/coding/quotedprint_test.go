@@ -60,7 +60,7 @@ func TestQPCleanerOverflow(t *testing.T) {
 		if n < 1 {
 			t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
 		}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if buf[i] != want[offset] {
 				t.Errorf("p[%v] = %q, want: %q (want[%v])", i, buf[i], want[offset], offset)
 			}
@@ -89,7 +89,7 @@ func TestQPCleanerSmallDest(t *testing.T) {
 				if n < 1 && offset < len(want) {
 					t.Fatalf("Read(p) = %v, wanted >0, at want[%v]", n, offset)
 				}
-				for i := 0; i < n; i++ {
+				for i := range n {
 					if p[i] != want[offset] {
 						t.Errorf("p[%v] = %q, want: %q (want[%v])", i, p[i], want[offset], offset)
 					}

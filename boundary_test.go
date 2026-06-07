@@ -336,7 +336,7 @@ func TestBoundaryReaderBufferBoundaryAbut(t *testing.T) {
 	// Setup buffer
 	buf = append(buf, prefix...)
 	padding := peekBufferSize - len(peekSuffix)
-	for i := 0; i < padding; i++ {
+	for range padding {
 		buf = append(buf, 'x')
 	}
 	buf = append(buf, peekSuffix...)
@@ -392,7 +392,7 @@ func TestBoundaryReaderBufferBoundaryCross(t *testing.T) {
 	// Setup buffer
 	buf = append(buf, prefix...)
 	padding := peekBufferSize - len(peekSuffix)
-	for i := 0; i < padding; i++ {
+	for range padding {
 		buf = append(buf, 'x')
 	}
 	buf = append(buf, peekSuffix...)

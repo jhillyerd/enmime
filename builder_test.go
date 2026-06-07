@@ -147,7 +147,7 @@ func TestBuilderTo(t *testing.T) {
 	}
 
 	a = enmime.Builder().To("name", "foo")
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		b = a.To("name", "bar"+strconv.Itoa(i))
 		if a.Equals(b) {
 			t.Error("To() should not mutate receiver, failed")

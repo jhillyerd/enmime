@@ -33,12 +33,12 @@ func (md *markdown) H3(content string) {
 }
 
 // Printf implements fmt.Printf for markdown
-func (md *markdown) Printf(format string, args ...interface{}) {
+func (md *markdown) Printf(format string, args ...any) {
 	fmt.Fprintf(md, format, args...)
 }
 
 // Println implements fmt.Println for markdown
-func (md *markdown) Println(args ...interface{}) {
+func (md *markdown) Println(args ...any) {
 	fmt.Fprintln(md, args...)
 }
 
