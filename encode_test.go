@@ -462,6 +462,190 @@ func TestParseRawContentTextOptionFalse(t *testing.T) {
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "parser-raw-content-text-option-false.raw.golden")
 }
 
+// TestEncodePartForcedCTE7Bit verifies that a non-text part with 7bit-safe content and forced "7bit" CTE
+// is not base64-encoded and the header reads Content-Transfer-Encoding: 7bit.
+func TestEncodePartForcedCTE7Bit(t *testing.T) {
+	p := enmime.NewPart("application/pgp-encrypted")
+	p.ContentTransferEncoding = "7bit"
+	p.Content = []byte("Version: 1")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "7bit", p.Header.Get("Content-Transfer-Encoding"))
+	assert.Contains(t, b.String(), "Version: 1")
+	assert.NotContains(t, b.String(), "base64")
+}
+
+// TestEncodePartForcedCTEQuotedPrintable verifies QP encoding is applied when forced.
+func TestEncodePartForcedCTEQuotedPrintable(t *testing.T) {
+	p := enmime.NewPart("application/pgp-signature")
+	p.ContentTransferEncoding = "quoted-printable"
+	p.Content = []byte("-----BEGIN PGP SIGNATURE-----\r\nVersion: GnuPG\r\n\r\n=AAAA\r\n-----END PGP SIGNATURE-----")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "quoted-printable", p.Header.Get("Content-Transfer-Encoding"))
+	assert.Contains(t, b.String(), "-----BEGIN PGP")
+}
+
+// TestEncodePartForcedCTEBase64 verifies base64 is applied when explicitly forced.
+func TestEncodePartForcedCTEBase64(t *testing.T) {
+	p := enmime.NewPart("application/zip")
+	p.ContentTransferEncoding = "base64"
+	p.Content = []byte("ZIPZIPZIP")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"))
+}
+
+// TestEncodePartForcedCTE8Bit verifies 8bit header is set and content is written verbatim.
+func TestEncodePartForcedCTE8Bit(t *testing.T) {
+	p := enmime.NewPart("application/octet-stream")
+	p.ContentTransferEncoding = "8bit"
+	p.Content = []byte("some binary data")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "8bit", p.Header.Get("Content-Transfer-Encoding"))
+	assert.Contains(t, b.String(), "some binary data")
+}
+
+// TestEncodePartForcedCTEEmpty verifies empty ContentTransferEncoding preserves default behavior (base64 for non-text).
+func TestEncodePartForcedCTEEmpty(t *testing.T) {
+	p := enmime.NewPart("application/octet-stream")
+	p.ContentTransferEncoding = ""
+	p.Content = []byte("data")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"))
+}
+
+// TestEncodePartForcedCTEUnrecognised verifies unrecognised values fall back to automatic detection.
+func TestEncodePartForcedCTEUnrecognised(t *testing.T) {
+	p := enmime.NewPart("application/octet-stream")
+	p.ContentTransferEncoding = "unknown-encoding"
+	p.Content = []byte("data")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Non-text part should default to base64.
+	assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"))
+}
+
+// TestEncodePartForcedCTECaseInsensitive verifies case-insensitive matching.
+func TestEncodePartForcedCTECaseInsensitive(t *testing.T) {
+	for _, val := range []string{"7Bit", "7BIT", "7bit"} {
+		p := enmime.NewPart("application/pgp-encrypted")
+		p.ContentTransferEncoding = val
+		p.Content = []byte("Version: 1")
+
+		b := &bytes.Buffer{}
+		err := p.Encode(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "7bit", p.Header.Get("Content-Transfer-Encoding"),
+			"expected 7bit for input %q", val)
+	}
+
+	for _, val := range []string{"BASE64", "Base64", "base64"} {
+		p := enmime.NewPart("text/plain")
+		p.ContentTransferEncoding = val
+		p.Content = []byte("hello")
+
+		b := &bytes.Buffer{}
+		err := p.Encode(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"),
+			"expected base64 for input %q", val)
+	}
+}
+
+// TestEncodePartForcedCTETextPartBase64 verifies that forcing base64 on a text part
+// overrides the auto-detection that would normally pick 7bit or QP.
+func TestEncodePartForcedCTETextPartBase64(t *testing.T) {
+	p := enmime.NewPart("text/plain")
+	p.ContentTransferEncoding = "base64"
+	p.Content = []byte("Hello, this is plain ASCII text that would normally be 7bit.")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"))
+	// Should not contain the plaintext directly
+	assert.NotContains(t, b.String(), "Hello, this is plain ASCII")
+}
+
+// TestEncodePartForcedCTEWithContentReader verifies that ContentReader + forced 7bit CTE
+// writes content verbatim instead of base64-encoding it.
+func TestEncodePartForcedCTEWithContentReader(t *testing.T) {
+	content := []byte("Version: 1")
+	p := enmime.NewPart("application/pgp-encrypted")
+	p.ContentTransferEncoding = "7bit"
+	p.ContentReader = bytes.NewReader(content)
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "7bit", p.Header.Get("Content-Transfer-Encoding"))
+	assert.Contains(t, b.String(), "Version: 1")
+	assert.Nil(t, p.ContentReader, "ContentReader should have been consumed")
+}
+
+// TestEncodePartForcedCTEPrecedenceOverEncoderOption verifies that ContentTransferEncoding on the part
+// takes precedence over the encoder-level ForceQuotedPrintableCte option.
+func TestEncodePartForcedCTEPrecedenceOverEncoderOption(t *testing.T) {
+	p := enmime.NewPart("application/octet-stream").WithEncoder(
+		enmime.NewEncoder(enmime.ForceQuotedPrintableCte(true)),
+	)
+	p.ContentTransferEncoding = "7bit"
+	p.Content = []byte("plain ASCII data")
+
+	b := &bytes.Buffer{}
+	err := p.Encode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Part-level override should win over encoder option.
+	assert.Equal(t, "7bit", p.Header.Get("Content-Transfer-Encoding"))
+	assert.Contains(t, b.String(), "plain ASCII data")
+}
+
 // TestRawContentUTF8Headers verifies plain-text headers are unmodified with the rawContent parser option.
 func TestRawContentUTF8Headers(t *testing.T) {
 	r := test.OpenTestData("encode", "utf8-to.raw.golden")

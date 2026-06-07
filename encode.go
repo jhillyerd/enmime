@@ -45,13 +45,24 @@ func (p *Part) Encode(writer io.Writer) error {
 		p.Header = make(textproto.MIMEHeader)
 	}
 	if p.ContentReader != nil {
-		// read some data in order to check whether the content is empty
-		p.Content = make([]byte, readChunkSize)
-		n, err := p.ContentReader.Read(p.Content)
-		if err != nil && err != io.EOF {
-			return err
+		// When a forced CTE is set to something other than base64, we need the full content
+		// in memory to use the standard encode path (not the streaming base64 path).
+		if forced := p.resolveForcedCTE(); forced != teRaw && forced != teBase64 {
+			all, err := io.ReadAll(p.ContentReader)
+			if err != nil {
+				return err
+			}
+			p.Content = all
+			p.ContentReader = nil
+		} else {
+			// read some data in order to check whether the content is empty
+			p.Content = make([]byte, readChunkSize)
+			n, err := p.ContentReader.Read(p.Content)
+			if err != nil && err != io.EOF {
+				return err
+			}
+			p.Content = p.Content[:n]
 		}
-		p.Content = p.Content[:n]
 	}
 	cte := teRaw
 	if p.parser == nil || !p.parser.rawContent {
@@ -108,8 +119,13 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	p.Header.Del(hnContentEncoding)
 
 	cte := te7Bit
+	forcedCTE := false
 	if len(p.Content) > 0 {
-		if strings.Index(strings.ToLower(p.ContentType), "message/") == 0 {
+		// Check for explicit override first.
+		if f := p.resolveForcedCTE(); f != teRaw {
+			cte = f
+			forcedCTE = true
+		} else if strings.Index(strings.ToLower(p.ContentType), "message/") == 0 {
 			// RFC 1341: `message` types must have no encoding other than "7bit", "8bit", or
 			// "binary". The message header fields are always US-ASCII in any case, and data within
 			// the body can still be encoded, in which case the Content-Transfer-Encoding header
@@ -127,6 +143,10 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 
 		// RFC 2045: 7bit is assumed if CTE header not present.
 		switch cte {
+		case te7Bit:
+			if forcedCTE {
+				p.Header.Set(hnContentEncoding, cte7Bit)
+			}
 		case te8Bit:
 			p.Header.Set(hnContentEncoding, cte8Bit)
 		case teBase64:
@@ -296,6 +316,24 @@ func (p *Part) encodeContentFromReader(b *bufio.Writer) error {
 	}
 
 	return nil
+}
+
+// resolveForcedCTE maps the ContentTransferEncoding field to an internal transferEncoding
+// value. Returns teRaw (sentinel for "not set / unrecognised") when the field is empty or
+// contains an unrecognised value.
+func (p *Part) resolveForcedCTE() transferEncoding {
+	switch strings.ToLower(p.ContentTransferEncoding) {
+	case cte7Bit:
+		return te7Bit
+	case cte8Bit:
+		return te8Bit
+	case cteQuotedPrintable:
+		return teQuoted
+	case cteBase64:
+		return teBase64
+	default:
+		return teRaw // sentinel: no override
+	}
 }
 
 // selectTransferEncoding scans content for non-ASCII characters and selects 'b' or 'q' encoding.
