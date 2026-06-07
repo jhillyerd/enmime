@@ -1618,3 +1618,26 @@ func TestMaxMIMEPartsEnvelope(t *testing.T) {
 	require.ErrorAs(t, err, new(*enmime.TooManyPartsError))
 	assert.Contains(t, err.Error(), "Failed to ReadParts")
 }
+
+// TestRFC2231LongFilenameSegments verifies that multi-segment RFC 2231 continuation parameters
+// in Content-Disposition are assembled correctly, including non-UTF-8 charsets such as EUC-KR.
+// Reproduces https://github.com/jhillyerd/enmime/issues/109
+func TestRFC2231LongFilenameSegments(t *testing.T) {
+	r := test.OpenTestData("parts", "long-filename-euckr.raw")
+	root, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Navigate to the attachment part (second child of the root multipart).
+	if root.FirstChild == nil {
+		t.Fatal("expected multipart children")
+	}
+	attach := root.FirstChild.NextSibling
+	if attach == nil {
+		t.Fatal("expected attachment sibling part")
+	}
+	want := "개.txt"
+	if attach.FileName != want {
+		t.Errorf("FileName got %q, want %q", attach.FileName, want)
+	}
+}

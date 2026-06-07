@@ -3,7 +3,10 @@ package mediatype
 import (
 	"fmt"
 	"mime"
+	"net/url"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	_utf8 "unicode/utf8"
 
@@ -48,9 +51,157 @@ func Parse(ctype string) (mtype string, params map[string]string, invalidParams 
 }
 
 // ParseWithOptions parses media-type with additional options controlling the parsing behavior.
+// rfc2231SegmentRe matches RFC 2231 continuation parameter names such as "filename*0*" or "filename*1".
+var rfc2231SegmentRe = regexp.MustCompile(`(?i)^([a-zA-Z0-9!#$&\-^_.+]+)\*(\d+)(\*?)$`)
+
+// assembleRFC2231Params detects RFC 2231 multi-segment continuation parameters (paramname*N*= or
+// paramname*N=) in a media type or content-disposition string, assembles their values in segment
+// order, applies charset conversion, and returns a new string where the continuation parameters
+// are replaced by a single decoded parameter. This is needed because Go's standard
+// mime.ParseMediaType only supports UTF-8 and US-ASCII in RFC 2231 charset-encoded parameters.
+func assembleRFC2231Params(s string) string {
+	parts := stringutil.SplitUnquoted(s, ';', '"')
+	if len(parts) < 2 {
+		return s
+	}
+
+	type segment struct {
+		partIdx int
+		segNum  int
+		encoded bool   // trailing * means percent-encoded value
+		value   string // raw value (may include charset'' prefix on segment 0)
+	}
+
+	byBase := map[string][]segment{}
+	for i := 1; i < len(parts); i++ {
+		trimmed := strings.TrimSpace(parts[i])
+		eqIdx := strings.IndexByte(trimmed, '=')
+		if eqIdx < 0 {
+			continue
+		}
+		paramName := strings.TrimSpace(trimmed[:eqIdx])
+		value := trimmed[eqIdx+1:]
+
+		m := rfc2231SegmentRe.FindStringSubmatch(paramName)
+		if m == nil {
+			continue
+		}
+		baseName := strings.ToLower(m[1])
+		segNum, _ := strconv.Atoi(m[2])
+		encoded := m[3] == "*"
+
+		byBase[baseName] = append(byBase[baseName], segment{
+			partIdx: i,
+			segNum:  segNum,
+			encoded: encoded,
+			value:   value,
+		})
+	}
+
+	if len(byBase) == 0 {
+		return s
+	}
+
+	removals := map[int]bool{}
+	var additions []string
+
+	for baseName, segs := range byBase {
+		slices.SortFunc(segs, func(a, b segment) int {
+			return a.segNum - b.segNum
+		})
+
+		charset := "us-ascii"
+		var rawBytes []byte
+		failed := false
+
+		for i, seg := range segs {
+			val := seg.value
+			if i == 0 {
+				// Segment 0 may carry a charset''value prefix per RFC 2231.
+				if before, after, found := strings.Cut(val, "''"); found {
+					charset = before
+					val = after
+				}
+			}
+			if seg.encoded {
+				decoded, err := url.PathUnescape(val)
+				if err != nil {
+					failed = true
+					break
+				}
+				rawBytes = append(rawBytes, decoded...)
+			} else {
+				rawBytes = append(rawBytes, val...)
+			}
+		}
+
+		if failed || rawBytes == nil {
+			continue
+		}
+
+		// Skip single-segment ASCII/UTF-8 params; stdlib handles those correctly.
+		charsetLower := strings.ToLower(charset)
+		isASCIILike := charsetLower == "us-ascii" || charsetLower == "ascii" ||
+			charsetLower == "utf-8" || charsetLower == "utf8"
+		if isASCIILike && len(segs) == 1 {
+			continue
+		}
+
+		utf8Val, err := coding.ConvertToUTF8String(charset, rawBytes)
+		if err != nil {
+			continue
+		}
+
+		for _, seg := range segs {
+			removals[seg.partIdx] = true
+		}
+		// Produce a single-segment RFC 2231 parameter with UTF-8 charset so that
+		// Go's mime.ParseMediaType can decode it without further transformation.
+		// Using the *=utf-8''... form avoids non-ASCII bytes in the raw string,
+		// which would otherwise be re-encoded to RFC 2047 by fixUnquotedSpecials.
+		additions = append(additions, " "+baseName+"*=utf-8''"+rfc2231PercentEncode(utf8Val))
+	}
+
+	if len(removals) == 0 {
+		return s
+	}
+
+	var result strings.Builder
+	result.WriteString(parts[0])
+	for i := 1; i < len(parts); i++ {
+		if removals[i] {
+			continue
+		}
+		result.WriteByte(';')
+		result.WriteString(parts[i])
+	}
+	for _, add := range additions {
+		result.WriteByte(';')
+		result.WriteString(add)
+	}
+	return result.String()
+}
+
+// rfc2231PercentEncode percent-encodes a UTF-8 string for use in an RFC 2231 parameter value.
+// Only unreserved token characters (alphanumeric and !#$&-^_.+~) are left unencoded.
+func rfc2231PercentEncode(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+			c == '!' || c == '#' || c == '$' || c == '&' || c == '+' ||
+			c == '-' || c == '.' || c == '^' || c == '_' || c == '`' || c == '|' || c == '~' {
+			b.WriteByte(c)
+		} else {
+			fmt.Fprintf(&b, "%%%02X", c)
+		}
+	}
+	return b.String()
+}
+
 func ParseWithOptions(ctype string, options ParseOptions) (mtype string, params map[string]string, invalidParams []string, err error) {
 	mtype, params, err = mime.ParseMediaType(
-		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(removeTrailingHTMLTags(ctype), ';', options)))))
+		fixNewlines(fixUnescapedQuotes(fixUnquotedSpecials(fixMangledMediaType(assembleRFC2231Params(removeTrailingHTMLTags(ctype)), ';', options)))))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			return "", nil, nil, nil
