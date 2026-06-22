@@ -14,7 +14,7 @@ jobs:
           - 1.26.x
     name: Go ${{ matrix.go }} build
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Setup Go
