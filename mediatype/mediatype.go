@@ -69,7 +69,7 @@ func ParseWithOptions(ctype string, options ParseOptions) (mtype string, params 
 		delete(params, name)
 	}
 
-	return mtype, params, invalidParams, err
+	return mtype, params, invalidParams, nil
 }
 
 // fixMangledMediaType is used to insert ; separators into media type strings that lack them, and

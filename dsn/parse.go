@@ -3,12 +3,11 @@ package dsn
 import (
 	"bufio"
 	"bytes"
-	"errors"
-	"fmt"
 	"io"
 
 	"github.com/jhillyerd/enmime/v2"
 	"github.com/jhillyerd/enmime/v2/internal/textproto"
+	"github.com/pkg/errors"
 )
 
 // ParseReport parses p as a "container" for delivery status report (per rfc6522) if p is "multipart/report".
@@ -90,7 +89,7 @@ func setExplanation(e *Explanation, p *enmime.Part) bool {
 func parseDeliveryStatus(data []byte) (DeliveryStatus, error) {
 	fields, err := parseDeliveryStatusFields(data)
 	if err != nil {
-		return DeliveryStatus{}, fmt.Errorf("parse delivery status: %w", err)
+		return DeliveryStatus{}, errors.WithMessage(err, "parse delivery status")
 	}
 
 	perMessage, perRecipient := splitDSNFields(fields)
@@ -124,7 +123,7 @@ func parseDeliveryStatusFields(data []byte) ([]textproto.MIMEHeader, error) {
 				break
 			}
 
-			return nil, fmt.Errorf("read MIME header fields: %w", err)
+			return nil, errors.Wrap(err, "read MIME header fields")
 		}
 
 		fields = append(fields, h)

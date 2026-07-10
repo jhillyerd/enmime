@@ -2,12 +2,12 @@ package coding
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
 	"github.com/cention-sany/utf7"
+	"github.com/pkg/errors"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -302,7 +302,7 @@ func init() {
 func ConvertToUTF8String(charset string, textBytes []byte) (string, error) {
 	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
-		return "", fmt.Errorf("unsupported charset %q", charset)
+		return "", errors.Errorf("unsupported charset %q", charset)
 	}
 	input := bytes.NewReader(textBytes)
 	reader := transform.NewReader(input, csentry.e.NewDecoder())
@@ -323,7 +323,7 @@ func NewCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	}
 	csentry, ok := encodings[strings.ToLower(charset)]
 	if !ok {
-		return nil, fmt.Errorf("unsupported charset %q", charset)
+		return nil, errors.Errorf("unsupported charset %q", charset)
 	}
 	return transform.NewReader(input, csentry.e.NewDecoder()), nil
 }
