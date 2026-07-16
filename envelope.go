@@ -1,7 +1,6 @@
 package enmime
 
 import (
-	"fmt"
 	"io"
 	"mime"
 	"net/mail"
@@ -109,7 +108,7 @@ func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
 		return nil, errors.New("no headers available")
 	}
 	if !AddressHeaders[strings.ToLower(key)] {
-		return nil, fmt.Errorf("%s is not an address header", key)
+		return nil, errors.Errorf("%s is not an address header", key)
 	}
 
 	return ParseAddressList(e.header.Get(key))
@@ -282,10 +281,10 @@ func parseMultiPartBody(root *Part, e *Envelope) error {
 	ctype := root.Header.Get(hnContentType)
 	mediatype, params, _, err := root.parseMediaType(ctype)
 	if err != nil {
-		return fmt.Errorf("unable to parse media type: %v", err)
+		return errors.WithMessage(err, "unable to parse media type")
 	}
 	if !strings.HasPrefix(mediatype, ctMultipartPrefix) {
-		return fmt.Errorf("unknown mediatype: %v", mediatype)
+		return errors.Errorf("unknown mediatype: %v", mediatype)
 	}
 	boundary := params[hpBoundary]
 	if boundary == "" {

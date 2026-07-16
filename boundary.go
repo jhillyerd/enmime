@@ -223,7 +223,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			continue
 		}
 		b.finished = true
-		return false, errors.WithMessagef(errNoBoundaryTerminator, "expecting boundary %q, got %q", string(b.prefix), string(line))
+		return false, errors.Wrapf(errNoBoundaryTerminator, "expecting boundary %q, got %q", string(b.prefix), string(line))
 	}
 }
 

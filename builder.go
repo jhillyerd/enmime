@@ -2,7 +2,6 @@ package enmime
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"maps"
 	"math/rand"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jhillyerd/enmime/v2/internal/stringutil"
+	"github.com/pkg/errors"
 )
 
 // MailBuilder facilitates the easy construction of a MIME message.  Each manipulation method
