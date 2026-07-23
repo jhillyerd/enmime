@@ -122,6 +122,26 @@ func TestFixMangledMediaType(t *testing.T) {
 			sep:   ';',
 			want:  `one/two; name="file.two"`,
 		},
+		{
+			// Keeps a distinct param whose name is a suffix of an earlier
+			// one (previously dropped by the substring match) (#162).
+			input: `application/octet-stream; filename="a.txt"; name="b.txt"`,
+			sep:   ';',
+			want:  `application/octet-stream; filename="a.txt"; name="b.txt"`,
+		},
+		{
+			// Keeps a distinct param whose "key=" appears inside an earlier
+			// param's value (#162).
+			input: `text/plain; note="size=5"; size="10"`,
+			sep:   ';',
+			want:  `text/plain; note="size=5"; size="10"`,
+		},
+		{
+			// Duplicate param names are case-insensitive (RFC 2045 §5.1).
+			input: `text/plain; name="x"; NAME="y"`,
+			sep:   ';',
+			want:  `text/plain; name="x"`,
+		},
 
 		// remove extra content type parts
 		{
@@ -522,6 +542,30 @@ func TestParseMediaType(t *testing.T) {
 			input:  "application/pdf; name=\"=?iso-8859-1?Q?key=3Dvalue?=\"",
 			mtype:  "application/pdf",
 			params: map[string]string{"name": "key=value"},
+		},
+		{
+			label:  "distinct suffix-name param kept",
+			input:  `application/octet-stream; filename="a.txt"; name="b.txt"`,
+			mtype:  "application/octet-stream",
+			params: map[string]string{"filename": "a.txt", "name": "b.txt"},
+		},
+		{
+			label:  "distinct param whose key appears in earlier value kept",
+			input:  `text/plain; note="size=5"; size="10"`,
+			mtype:  "text/plain",
+			params: map[string]string{"note": "size=5", "size": "10"},
+		},
+		{
+			label:  "exact duplicate keeps first",
+			input:  `text/plain; name="first"; name="second"`,
+			mtype:  "text/plain",
+			params: map[string]string{"name": "first"},
+		},
+		{
+			label:  "case-insensitive duplicate keeps first",
+			input:  `text/plain; name="x"; NAME="y"`,
+			mtype:  "text/plain",
+			params: map[string]string{"name": "x"},
 		},
 	}
 	for _, tc := range testCases {

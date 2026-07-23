@@ -37,6 +37,23 @@ func TestPlainTextPart(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
+func TestContentTypeSuffixParamNotDropped(t *testing.T) {
+	// "name" carries the attachment filename and must not be dropped just
+	// because "name=" is a substring of the earlier "xname=" param (#162).
+	r := strings.NewReader("Content-Type: application/octet-stream; xname=\"detail\"; name=\"report.pdf\"\r\n" +
+		"\r\nbody\r\n")
+	p, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatalf("Unexpected parse error: %+v", err)
+	}
+	if p == nil {
+		t.Fatal("Root node should not be nil")
+	}
+	if got, want := p.FileName, "report.pdf"; got != want {
+		t.Errorf("FileName got %q, want %q", got, want)
+	}
+}
+
 func TestAddChildInfiniteLoops(_ *testing.T) {
 	// Part adds itself
 	parentPart := &enmime.Part{
