@@ -1,0 +1,21 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: test
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="boundary"
+
+--boundary
+Content-Type: text/plain; charset=us-ascii
+
+test
+
+--boundary
+Content-Type: application/zip
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0*=euc-kr''%B0%B3;
+ filename*1*=%2E%74%78%74
+
+UEsDBAA=
+--boundary--

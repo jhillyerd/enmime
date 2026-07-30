@@ -523,6 +523,18 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "application/pdf",
 			params: map[string]string{"name": "key=value"},
 		},
+		{
+			label:  "RFC 2231 multi-segment filename with euc-kr charset",
+			input:  `attachment; filename*0*=euc-kr''%B0%B3; filename*1*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "개.txt"},
+		},
+		{
+			label:  "RFC 2231 multi-segment filename with us-ascii charset",
+			input:  `attachment; filename*0*=us-ascii''hello; filename*1*=-world.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "hello-world.txt"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
