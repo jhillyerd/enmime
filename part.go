@@ -321,6 +321,9 @@ func (p *Part) decodeContent(r io.Reader, readPartErrorPolicy ReadPartErrorPolic
 	// Collect base64 errors.
 	if b64cleaner != nil {
 		for _, err := range b64cleaner.Errors {
+			if readPartErrorPolicy != nil && !readPartErrorPolicy(p, err) {
+				return errors.WithStack(err)
+			}
 			p.addWarning(ErrorMalformedBase64, err.Error())
 		}
 	}

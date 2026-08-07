@@ -601,6 +601,34 @@ func TestReadPartErrorPolicy(t *testing.T) {
 	}
 }
 
+// TestReadPartErrorPolicyBase64Cleaner covers a different error path than
+// TestReadPartErrorPolicy above: errors collected by the internal
+// Base64Cleaner (invalid, non-alphabet bytes silently stripped from a base64
+// stream rather than surfaced as a decode error) must also be offered to the
+// configured ReadPartErrorPolicy, not unconditionally downgraded to
+// warnings. testdata/low-quality/malformed-base64-attach.raw's
+// application/msword attachment decodes successfully after cleaning
+// (`PGh0*bWw+Cg==` has a single stray `*`), so it never reaches
+// base64.CorruptInputError and previously bypassed the policy entirely.
+func TestReadPartErrorPolicyBase64Cleaner(t *testing.T) {
+	var policyCalled bool
+	rejectPolicy := enmime.ReadPartErrorPolicy(func(_ *enmime.Part, _ error) bool {
+		policyCalled = true
+		return false
+	})
+
+	r := test.OpenTestData("low-quality", "malformed-base64-attach.raw")
+	parser := enmime.NewParser(enmime.SetReadPartErrorPolicy(rejectPolicy))
+	_, err := parser.ReadParts(r)
+
+	if !policyCalled {
+		t.Error("ReadPartErrorPolicy was not called for a Base64Cleaner-collected error")
+	}
+	if err == nil {
+		t.Error("Expected ReadParts to fail since the policy returned false")
+	}
+}
+
 func TestMultiNoSkipMalformedPartFails(t *testing.T) {
 	r := test.OpenTestData("parts", "multi-malformed.raw")
 	parser := enmime.NewParser(enmime.SkipMalformedParts(false))
