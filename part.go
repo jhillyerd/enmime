@@ -46,6 +46,9 @@ type Part struct {
 	// value when encoding this part. Valid values are "7bit", "8bit", "base64", and
 	// "quoted-printable". When empty, the encoding is selected automatically.
 	// Unrecognised values fall back to automatic detection.
+	//
+	// Content is not validated against the chosen encoding; the caller is responsible for
+	// RFC compliance (e.g. ensuring content forced to "7bit" is ASCII-safe).
 	ContentTransferEncoding string
 
 	Errors        []*Error  // Errors encountered while parsing this part.
@@ -528,9 +531,9 @@ func (p *Part) WithEncoder(e *Encoder) *Part {
 	return p
 }
 
-// SetContentTransferEncoding sets the ContentTransferEncoding field on this Part,
+// WithContentTransferEncoding sets the ContentTransferEncoding field on this Part,
 // forcing the specified Content-Transfer-Encoding when encoding.
-func (p *Part) SetContentTransferEncoding(cte string) *Part {
+func (p *Part) WithContentTransferEncoding(cte string) *Part {
 	p.ContentTransferEncoding = cte
 	return p
 }

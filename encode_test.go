@@ -627,13 +627,16 @@ func TestEncodePartForcedCTEWithContentReader(t *testing.T) {
 }
 
 // TestEncodePartForcedCTEPrecedenceOverEncoderOption verifies that ContentTransferEncoding on the part
-// takes precedence over the encoder-level ForceQuotedPrintableCte option.
+// takes precedence over the encoder-level ForceQuotedPrintableCte option. Without the override, the
+// non-ASCII text content combined with ForceQuotedPrintableCte(true) would be QP-encoded; the forced
+// "base64" must win instead.
 func TestEncodePartForcedCTEPrecedenceOverEncoderOption(t *testing.T) {
-	p := enmime.NewPart("application/octet-stream").WithEncoder(
+	content := bytes.Repeat([]byte{byte(0x10)}, 10) // non-ASCII; ForceQuotedPrintableCte would pick QP
+	p := enmime.NewPart("text/plain").WithEncoder(
 		enmime.NewEncoder(enmime.ForceQuotedPrintableCte(true)),
 	)
-	p.ContentTransferEncoding = "7bit"
-	p.Content = []byte("plain ASCII data")
+	p.ContentTransferEncoding = "base64"
+	p.Content = content
 
 	b := &bytes.Buffer{}
 	err := p.Encode(b)
@@ -641,9 +644,25 @@ func TestEncodePartForcedCTEPrecedenceOverEncoderOption(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Part-level override should win over encoder option.
+	// Part-level override should win over the encoder option.
+	assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"))
+	// The QP soft form should not appear, since the override forced base64.
+	assert.NotContains(t, b.String(), "=10=10")
+}
+
+// TestEncodePartWithContentTransferEncodingMethod verifies the WithContentTransferEncoding builder method.
+func TestEncodePartWithContentTransferEncodingMethod(t *testing.T) {
+	p := enmime.NewPart("application/pgp-encrypted").
+		WithContentTransferEncoding("7bit")
+	p.Content = []byte("Version: 1")
+
+	b := &bytes.Buffer{}
+	if err := p.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+
 	assert.Equal(t, "7bit", p.Header.Get("Content-Transfer-Encoding"))
-	assert.Contains(t, b.String(), "plain ASCII data")
+	assert.Contains(t, b.String(), "Version: 1")
 }
 
 // TestRawContentUTF8Headers verifies plain-text headers are unmodified with the rawContent parser option.
