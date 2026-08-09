@@ -119,13 +119,24 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	p.Header.Del(hnContentEncoding)
 
 	cte := te7Bit
-	forcedCTE := false
-	if len(p.Content) > 0 {
-		// Check for explicit override first.
-		if f := p.resolveForcedCTE(); f != teRaw {
-			cte = f
-			forcedCTE = true
-		} else if strings.Index(strings.ToLower(p.ContentType), "message/") == 0 {
+	if f := p.resolveForcedCTE(); f != teRaw {
+		// An explicit override applies regardless of content length, so the header is always
+		// emitted (including 7bit), even when the body is empty.
+		cte = f
+		switch f {
+		case te7Bit:
+			p.Header.Set(hnContentEncoding, cte7Bit)
+		case te8Bit:
+			p.Header.Set(hnContentEncoding, cte8Bit)
+		case teBase64:
+			p.Header.Set(hnContentEncoding, cteBase64)
+		case teQuoted:
+			p.Header.Set(hnContentEncoding, cteQuotedPrintable)
+		}
+	} else if len(p.Content) > 0 {
+		// No override: select automatically. RFC 2045: 7bit is assumed if the CTE header is not
+		// present, so for auto-detected 7bit (and for empty content) no header is emitted.
+		if strings.Index(strings.ToLower(p.ContentType), "message/") == 0 {
 			// RFC 1341: `message` types must have no encoding other than "7bit", "8bit", or
 			// "binary". The message header fields are always US-ASCII in any case, and data within
 			// the body can still be encoded, in which case the Content-Transfer-Encoding header
@@ -140,13 +151,7 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 				}
 			}
 		}
-
-		// RFC 2045: 7bit is assumed if CTE header not present.
 		switch cte {
-		case te7Bit:
-			if forcedCTE {
-				p.Header.Set(hnContentEncoding, cte7Bit)
-			}
 		case te8Bit:
 			p.Header.Set(hnContentEncoding, cte8Bit)
 		case teBase64:

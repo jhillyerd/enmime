@@ -626,6 +626,80 @@ func TestEncodePartForcedCTEWithContentReader(t *testing.T) {
 	assert.Nil(t, p.ContentReader, "ContentReader should have been consumed")
 }
 
+// TestEncodePartForcedCTEEmptyContent verifies that a forced Content-Transfer-Encoding is still
+// applied to the header when the body is empty -- either nil/zero-length Content or a ContentReader
+// that yields zero bytes. Previously the override was gated on len(Content) > 0 and was silently
+// dropped, contradicting the documented "forces" contract.
+func TestEncodePartForcedCTEEmptyContent(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		cte  string
+		part func() *enmime.Part
+	}{
+		{
+			name: "7bit nil content",
+			cte:  "7bit",
+			part: func() *enmime.Part {
+				p := enmime.NewPart("application/pgp-encrypted")
+				p.ContentTransferEncoding = "7bit"
+				return p
+			},
+		},
+		{
+			name: "base64 nil content",
+			cte:  "base64",
+			part: func() *enmime.Part {
+				p := enmime.NewPart("application/octet-stream")
+				p.ContentTransferEncoding = "base64"
+				return p
+			},
+		},
+		{
+			name: "7bit zero-byte reader",
+			cte:  "7bit",
+			part: func() *enmime.Part {
+				p := enmime.NewPart("application/pgp-encrypted")
+				p.ContentTransferEncoding = "7bit"
+				p.ContentReader = bytes.NewReader(nil)
+				return p
+			},
+		},
+		{
+			name: "base64 zero-byte reader",
+			cte:  "base64",
+			part: func() *enmime.Part {
+				p := enmime.NewPart("application/octet-stream")
+				p.ContentTransferEncoding = "base64"
+				p.ContentReader = bytes.NewReader(nil)
+				return p
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := tc.part()
+			b := &bytes.Buffer{}
+			if err := p.Encode(b); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, tc.cte, p.Header.Get("Content-Transfer-Encoding"))
+		})
+	}
+}
+
+// TestEncodePartAutoCTEEmptyContent verifies that, when no CTE override is set, an empty body still
+// results in no Content-Transfer-Encoding header (RFC 2045: 7bit is assumed when the header is
+// absent). This guards against the forced-override refactor accidentally emitting a header for
+// empty auto-detected parts.
+func TestEncodePartAutoCTEEmptyContent(t *testing.T) {
+	p := enmime.NewPart("text/plain")
+	// No ContentTransferEncoding set; Content is empty.
+	b := &bytes.Buffer{}
+	if err := p.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	assert.Empty(t, p.Header.Get("Content-Transfer-Encoding"))
+}
+
 // TestEncodePartForcedCTEPrecedenceOverEncoderOption verifies that ContentTransferEncoding on the part
 // takes precedence over the encoder-level ForceQuotedPrintableCte option. Without the override, the
 // non-ASCII text content combined with ForceQuotedPrintableCte(true) would be QP-encoded; the forced
