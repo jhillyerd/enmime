@@ -1,9 +1,11 @@
 package enmime_test
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"io"
+	"net/textproto"
 	"testing"
 	"time"
 
@@ -682,6 +684,8 @@ func TestEncodePartForcedCTEEmptyContent(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, tc.cte, p.Header.Get("Content-Transfer-Encoding"))
+			assert.True(t, bytes.HasSuffix(b.Bytes(), []byte("\r\n\r\n")),
+				"empty body must still be preceded by the header separator, got %q", b.String())
 		})
 	}
 }
@@ -753,4 +757,47 @@ func TestRawContentUTF8Headers(t *testing.T) {
 	}
 
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "utf8-to.raw.golden")
+}
+
+// TestEncodeEmptyChildEndsHeaders verifies that an empty child's headers are still separated from
+// the following boundary by an empty line.
+func TestEncodeEmptyChildEndsHeaders(t *testing.T) {
+	p := enmime.NewPart("multipart/mixed")
+	p.Boundary = "enmime-1234567890-parent"
+	p.FirstChild = enmime.NewPart("text/plain")
+
+	b := &bytes.Buffer{}
+	if err := p.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t,
+		"Content-Type: multipart/mixed; boundary=enmime-1234567890-parent\r\n"+
+			"\r\n--enmime-1234567890-parent\r\n"+
+			"Content-Type: text/plain\r\n"+
+			"\r\n"+
+			"\r\n--enmime-1234567890-parent--\r\n",
+		b.String())
+}
+
+// TestEncodeEmptyBodyReadableByTextproto covers the reported symptom of issue #196: a message
+// built with no body encodes to a header section that net/textproto can read without hitting EOF.
+func TestEncodeEmptyBodyReadableByTextproto(t *testing.T) {
+	p, err := enmime.Builder().
+		From("Name", "from@example.com").
+		To("Name", "to@example.com").
+		Subject("Test").
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b := &bytes.Buffer{}
+	if err := p.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+
+	h, err := textproto.NewReader(bufio.NewReader(bytes.NewReader(b.Bytes()))).ReadMIMEHeader()
+	assert.NoError(t, err)
+	assert.Equal(t, "Test", h.Get("Subject"))
 }

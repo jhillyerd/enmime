@@ -73,10 +73,15 @@ func (p *Part) Encode(writer io.Writer) error {
 	if err := p.encodeHeader(b); err != nil {
 		return err
 	}
-	if len(p.Content) > 0 {
+	if p.FirstChild == nil || len(p.Content) > 0 {
+		// Empty line closing the header section (RFC 5322 2.1). A part without children emits
+		// it even when the body is empty; parts with children get it from the leading CRLF of
+		// the boundary marker below.
 		if _, err := b.Write(crnl); err != nil {
 			return err
 		}
+	}
+	if len(p.Content) > 0 {
 		if err := p.encodeContent(b, cte); err != nil {
 			return err
 		}
