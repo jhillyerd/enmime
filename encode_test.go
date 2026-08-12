@@ -12,6 +12,7 @@ import (
 	"github.com/jhillyerd/enmime/v2"
 	"github.com/jhillyerd/enmime/v2/internal/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEncodePartEmpty(t *testing.T) {
@@ -798,6 +799,6 @@ func TestEncodeEmptyBodyReadableByTextproto(t *testing.T) {
 	}
 
 	h, err := textproto.NewReader(bufio.NewReader(bytes.NewReader(b.Bytes()))).ReadMIMEHeader()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Test", h.Get("Subject"))
 }
