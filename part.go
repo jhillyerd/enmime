@@ -108,6 +108,30 @@ func (p *Part) AddChild(child *Part) {
 	}
 }
 
+// DeleteChild removes child from this part's list of children, relinking the sibling chain
+// around it. It clears the Parent and NextSibling pointers on the removed child so it becomes a
+// standalone part. Children that followed child in the chain stay attached to this part. Safe to
+// call on nil, and a no-op if child is nil or is not a direct child of this part.
+func (p *Part) DeleteChild(child *Part) {
+	if p == nil || child == nil {
+		return
+	}
+	if p.FirstChild == child {
+		p.FirstChild = child.NextSibling
+		child.Parent = nil
+		child.NextSibling = nil
+		return
+	}
+	for c := p.FirstChild; c != nil; c = c.NextSibling {
+		if c.NextSibling == child {
+			c.NextSibling = child.NextSibling
+			child.Parent = nil
+			child.NextSibling = nil
+			return
+		}
+	}
+}
+
 // TextContent indicates whether the content is text based on its content type.  This value
 // determines what content transfer encoding scheme to use.
 func (p *Part) TextContent() bool {

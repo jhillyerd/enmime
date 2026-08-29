@@ -78,6 +78,78 @@ func TestAddChildInfiniteLoops(_ *testing.T) {
 	parentPart.AddChild(childPart)
 }
 
+func TestDeleteChild(t *testing.T) {
+	newTree := func() (parent, a, b, c *enmime.Part) {
+		parent = &enmime.Part{PartID: "0"}
+		a = &enmime.Part{PartID: "1"}
+		b = &enmime.Part{PartID: "2"}
+		c = &enmime.Part{PartID: "3"}
+		parent.AddChild(a)
+		parent.AddChild(b)
+		parent.AddChild(c)
+		return
+	}
+
+	childIDs := func(parent *enmime.Part) string {
+		var ids []string
+		for p := parent.FirstChild; p != nil; p = p.NextSibling {
+			ids = append(ids, p.PartID)
+		}
+		return strings.Join(ids, ",")
+	}
+
+	t.Run("removes a middle child and relinks siblings", func(t *testing.T) {
+		parent, _, b, _ := newTree()
+		parent.DeleteChild(b)
+		if got, want := childIDs(parent), "1,3"; got != want {
+			t.Errorf("children got %q, want %q", got, want)
+		}
+		if b.Parent != nil || b.NextSibling != nil {
+			t.Errorf("removed child should be detached, got Parent=%v NextSibling=%v", b.Parent, b.NextSibling)
+		}
+	})
+
+	t.Run("removes the first child", func(t *testing.T) {
+		parent, a, _, _ := newTree()
+		parent.DeleteChild(a)
+		if got, want := childIDs(parent), "2,3"; got != want {
+			t.Errorf("children got %q, want %q", got, want)
+		}
+		if parent.FirstChild == nil || parent.FirstChild.PartID != "2" {
+			t.Errorf("FirstChild not relinked, got %v", parent.FirstChild)
+		}
+		if a.Parent != nil || a.NextSibling != nil {
+			t.Errorf("removed child should be detached")
+		}
+	})
+
+	t.Run("removes the last child", func(t *testing.T) {
+		parent, _, _, c := newTree()
+		parent.DeleteChild(c)
+		if got, want := childIDs(parent), "1,2"; got != want {
+			t.Errorf("children got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("ignores a part that is not a child", func(t *testing.T) {
+		parent, _, _, _ := newTree()
+		parent.DeleteChild(&enmime.Part{PartID: "x"})
+		if got, want := childIDs(parent), "1,2,3"; got != want {
+			t.Errorf("children got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("nil child and nil receiver are safe", func(t *testing.T) {
+		parent, _, _, _ := newTree()
+		parent.DeleteChild(nil)
+		if got, want := childIDs(parent), "1,2,3"; got != want {
+			t.Errorf("children got %q, want %q", got, want)
+		}
+		var nilPart *enmime.Part
+		nilPart.DeleteChild(parent)
+	})
+}
+
 func TestQuotedPrintablePart(t *testing.T) {
 	var want, got string
 	var wantp *enmime.Part
