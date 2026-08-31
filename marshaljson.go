@@ -8,11 +8,11 @@ import (
 
 // MarshalJSON implements json.Marshaler for Part.
 //
-// A Part links back to its Parent, so the default marshaler walks that pointer
-// and fails with "encountered a cycle via *enmime.Part". This emits the part's
-// own headers, metadata and content, leaving out the Parent, FirstChild and
-// NextSibling links (and the unexported parsing state) so a Part, or a slice of
-// them, can be serialized on its own.
+// Only the part's own headers, metadata and content are emitted; the Parent,
+// FirstChild and NextSibling links and the unexported parsing state are left
+// out. Because the child parts are not encoded, marshaling a root Part on its
+// own discards the rest of the tree, so callers usually want to marshal the
+// enclosing Envelope instead to get a usable result.
 func (p *Part) MarshalJSON() ([]byte, error) {
 	return json.Marshal(partView{
 		Header:                  p.Header,
