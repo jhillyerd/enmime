@@ -98,7 +98,9 @@ func (p *Part) appendChild(lastChild *Part, child *Part) *Part {
 			tail := lastChild
 			if tail == nil {
 				// Walk the sibling chain to find the last child.
-				for tail = p.FirstChild; tail.NextSibling != nil; tail = tail.NextSibling {
+				tail = p.FirstChild
+				for tail.NextSibling != nil {
+					tail = tail.NextSibling
 				}
 			}
 			if tail == child {
