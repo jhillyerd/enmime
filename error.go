@@ -31,9 +31,9 @@ const (
 
 // Error describes an error encountered while parsing.
 type Error struct {
-	Name   string // The name or type of error encountered, from Error consts.
-	Detail string // Additional detail about the cause of the error, if available.
-	Severe bool   // Indicates that a portion of the message was lost during parsing.
+	Name   string `json:"name"`   // The name or type of error encountered, from Error consts.
+	Detail string `json:"detail"` // Additional detail about the cause of the error, if available.
+	Severe bool   `json:"severe"` // Indicates that a portion of the message was lost during parsing.
 }
 
 // Error formats the enmime.Error as a string.
