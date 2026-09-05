@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"math/rand"
 	"mime/quotedprintable"
@@ -77,35 +78,47 @@ func NewPart(contentType string) *Part {
 // The child may have siblings and children attached.  This method will set the Parent field on
 // child and all its siblings. Safe to call on nil.
 func (p *Part) AddChild(child *Part) {
+	p.appendChild(nil, child)
+}
+
+// appendChild adds child to the end of p's child list, like AddChild.  When lastChild is the
+// known tail of p's child list, the sibling chain is not walked; appendChild returns the new tail
+// so that callers appending many children need not walk the chain on each call.  Callers that do
+// not know the current tail may pass nil for lastChild.
+func (p *Part) appendChild(lastChild *Part, child *Part) *Part {
 	if p == child {
 		// Prevent paradox.
-		return
+		return lastChild
 	}
 	if p != nil {
 		if p.FirstChild == nil {
 			// Make it the first child.
 			p.FirstChild = child
 		} else {
-			// Append to sibling chain.
-			current := p.FirstChild
-			for current.NextSibling != nil {
-				current = current.NextSibling
+			tail := lastChild
+			if tail == nil {
+				// Walk the sibling chain to find the last child.
+				for tail = p.FirstChild; tail.NextSibling != nil; tail = tail.NextSibling {
+				}
 			}
-			if current == child {
+			if tail == child {
 				// Prevent infinite loop.
-				return
+				return lastChild
 			}
-			current.NextSibling = child
+			tail.NextSibling = child
 		}
 	}
-	// Update all new first-level children Parent pointers.
+	// Update all new first-level children Parent pointers, tracking the new tail.
+	newTail := lastChild
 	for c := child; c != nil; c = c.NextSibling {
 		if c == c.NextSibling {
 			// Prevent infinite loop.
-			return
+			break
 		}
 		c.Parent = p
+		newTail = c
 	}
+	return newTail
 }
 
 // DeleteChild removes child from this part's list of children, relinking the sibling chain
@@ -444,8 +457,15 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 	}
 
 	if detectMultipartMessage(root, p.multipartWOBoundaryAsSinglePart) {
-		// Content is multipart, parse it.
-		if err := parseParts(root, br); err != nil {
+		// Content is multipart, parse it.  Pass a budget to enforce the parser's MIME part
+		// limit; a nil budget disables it.  The budget is a copy so that decrementing it does
+		// not mutate the parser's configured limit.
+		var partsLeft *int
+		if p.maxMIMEParts > 0 {
+			parts := p.maxMIMEParts
+			partsLeft = &parts
+		}
+		if err := parseParts(root, br, partsLeft); err != nil {
 			return nil, err
 		}
 	} else {
@@ -457,11 +477,34 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 	return root, nil
 }
 
-// parseParts recursively parses a MIME multipart document and sets each Parts PartID.
-func parseParts(parent *Part, reader *bufio.Reader) error {
+// TooManyPartsError is returned by ReadParts and ReadEnvelope when a message contains more MIME
+// parts than permitted by the MaxMIMEParts option.  Parsing is aborted when the limit is reached,
+// so any returned Part tree is incomplete; this error is always fatal, even when SkipMalformedParts
+// is enabled.
+type TooManyPartsError struct {
+	Limit int // The MIME part limit that was exceeded.
+}
+
+func (e *TooManyPartsError) Error() string {
+	return fmt.Sprintf("MIME message contains more than %d parts", e.Limit)
+}
+
+// isTooManyPartsError reports whether err is, or wraps, a TooManyPartsError.
+func isTooManyPartsError(err error) bool {
+	var target *TooManyPartsError
+	return errors.As(err, &target)
+}
+
+// parseParts recursively parses a MIME multipart document and sets each Parts PartID.  The
+// partsLeft budget, shared by all recursive invocations, counts down with every part parsed;
+// parsing fails with a TooManyPartsError when it is exhausted.
+func parseParts(parent *Part, reader *bufio.Reader, partsLeft *int) error {
 	firstRecursion := parent.Parent == nil
 	// Loop over MIME boundaries.
 	br := newBoundaryReader(reader, parent.Boundary)
+	// Track the tail of parent's child chain so appends stay O(1) instead of walking the
+	// sibling list for every AddChild.
+	var lastChild *Part
 	for indexPartID := 1; true; indexPartID++ {
 		next, err := br.Next()
 		if err != nil && errors.Cause(err) != io.EOF {
@@ -473,6 +516,12 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 		}
 		if !next {
 			break
+		}
+		if partsLeft != nil {
+			if *partsLeft <= 0 {
+				return &TooManyPartsError{Limit: parent.parser.maxMIMEParts}
+			}
+			*partsLeft--
 		}
 
 		// Set this Part's PartID, indicating its position within the MIME Part tree.
@@ -504,7 +553,7 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 				}
 				return err
 			}
-			parent.AddChild(p)
+			lastChild = parent.appendChild(lastChild, p)
 			continue
 		} else if detectTextHeader(p, inttp.MIMEHeader(p.Header), false) {
 			// Some parts are data but for some reason have a boundary header field so do not treat them
@@ -518,14 +567,14 @@ func parseParts(parent *Part, reader *bufio.Reader) error {
 				}
 				return err
 			}
-			parent.AddChild(p)
+			lastChild = parent.appendChild(lastChild, p)
 			continue
 		}
 
-		parent.AddChild(p)
+		lastChild = parent.appendChild(lastChild, p)
 		// Content is another multipart.
-		if err = parseParts(p, bbr); err != nil {
-			if p.parser.skipMalformedParts {
+		if err = parseParts(p, bbr, partsLeft); err != nil {
+			if p.parser.skipMalformedParts && !isTooManyPartsError(err) {
 				parent.addErrorf(ErrorMalformedChildPart, "parse parts: %s", err.Error())
 				continue
 			}

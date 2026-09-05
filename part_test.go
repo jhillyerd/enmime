@@ -6,6 +6,8 @@ import (
 
 	"github.com/jhillyerd/enmime/v2"
 	"github.com/jhillyerd/enmime/v2/internal/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPlainTextPart(t *testing.T) {
@@ -1521,4 +1523,98 @@ func TestCharacterDetectionRunes(t *testing.T) {
 	}
 
 	test.ComparePart(t, p, wantp)
+}
+
+// buildPartsMessage returns a MIME message containing n text/plain parts inside a single
+// multipart/mixed container.
+func buildPartsMessage(n int) string {
+	var b strings.Builder
+	b.WriteString("Content-Type: multipart/mixed; boundary=BOUND\r\n\r\n")
+	for i := 0; i < n; i++ {
+		b.WriteString("--BOUND\r\nContent-Type: text/plain\r\n\r\nbody\r\n")
+	}
+	b.WriteString("--BOUND--\r\n")
+	return b.String()
+}
+
+// buildNestedPartsMessage returns a MIME message whose root container holds two text parts and
+// one nested multipart container holding two more: five parts in total, excluding the root.
+func buildNestedPartsMessage() string {
+	return "Content-Type: multipart/mixed; boundary=BOUND\r\n" +
+		"\r\n" +
+		"--BOUND\r\nContent-Type: text/plain\r\n\r\nfirst\r\n" +
+		"--BOUND\r\nContent-Type: multipart/mixed; boundary=NESTED\r\n\r\n" +
+		"--NESTED\r\nContent-Type: text/plain\r\n\r\nnested one\r\n" +
+		"--NESTED\r\nContent-Type: text/plain\r\n\r\nnested two\r\n" +
+		"--NESTED--\r\n" +
+		"--BOUND\r\nContent-Type: text/plain\r\n\r\nsecond\r\n" +
+		"--BOUND--\r\n"
+}
+
+// countParts returns the number of parts in the tree rooted at root, excluding root itself.
+// Multipart containers count as parts.
+func countParts(root *enmime.Part) int {
+	return len(root.BreadthMatchAll(func(_ *enmime.Part) bool { return true })) - 1
+}
+
+func TestMaxMIMEParts(t *testing.T) {
+	t.Run("message under limit parses", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEParts(5))
+		p, err := parser.ReadParts(strings.NewReader(buildPartsMessage(4)))
+		require.NoError(t, err)
+		assert.Equal(t, 4, countParts(p))
+	})
+
+	t.Run("message at limit parses", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEParts(5))
+		p, err := parser.ReadParts(strings.NewReader(buildPartsMessage(5)))
+		require.NoError(t, err)
+		assert.Equal(t, 5, countParts(p))
+	})
+
+	t.Run("message over limit fails", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEParts(5))
+		_, err := parser.ReadParts(strings.NewReader(buildPartsMessage(6)))
+		require.Error(t, err)
+		var limitErr *enmime.TooManyPartsError
+		require.ErrorAs(t, err, &limitErr)
+		assert.Equal(t, 5, limitErr.Limit)
+		assert.Equal(t, "MIME message contains more than 5 parts", err.Error())
+	})
+
+	t.Run("zero disables the limit", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEParts(0))
+		p, err := parser.ReadParts(strings.NewReader(buildPartsMessage(100)))
+		require.NoError(t, err)
+		assert.Equal(t, 100, countParts(p))
+	})
+
+	t.Run("limit includes nested containers", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEParts(5))
+		p, err := parser.ReadParts(strings.NewReader(buildNestedPartsMessage()))
+		require.NoError(t, err)
+		assert.Equal(t, 5, countParts(p))
+
+		parser = enmime.NewParser(enmime.MaxMIMEParts(4))
+		_, err = parser.ReadParts(strings.NewReader(buildNestedPartsMessage()))
+		assert.ErrorAs(t, err, new(*enmime.TooManyPartsError))
+	})
+}
+
+func TestMaxMIMEPartsNotSkippedWhenMalformedPartsSkipped(t *testing.T) {
+	// The limit is reached inside the nested container; SkipMalformedParts must not swallow
+	// the error and continue parsing.
+	parser := enmime.NewParser(
+		enmime.MaxMIMEParts(3),
+		enmime.SkipMalformedParts(true))
+	_, err := parser.ReadParts(strings.NewReader(buildNestedPartsMessage()))
+	assert.ErrorAs(t, err, new(*enmime.TooManyPartsError))
+}
+
+func TestMaxMIMEPartsEnvelope(t *testing.T) {
+	// ReadEnvelope wraps the error; users must still be able to detect it with errors.As.
+	parser := enmime.NewParser(enmime.MaxMIMEParts(3))
+	_, err := parser.ReadEnvelope(strings.NewReader(buildPartsMessage(4)))
+	require.ErrorAs(t, err, new(*enmime.TooManyPartsError))
+	assert.Contains(t, err.Error(), "Failed to ReadParts")
 }
