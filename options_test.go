@@ -6,7 +6,16 @@ import (
 	"testing"
 
 	"github.com/jhillyerd/enmime/v2/mediatype"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestMaxMIMEPartsOption(t *testing.T) {
+	assert.Equal(t, defaultMaxMIMEParts, NewParser().maxMIMEParts,
+		"NewParser() should default to the recommended part limit")
+	assert.Equal(t, 0, NewParser(MaxMIMEParts(0)).maxMIMEParts,
+		"MaxMIMEParts(0) should disable the limit")
+	assert.Equal(t, 42, NewParser(MaxMIMEParts(42)).maxMIMEParts)
+}
 
 func TestSetCustomParseMediaType(t *testing.T) {
 	alwaysReturnHTML := func(_ string) (mtype string, params map[string]string, invalidParams []string, err error) {

@@ -1,5 +1,9 @@
 package enmime
 
+// defaultMaxMIMEParts is the default limit on the number of MIME parts parsed from a single
+// message; see the MaxMIMEParts option.
+const defaultMaxMIMEParts = 10000
+
 // Option to configure parsing.
 type Option interface {
 	apply(p *Parser)
@@ -116,6 +120,22 @@ type minCharsetDetectRunesOption int
 
 func (o minCharsetDetectRunesOption) apply(p *Parser) {
 	p.minCharsetDetectRunes = int(o)
+}
+
+// MaxMIMEParts sets the maximum number of MIME parts a message may contain, including nested
+// multipart containers but excluding the root.  Messages with more parts than this fail to parse
+// with a TooManyPartsError; this protects against CPU and memory exhaustion from hostile
+// messages containing a huge number of (possibly tiny) parts.  The limit is enforced even when
+// SkipMalformedParts is enabled.  The default is 10000; zero or a negative value disables the
+// limit.
+func MaxMIMEParts(n int) Option {
+	return maxMIMEPartsOption(n)
+}
+
+type maxMIMEPartsOption int
+
+func (o maxMIMEPartsOption) apply(p *Parser) {
+	p.maxMIMEParts = int(o)
 }
 
 // MinCharsetDetectRunes sets the minimum length of a MIME part before enmime will attempt to

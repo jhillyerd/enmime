@@ -19,6 +19,7 @@ type CustomParseMediaType func(ctype string) (mtype string, params map[string]st
 // Parser parses MIME.  Create with NewParser to inherit recommended defaults.
 type Parser struct {
 	maxStoredPartErrors             int
+	maxMIMEParts                    int
 	multipartWOBoundaryAsSinglePart bool
 	readPartErrorPolicy             ReadPartErrorPolicy
 	skipMalformedParts              bool
@@ -38,6 +39,7 @@ func NewParser(ops ...Option) *Parser {
 	// Construct parser with default options.
 	p := Parser{
 		minCharsetDetectRunes: 100,
+		maxMIMEParts:          defaultMaxMIMEParts,
 	}
 
 	for _, o := range ops {
