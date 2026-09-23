@@ -389,6 +389,62 @@ func TestParseAttachmentApplication(t *testing.T) {
 	}
 }
 
+// TestParseAttachmentMissingContentType expects Content-Disposition and Content-ID to be read
+// from parts that have no Content-Type header.
+func TestParseAttachmentMissingContentType(t *testing.T) {
+	msg := test.OpenTestData("mail", "attachment-missing-ctype.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	want := "A text section"
+	if !strings.Contains(e.Text, want) {
+		t.Errorf("Text: %q should contain: %q", e.Text, want)
+	}
+
+	if len(e.Attachments) != 1 {
+		t.Fatal("Should have a single attachment, got:", len(e.Attachments))
+	}
+	wantp := &enmime.Part{
+		Parent:      test.PartExists,
+		NextSibling: test.PartExists,
+		// No ContentType
+		Disposition: "attachment",
+		FileName:    "notes.txt",
+		PartID:      "2",
+	}
+	test.ComparePart(t, e.Attachments[0], wantp)
+
+	if len(e.Inlines) != 1 {
+		t.Fatal("Should have a single inline, got:", len(e.Inlines))
+	}
+	wantp = &enmime.Part{
+		Parent:      test.PartExists,
+		Disposition: "inline",
+		PartID:      "3",
+	}
+	test.ComparePart(t, e.Inlines[0], wantp)
+	want = "part123456@inbucket.org"
+	if got := e.Inlines[0].ContentID; got != want {
+		t.Errorf("ContentID got: %q, want: %q", got, want)
+	}
+
+	if len(e.OtherParts) > 0 {
+		t.Error("Should have no other parts, got:", len(e.OtherParts))
+	}
+
+	// Two warnings for each of the two parts, as before.
+	if len(e.Errors) != 4 {
+		t.Errorf("len(e.Errors) got: %v, want: 4", len(e.Errors))
+	}
+	for _, perr := range e.Errors {
+		if perr.Name != enmime.ErrorMissingContentType {
+			t.Errorf("e.Errors got: %v, want only: %v", perr.Name, enmime.ErrorMissingContentType)
+		}
+	}
+}
+
 func TestParseOtherParts(t *testing.T) {
 	msg := test.OpenTestData("mail", "other-parts.raw")
 	e, err := enmime.ReadEnvelope(msg)
