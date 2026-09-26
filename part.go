@@ -165,10 +165,13 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 		return err
 	}
 	p.Header = textproto.MIMEHeader(header)
+	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
 	ctype := header.Get(hnContentType)
 	if ctype == "" {
 		if defaultContentType == "" {
 			p.addWarning(ErrorMissingContentType, "MIME parts should have a Content-Type header")
+			// Content-Disposition does not depend on Content-Type, set disposition and filename.
+			p.setupContentHeaders(nil)
 			return nil
 		}
 		ctype = defaultContentType
@@ -188,7 +191,6 @@ func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
 	// Set disposition, filename, charset if available.
 	p.setupContentHeaders(mparams)
 	p.Boundary = mparams[hpBoundary]
-	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
 	return nil
 }
 
