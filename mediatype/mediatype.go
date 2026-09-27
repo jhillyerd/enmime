@@ -119,19 +119,33 @@ func assembleRFC2231Params(ctype string) string {
 		charset := "us-ascii"
 		charsetFound := false
 
-		// RFC 2231 only permits a charset'' prefix in extended (asterisk) segments;
+		// RFC 2231 only permits a charset'language' prefix in extended (asterisk) segments;
 		// plain name*N= values are taken literally. Some MUAs (Outlook) repeat the
 		// prefix on every extended segment; strip it from each and remember the first.
 		stripped := make([]string, len(segs))
 		for i, seg := range segs {
 			val := seg.value
 			if seg.encoded {
-				if prefix, rest, found := strings.Cut(val, "''"); found {
-					if !charsetFound {
-						charset = prefix
-						charsetFound = true
+				if cs, afterCS, found := strings.Cut(val, "'"); found {
+					if _, rest, found := strings.Cut(afterCS, "'"); found {
+						if !charsetFound {
+							charset = cs
+							charsetFound = true
+						}
+						val = rest
 					}
-					val = rest
+				}
+			} else {
+				// Plain continuation segments may be quoted strings (RFC 2231 §4.1,
+				// e.g. URL*0="ftp://"; URL*1="cs.utk.edu/pub"). Trim surrounding
+				// whitespace and unwrap quotes before joining.
+				val = strings.TrimSpace(val)
+				if len(val) >= 2 && strings.HasPrefix(val, `"`) && strings.HasSuffix(val, `"`) {
+					if unquoted, err := strconv.Unquote(val); err == nil {
+						val = unquoted
+					} else {
+						val = val[1 : len(val)-1]
+					}
 				}
 			}
 			stripped[i] = val

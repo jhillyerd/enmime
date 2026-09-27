@@ -775,6 +775,30 @@ func TestAssembleRFC2231Params(t *testing.T) {
 			mtype:  "attachment",
 			params: map[string]string{"filename": "€ a.txt"},
 		},
+		{
+			label:  "charset with language tag in extended prefix",
+			input:  `attachment; filename*0*=euc-kr'ko'%C0%CC; filename*1*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이.txt"},
+		},
+		{
+			label:  "charset with language tag, single segment",
+			input:  `attachment; filename*=us-ascii'en-us'Hello.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "Hello.txt"},
+		},
+		{
+			label:  "quoted plain continuation segments are joined",
+			input:  `test/plain; URL*0="ftp://"; URL*1="cs.utk.edu/pub"`,
+			mtype:  "test/plain",
+			params: map[string]string{"url": "ftp://cs.utk.edu/pub"},
+		},
+		{
+			label:  "plain continuation segments with whitespace trimmed",
+			input:  `attachment; filename*0= "long "; filename*1= name.txt `,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "long name.txt"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
