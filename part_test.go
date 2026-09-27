@@ -1530,7 +1530,7 @@ func TestCharacterDetectionRunes(t *testing.T) {
 func buildPartsMessage(n int) string {
 	var b strings.Builder
 	b.WriteString("Content-Type: multipart/mixed; boundary=BOUND\r\n\r\n")
-	for i := 0; i < n; i++ {
+	for range n {
 		b.WriteString("--BOUND\r\nContent-Type: text/plain\r\n\r\nbody\r\n")
 	}
 	b.WriteString("--BOUND--\r\n")

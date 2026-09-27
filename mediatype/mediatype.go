@@ -75,12 +75,12 @@ func assembleRFC2231Params(s string) string {
 	byBase := map[string][]segment{}
 	for i := 1; i < len(parts); i++ {
 		trimmed := strings.TrimSpace(parts[i])
-		eqIdx := strings.IndexByte(trimmed, '=')
-		if eqIdx < 0 {
+		before, after, ok := strings.Cut(trimmed, "=")
+		if !ok {
 			continue
 		}
-		paramName := strings.TrimSpace(trimmed[:eqIdx])
-		value := trimmed[eqIdx+1:]
+		paramName := strings.TrimSpace(before)
+		value := after
 
 		m := rfc2231SegmentRe.FindStringSubmatch(paramName)
 		if m == nil {
