@@ -811,6 +811,24 @@ func TestAssembleRFC2231Params(t *testing.T) {
 			mtype:  "attachment",
 			params: map[string]string{"filename": "long-file.txt"},
 		},
+		{
+			label:  "percent escape triplet split across encoded segment boundary",
+			input:  `attachment; filename*0*=utf-8''data%2; filename*1*=4.csv`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "data$.csv"},
+		},
+		{
+			label:  "multi-byte UTF-8 escape split across segment boundary",
+			input:  `attachment; filename*0*=utf-8''ca%C; filename*1*=3%A9.pdf`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "caé.pdf"},
+		},
+		{
+			label:  "encoded run flushes before plain segment",
+			input:  `attachment; filename*0*=utf-8''caf%C3; filename*1*=%A9x; filename*2=.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "caféx.txt"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {

@@ -154,21 +154,39 @@ func assembleRFC2231Params(ctype string) string {
 		// Gaps in the segment numbering (e.g. 0, 2) are treated as empty: the present
 		// segments are assembled in order, which avoids the garbage an index-based
 		// concatenation would produce.
+		//
+		// Adjacent encoded segments are accumulated as raw percent-encoded text and
+		// decoded only when flushed — before a plain segment interrupts the run and
+		// once after the loop — so escape triplets split across segment boundaries
+		// (e.g. "...%2" + "4b...") decode correctly instead of failing per segment.
 		rawBytes := make([]byte, 0)
 		failed := false
+		var pending strings.Builder // encoded text not yet percent-decoded
+		flushPending := func() {
+			if failed || pending.Len() == 0 {
+				return
+			}
+			decoded, err := url.PathUnescape(pending.String())
+			if err != nil {
+				failed = true
+				return
+			}
+			rawBytes = append(rawBytes, decoded...)
+			pending.Reset()
+		}
 		for i := range segs {
 			val := stripped[i]
 			if segs[i].encoded {
-				decoded, err := url.PathUnescape(val)
-				if err != nil {
-					failed = true
-					break
-				}
-				rawBytes = append(rawBytes, decoded...)
-			} else {
-				rawBytes = append(rawBytes, val...)
+				pending.WriteString(val)
+				continue
 			}
+			flushPending()
+			if failed {
+				break
+			}
+			rawBytes = append(rawBytes, val...)
 		}
+		flushPending()
 		if failed {
 			// Malformed percent-encoding: preserve the raw segment values as a plain quoted
 			// parameter rather than silently dropping or partially decoding the filename.
