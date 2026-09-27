@@ -1636,8 +1636,14 @@ func TestRFC2231LongFilenameSegments(t *testing.T) {
 	if attach == nil {
 		t.Fatal("expected attachment sibling part")
 	}
-	want := "개.txt"
+	// Long Korean filename split across 5 continuation segments, including multibyte
+	// EUC-KR characters deliberately broken across segment boundaries.
+	want := "한국 파일 이름이 매우 긴 첨부 파일입니다.pdf"
 	if attach.FileName != want {
 		t.Errorf("FileName got %q, want %q", attach.FileName, want)
+	}
+	// No percent-encoding leftovers may survive assembly.
+	if strings.Contains(attach.FileName, "%") {
+		t.Errorf("FileName contains leftover percent-encoding: %q", attach.FileName)
 	}
 }

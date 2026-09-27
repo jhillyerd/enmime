@@ -156,6 +156,12 @@ func assembleRFC2231Params(ctype string) string {
 			}
 		}
 		if failed {
+			// Malformed percent-encoding: preserve the raw segment values as a plain quoted
+			// parameter rather than silently dropping or partially decoding the filename.
+			for _, seg := range segs {
+				removals[seg.partIdx] = true
+			}
+			additions = append(additions, " "+baseName+`="`+rfc2231EscapeQuoted(strings.Join(stripped, ""))+"\"")
 			continue
 		}
 
