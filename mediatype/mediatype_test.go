@@ -1,6 +1,7 @@
 package mediatype
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -567,6 +568,18 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "text/plain",
 			params: map[string]string{"name": "x"},
 		},
+		{
+			label:  "RFC 2231 multi-segment filename with euc-kr charset",
+			input:  `attachment; filename*0*=euc-kr''%B0%B3; filename*1*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "개.txt"},
+		},
+		{
+			label:  "RFC 2231 multi-segment filename with us-ascii charset",
+			input:  `attachment; filename*0*=us-ascii''hello; filename*1*=-world.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "hello-world.txt"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
@@ -653,5 +666,226 @@ func TestRemoveTrailingHTMLTags(t *testing.T) {
 				t.Errorf("should remove trainling HTML tags, has: %q, want: %q, got: %q", tt.has, tt.want, got)
 			}
 		})
+	}
+}
+
+// TestAssembleRFC2231Params exercises the RFC 2231 continuation-parameter assembly added for
+// https://github.com/jhillyerd/enmime/issues/109. Each case runs end-to-end through Parse so
+// that failure modes (dropped params, leftover segments, garbage concatenation) are caught.
+func TestAssembleRFC2231Params(t *testing.T) {
+	testCases := []struct {
+		label  string
+		input  string
+		mtype  string
+		params map[string]string
+	}{
+		{
+			label:  "multi-segment utf-8 happy path",
+			input:  `attachment; filename*0*=utf-8''%E2%82%AC%20; filename*1*=%EB%AC%B8%EC%84%9C.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "€ 문서.txt"},
+		},
+		{
+			label:  "multi-segment euc-kr happy path",
+			input:  `attachment; filename*0*=euc-kr''%C0%CC; filename*1*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이.txt"},
+		},
+		{
+			label:  "single-segment with charset decodes as percent-encoded",
+			input:  `attachment; filename*=euc-kr''%C0%CC.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이.txt"},
+		},
+		{
+			label:  "single-segment ascii charset handled by stdlib",
+			input:  `attachment; filename*=us-ascii''report-1.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "report-1.txt"},
+		},
+		{
+			label:  "repeated charset prefix on every segment (Outlook)",
+			input:  `attachment; filename*0*=euc-kr''%C6%C4; filename*1*=euc-kr''%C0%CF`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "파일"},
+		},
+		{
+			label:  "segment gap assembles present segments only",
+			input:  `attachment; filename*0*=euc-kr''%C0%CC; filename*2*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이.txt"},
+		},
+		{
+			label:  "out-of-order segments assembled by index",
+			input:  `attachment; filename*1*=%2E%74%78%74; filename*0*=euc-kr''%C0%CC`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이.txt"},
+		},
+		{
+			label:  "empty charset prefix segment",
+			input:  `attachment; filename*0*=euc-kr''%C0%CC; filename*1*=''`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이"},
+		},
+		{
+			label:  "unknown charset preserves value instead of dropping it",
+			input:  `attachment; filename*0*=bogus-charset''%C0%CC; filename*1*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "%C0%CC%2E%74%78%74"},
+		},
+		{
+			label:  "malformed percent-encoding preserves raw value",
+			input:  `attachment; filename*0*=euc-kr''%ZZ%41; filename*1*=%42`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "%ZZ%41%42"},
+		},
+		{
+			label:  "apostrophe pair in plain segments survives literal",
+			input:  `attachment; filename*0=don''t; filename*1=panic.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "don''tpanic.txt"},
+		},
+		{
+			label:  "charset prefix stripped only from extended segment",
+			input:  `attachment; filename*0*=utf-8''doc; filename*1=don''t.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "docdon''t.txt"},
+		},
+		{
+			label:  "empty params ignored",
+			input:  `attachment;;`,
+			mtype:  "attachment",
+			params: map[string]string{},
+		},
+		{
+			label:  "no params untouched",
+			input:  `text/plain`,
+			mtype:  "text/plain",
+			params: map[string]string{},
+		},
+		{
+			label:  "plain filename param untouched",
+			input:  `attachment; filename="x.txt"`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "x.txt"},
+		},
+		{
+			label:  "single utf-8 extended param handled by stdlib",
+			input:  `attachment; filename*=utf-8''%E2%82%AC%20a.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "€ a.txt"},
+		},
+		{
+			label:  "charset with language tag in extended prefix",
+			input:  `attachment; filename*0*=euc-kr'ko'%C0%CC; filename*1*=%2E%74%78%74`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "이.txt"},
+		},
+		{
+			label:  "charset with language tag, single segment",
+			input:  `attachment; filename*=us-ascii'en-us'Hello.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "Hello.txt"},
+		},
+		{
+			label:  "quoted plain continuation segments are joined",
+			input:  `test/plain; URL*0="ftp://"; URL*1="cs.utk.edu/pub"`,
+			mtype:  "test/plain",
+			params: map[string]string{"url": "ftp://cs.utk.edu/pub"},
+		},
+		{
+			label:  "plain continuation segments with whitespace trimmed",
+			input:  `attachment; filename*0= "long "; filename*1= name.txt `,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "long name.txt"},
+		},
+		{
+			label:  "double digit segment numbers, out of order",
+			input:  `attachment; filename*10*=-name.txt; filename*0*=utf-8''long-; filename*1*=file`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "long-file-name.txt"},
+		},
+		{
+			label:  "plain filename fallback superseded by continuations",
+			input:  `attachment; filename="fallback.txt"; filename*0*=utf-8''long-; filename*1*=file.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "long-file.txt"},
+		},
+		{
+			label:  "percent escape triplet split across encoded segment boundary",
+			input:  `attachment; filename*0*=utf-8''data%2; filename*1*=4.csv`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "data$.csv"},
+		},
+		{
+			label:  "multi-byte UTF-8 escape split across segment boundary",
+			input:  `attachment; filename*0*=utf-8''ca%C; filename*1*=3%A9.pdf`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "caé.pdf"},
+		},
+		{
+			label:  "encoded run flushes before plain segment",
+			input:  `attachment; filename*0*=utf-8''caf%C3; filename*1*=%A9x; filename*2=.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "caféx.txt"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.label, func(t *testing.T) {
+			mtype, params, _, err := Parse(tc.input)
+			if err != nil {
+				t.Fatalf("got err %v, want nil", err)
+			}
+			if mtype != tc.mtype {
+				t.Errorf("mtype got %q, want %q", mtype, tc.mtype)
+			}
+			for k, v := range tc.params {
+				if params[k] != v {
+					t.Errorf("params[%q] got %q, want %q", k, params[k], v)
+				}
+				delete(params, k)
+			}
+			for pname := range params {
+				t.Errorf("Found unexpected param: %q=%q", pname, params[pname])
+			}
+		})
+	}
+}
+
+func TestAssembleRFC2231ParamsString(t *testing.T) {
+	// String-level checks of assembleRFC2231Params before it reaches the standard library.
+	if got := assembleRFC2231Params("text/plain"); got != "text/plain" {
+		t.Errorf("no-param input got %q, want unchanged", got)
+	}
+	if got := assembleRFC2231Params(`attachment; filename="x.txt"`); got != `attachment; filename="x.txt"` {
+		t.Errorf("plain param got %q, want unchanged", got)
+	}
+	if got := assembleRFC2231Params(""); got != "" {
+		t.Errorf("empty input got %q, want empty", got)
+	}
+
+	in := `attachment; filename*0*=euc-kr''%C6%C4; filename*1*=euc-kr''%C0%CF`
+	out := assembleRFC2231Params(in)
+	if strings.Count(out, "filename*") != 1 {
+		t.Errorf("assembled string should collapse to one extended param, got %q", out)
+	}
+	if !strings.Contains(out, "utf-8''") {
+		t.Errorf("assembled string should re-encode as utf-8 extended form, got %q", out)
+	}
+
+	// Failure paths must degrade to a recoverable quoted param, not an empty result.
+	for _, in := range []string{
+		`attachment; filename*0*=bogus-charset''%C0%CC; filename*1*=%2E%74%78%74`,
+		`attachment; filename*0*=euc-kr''%ZZ%41; filename*1*=%42`,
+	} {
+		out := assembleRFC2231Params(in)
+		mtype, params, _, err := Parse(out)
+		if err != nil || mtype != "attachment" {
+			t.Errorf("failure-path input %q did not survive re-parse: %q (%v)", in, out, err)
+			continue
+		}
+		if params["filename"] == "" {
+			t.Errorf("failure-path input %q silently dropped filename: %q", in, out)
+		}
 	}
 }

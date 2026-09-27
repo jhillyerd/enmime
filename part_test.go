@@ -1530,7 +1530,7 @@ func TestCharacterDetectionRunes(t *testing.T) {
 func buildPartsMessage(n int) string {
 	var b strings.Builder
 	b.WriteString("Content-Type: multipart/mixed; boundary=BOUND\r\n\r\n")
-	for i := 0; i < n; i++ {
+	for range n {
 		b.WriteString("--BOUND\r\nContent-Type: text/plain\r\n\r\nbody\r\n")
 	}
 	b.WriteString("--BOUND--\r\n")
@@ -1617,4 +1617,33 @@ func TestMaxMIMEPartsEnvelope(t *testing.T) {
 	_, err := parser.ReadEnvelope(strings.NewReader(buildPartsMessage(4)))
 	require.ErrorAs(t, err, new(*enmime.TooManyPartsError))
 	assert.Contains(t, err.Error(), "Failed to ReadParts")
+}
+
+// TestRFC2231LongFilenameSegments verifies that multi-segment RFC 2231 continuation parameters
+// in Content-Disposition are assembled correctly, including non-UTF-8 charsets such as EUC-KR.
+// Reproduces https://github.com/jhillyerd/enmime/issues/109
+func TestRFC2231LongFilenameSegments(t *testing.T) {
+	r := test.OpenTestData("parts", "long-filename-euckr.raw")
+	root, err := enmime.ReadParts(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Navigate to the attachment part (second child of the root multipart).
+	if root.FirstChild == nil {
+		t.Fatal("expected multipart children")
+	}
+	attach := root.FirstChild.NextSibling
+	if attach == nil {
+		t.Fatal("expected attachment sibling part")
+	}
+	// Long Korean filename split across 5 continuation segments, including multibyte
+	// EUC-KR characters deliberately broken across segment boundaries.
+	want := "한국 파일 이름이 매우 긴 첨부 파일입니다.pdf"
+	if attach.FileName != want {
+		t.Errorf("FileName got %q, want %q", attach.FileName, want)
+	}
+	// No percent-encoding leftovers may survive assembly.
+	if strings.Contains(attach.FileName, "%") {
+		t.Errorf("FileName contains leftover percent-encoding: %q", attach.FileName)
+	}
 }
