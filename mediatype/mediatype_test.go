@@ -799,6 +799,18 @@ func TestAssembleRFC2231Params(t *testing.T) {
 			mtype:  "attachment",
 			params: map[string]string{"filename": "long name.txt"},
 		},
+		{
+			label:  "double digit segment numbers, out of order",
+			input:  `attachment; filename*10*=-name.txt; filename*0*=utf-8''long-; filename*1*=file`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "long-file-name.txt"},
+		},
+		{
+			label:  "plain filename fallback superseded by continuations",
+			input:  `attachment; filename="fallback.txt"; filename*0*=utf-8''long-; filename*1*=file.txt`,
+			mtype:  "attachment",
+			params: map[string]string{"filename": "long-file.txt"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
