@@ -1647,3 +1647,43 @@ func TestRFC2231LongFilenameSegments(t *testing.T) {
 		t.Errorf("FileName contains leftover percent-encoding: %q", attach.FileName)
 	}
 }
+
+// TestRFC2047FilenameWithQuote verifies that an RFC 2047 encoded-word filename whose decoded
+// payload contains a double quote does not swallow the remaining parameters of the
+// Content-Disposition header. Reproduces https://github.com/jhillyerd/enmime/issues/384
+func TestRFC2047FilenameWithQuote(t *testing.T) {
+	tests := []struct {
+		name string
+		cd   string
+		want string
+	}{
+		{
+			"non-ASCII name with embedded quote",
+			`attachment; filename="=?utf-8?B?6riI7KeA66y47J6QIi5wZGY=?="; size=8759; modification-date="Tue, 02 Dec 2025 04:34:59 GMT"`,
+			`금지문자".pdf`,
+		},
+		{
+			"ASCII name with embedded quote",
+			`attachment; filename="=?utf-8?B?ZmlsZW5hbWUiLnBkZg==?="; size=8759`,
+			`filename".pdf`,
+		},
+		{
+			"plain non-ASCII name still works",
+			`attachment; filename="=?utf-8?B?6riI7KeA66y47J6QLnBkZg==?="; size=8759`,
+			`금지문자.pdf`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := strings.NewReader("Content-Type: application/pdf\r\nContent-Disposition: " +
+				tc.cd + "\r\n\r\nbody")
+			root, err := enmime.ReadParts(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if root.FileName != tc.want {
+				t.Errorf("FileName got %q, want %q", root.FileName, tc.want)
+			}
+		})
+	}
+}

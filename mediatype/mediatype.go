@@ -366,7 +366,7 @@ func fixMangledMediaType(mtype string, sep rune, options ParseOptions) string {
 			}
 
 			// RFC-2047 encoded attribute name.
-			p = coding.RFC2047Decode(p)
+			p = decodeRFC2047Param(p)
 
 			pair := strings.SplitAfter(p, "=")
 
@@ -406,6 +406,28 @@ func fixMangledMediaType(mtype string, sep rune, options ParseOptions) string {
 	mtype = strings.TrimSuffix(mtype, ";")
 
 	return mtype
+}
+
+// decodeRFC2047Param decodes RFC 2047 encoded words within a single key=value parameter chunk.
+//
+// Decoding is abandoned when the encoded payload would introduce additional double-quote
+// characters into the chunk: an encoded word inside a quoted-string that decodes to a value
+// containing " would break the quoting structure of the parameter (and confuse
+// fixUnescapedQuotes into extending the value across unrelated parameters). Leaving the
+// encoded word intact keeps the header syntax well-formed; the encoded word is decoded later,
+// after the header has been split into parameters, by coding.DecodeExtHeader.
+//
+// https://github.com/jhillyerd/enmime/issues/384
+func decodeRFC2047Param(p string) string {
+	decoded := coding.RFC2047Decode(p)
+	// When the chunk has no literal quotes, decoding is free to introduce the structural
+	// quotes it adds itself (e.g. an encoded word standing in for an entire key=value pair).
+	// Once literal quotes are present, extra quotes in the decoded text must come from the
+	// encoded payload itself and indicate a quoting hazard.
+	if strings.Contains(p, `"`) && strings.Count(decoded, `"`) > strings.Count(p, `"`) {
+		return p
+	}
+	return decoded
 }
 
 // consumeParam takes the the parameter part of a Content-Type header, returns a clean version of
