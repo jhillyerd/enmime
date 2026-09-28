@@ -580,6 +580,33 @@ func TestParseMediaType(t *testing.T) {
 			mtype:  "attachment",
 			params: map[string]string{"filename": "hello-world.txt"},
 		},
+		{
+			// An RFC 2047 encoded word inside a quoted parameter value whose payload
+			// decodes to an embedded double-quote must stay encoded, so the quoting
+			// structure of the value (and following parameters) is not destroyed.
+			// DecodeExtHeader decodes it later, per parameter.
+			// https://github.com/jhillyerd/enmime/issues/384
+			label: "encoded-word filename containing quote keeps trailing params separate",
+			input: `attachment; filename="=?utf-8?B?6riI7KeA66y47J6QIi5wZGY=?="; size=8759; creation-date="Tue, 02 Dec 2025 04:34:59 GMT"; modification-date="Tue, 02 Dec 2025 04:34:59 GMT"`,
+			mtype: "attachment",
+			params: map[string]string{
+				"filename":          "=?utf-8?B?6riI7KeA66y47J6QIi5wZGY=?=",
+				"size":              "8759",
+				"creation-date":     "Tue, 02 Dec 2025 04:34:59 GMT",
+				"modification-date": "Tue, 02 Dec 2025 04:34:59 GMT",
+			},
+		},
+		{
+			// An ASCII filename whose encoded payload contains a quote is treated the same
+			// way: non-ASCII is not the trigger, the embedded quote is.
+			label: "ASCII encoded-word filename containing quote",
+			input: `attachment; filename="=?utf-8?B?ZmlsZW5hbWUiLnBkZg==?="; size=8759`,
+			mtype: "attachment",
+			params: map[string]string{
+				"filename": "=?utf-8?B?ZmlsZW5hbWUiLnBkZg==?=",
+				"size":     "8759",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.label, func(t *testing.T) {
