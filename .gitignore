@@ -31,3 +31,6 @@ _testmain.go
 
 cmd/mime-dump/mime-dump
 cmd/mime-extractor/mime-extractor
+
+# pi agent
+/.pi
