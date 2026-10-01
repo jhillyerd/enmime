@@ -14,16 +14,10 @@ see the wiki for example [Builder Usage].
 
 ### Note on BCC
 
-The builder's `BCC()` and `BCCAddrs()` methods do **not** write a `Bcc:` header into the message
-produced by `Build()`.  Per [RFC 5322 section 3.6.3], blind-copy addresses must not appear in the
-header section of a transmitted message, so enmime holds them aside and passes them to the SMTP
-server as envelope recipients when you call `Send()` (or `SendWithReversePath()`).  Consequently
-`Header.Get("Bcc")` on a built message is always empty, which is correct behaviour and not an
-encoding bug.
-
-If you need the recipients recorded in the message itself (for example when storing a copy rather
-than sending it), add them to a header explicitly via `AddHeader` — and be aware that this defeats
-the "blind" part of blind copy for everyone who sees the message.
+`BCC()` and `BCCAddrs()` addresses are not written into the `Bcc:` header of the message built by
+`Build()`; they are passed to the SMTP server as envelope recipients by `Send()` instead, per
+[RFC 5322 section 3.6.3].  An absent `Bcc` header is therefore expected, not an encoding bug.  Use
+`Header()` if you want one in the message itself.
 
 [RFC 5322 section 3.6.3]: https://www.rfc-editor.org/rfc/rfc5322#section-3.6.3
 

@@ -128,21 +128,9 @@ func (p *MailBuilder) GetCC() []mail.Address {
 }
 
 // BCC returns a copy of MailBuilder with this name & address appended to the BCC list.  name may be
-// empty.  This method only has an effect if the Send method is used to transmit the message, there
-// is no effect on the parts returned by Build().
-//
-// Per RFC 5322 section 3.6.3, blind-copy recipients must not be listed in the header section of the
-// transmitted message, so Build() never emits a "Bcc" header.  BCC addresses are used solely as
-// SMTP envelope recipients by Send() and SendWithReversePath(), which means:
-//
-//   - The produced Part (and its Header) contains no Bcc field; p.Header.Get("Bcc") returns "".
-//   - Calling Build() with only BCC recipients is valid; it satisfies the recipient requirement, but
-//     the resulting message has no visible To/Cc/Bcc addressees.
-//   - Anyone who forwards or archives the built Part loses the blind-copy recipients entirely.
-//
-// If you need the message body itself to record these recipients (for example to persist a
-// sent-mail copy or to hand a fully-formed message to a different transport), add them to a header
-// yourself or deliver them via Send().
+// empty.  These addresses are used only as envelope recipients by Send() and SendWithReversePath();
+// Build() deliberately writes no "Bcc" header for them (see RFC 5322 section 3.6.3).  Use Header()
+// if the message itself must record them.
 func (p MailBuilder) BCC(name, addr string) MailBuilder {
 	if len(addr) > 0 {
 		p.bcc = append(p.bcc, mail.Address{Name: name, Address: addr})
@@ -150,21 +138,15 @@ func (p MailBuilder) BCC(name, addr string) MailBuilder {
 	return p
 }
 
-// BCCAddrs returns a copy of MailBuilder with the specified as the blind CC list.  This method only
-// has an effect if the Send method is used to transmit the message, there is no effect on the parts
-// returned by Build().
-//
-// As with BCC(), no "Bcc" header is written into the parts produced by Build(); these addresses are
-// used only as SMTP envelope recipients by Send() and SendWithReversePath().  See RFC 5322 section
-// 3.6.3.  Note that the supplied slice is retained by reference, so callers that reuse or mutate it
-// should copy it first.
+// BCCAddrs returns a copy of MailBuilder with the specified as the blind CC list.  Like BCC(),
+// these addresses are delivered as envelope recipients by Send() and are not written to a "Bcc"
+// header.
 func (p MailBuilder) BCCAddrs(bcc []mail.Address) MailBuilder {
 	p.bcc = bcc
 	return p
 }
 
-// GetBCC returns a copy of the stored bcc addresses.  These addresses do not appear in the headers
-// of the message produced by Build(); they are used only as SMTP envelope recipients by Send().
+// GetBCC returns a copy of the stored bcc addresses; Build() does not write them to a header.
 func (p *MailBuilder) GetBCC() []mail.Address {
 	bcc := make([]mail.Address, 0, len(p.bcc))
 	bcc = append(bcc, p.bcc...)
@@ -348,10 +330,9 @@ func (p MailBuilder) AddFileOtherPart(path string) MailBuilder {
 // Build performs some basic validations, then constructs a tree of Part structs from the configured
 // MailBuilder.  It will set the Date header to now if it was not explicitly set.
 //
-// The resulting headers include "To", "Cc", and "Reply-To" when the corresponding addresses were
-// configured, but never "Bcc": blind-copy recipients are omitted from the header section per RFC
-// 5322 section 3.6.3.  Pass the built message to Send() (or SendWithReversePath()) to deliver to the
-// BCC recipients, or add your own header if the recipients must be recorded in the message itself.
+// No "Bcc" header is generated for BCC()/BCCAddrs() addresses; they are delivered as envelope
+// recipients by Send() instead.  Headers set with Header() are copied into the result unchanged,
+// including "Bcc".
 func (p MailBuilder) Build() (*Part, error) {
 	if p.err != nil {
 		return nil, p.err
@@ -436,9 +417,7 @@ func (p MailBuilder) Build() (*Part, error) {
 	if len(p.replyTo) > 0 {
 		h.Set("Reply-To", stringutil.JoinAddress(p.replyTo))
 	}
-	// Note: no "Bcc" header is written here.  Blind-copy recipients are excluded from the header
-	// section of the transmitted message (RFC 5322 3.6.3); they are delivered as SMTP envelope
-	// recipients by Send()/SendWithReversePath() instead.  See BCC() and BCCAddrs().
+	// Bcc addresses are deliberately not written to a header here; see BCC().
 	date := p.date
 	if date.IsZero() {
 		date = time.Now()
