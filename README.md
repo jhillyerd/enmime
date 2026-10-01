@@ -12,6 +12,15 @@ parsing MIME encoded emails.  It is being developed in tandem with the
 enmime includes a fluent interface builder for generating MIME encoded messages,
 see the wiki for example [Builder Usage].
 
+### Note on BCC
+
+`BCC()` and `BCCAddrs()` addresses are not written into the `Bcc:` header of the message built by
+`Build()`; they are passed to the SMTP server as envelope recipients by `Send()` instead, per
+[RFC 5322 section 3.6.3].  An absent `Bcc` header is therefore expected, not an encoding bug.  Use
+`Header()` if you want one in the message itself.
+
+[RFC 5322 section 3.6.3]: https://www.rfc-editor.org/rfc/rfc5322#section-3.6.3
+
 See our [Pkg Docs] for examples and API usage information.
 
 
