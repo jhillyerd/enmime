@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"net/textproto"
 
 	"github.com/jhillyerd/enmime/v2/internal/coding"
-	"github.com/jhillyerd/enmime/v2/internal/textproto"
+	inttp "github.com/jhillyerd/enmime/v2/internal/textproto"
 
 	"github.com/pkg/errors"
 )
@@ -38,7 +39,7 @@ func DecodeRFC2047(s string) string {
 //	h, err := enmime.DecodeHeaders(b, "content-type", "user-agent")
 func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, error) {
 	b = ensureHeaderBoundary(b)
-	tr := textproto.NewReader(bufio.NewReader(bytes.NewReader(b)))
+	tr := inttp.NewReader(bufio.NewReader(bytes.NewReader(b)))
 	headers, err := tr.ReadMIMEHeader()
 	switch errors.Cause(err) {
 	case nil, io.EOF:
@@ -46,11 +47,12 @@ func DecodeHeaders(b []byte, addtlHeaders ...string) (textproto.MIMEHeader, erro
 	default:
 		return nil, err
 	}
-	headerList := defaultHeadersList
+	headerList := make([]string, 0, len(defaultHeadersList)+len(addtlHeaders))
+	headerList = append(headerList, defaultHeadersList...)
 	headerList = append(headerList, addtlHeaders...)
-	res := map[string][]string{}
+	res := make(textproto.MIMEHeader)
 	for _, header := range headerList {
-		h := textproto.CanonicalEmailMIMEHeaderKey(header)
+		h := inttp.CanonicalEmailMIMEHeaderKey(header)
 		res[h] = make([]string, 0, len(headers[h]))
 		for _, value := range headers[h] {
 			res[h] = append(res[h], DecodeRFC2047(value))
