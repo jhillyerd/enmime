@@ -137,17 +137,48 @@ func TestQPCleanerLineBreak(t *testing.T) {
 }
 
 func TestQPCleanerLineBreakBufferFull(t *testing.T) {
-	input := bytes.Repeat([]byte("abc"), 10000)
-	inbuf := bytes.NewBuffer(input)
-	qp := coding.NewQPCleaner(inbuf)
-
-	dest := make([]byte, 1025)
-	n, err := qp.Read(dest)
-	if err != nil {
-		t.Fatal(err)
+	prefix := strings.Repeat("a", coding.MaxQPLineLen)
+	testCases := []struct {
+		name, input, want string
+	}{
+		{"plain", prefix + "END", prefix + "=\r\nEND"},
+		{"tab", prefix + "\tEND", prefix + "=\r\n\tEND"},
+		{"newline", prefix + "\r\nEND", prefix + "=\r\n\r\nEND"},
+		{"hex-escape", prefix + "=3DEND", prefix + "=\r\n=3DEND"},
+		{"invalid-equals", prefix + "=zEND", prefix + "=\r\n=3DzEND"},
+		{"trailing-equals", prefix + "=", prefix + "=\r\n=3D"},
+		{"trailing-partial-escape", prefix + "=a", prefix + "=\r\n=3Da"},
+		{"short-trailing-equals", "=", "=3D"},
+		{"short-trailing-partial-escape", "=a", "=3Da"},
+		{"invalid-byte", prefix + "\x80END", prefix + "=\r\n=80END"},
+		{"eof", prefix, prefix},
 	}
-	if n != 1025 {
-		t.Error("got:", n, "want:", 1025)
+	bufferSizes := [][]int{
+		{1}, {2}, {3}, {1024}, {1025}, {1026}, {1027}, {1028},
+		{1, 1025, 2, 1026, 3, 1027},
+	}
+	for _, tc := range testCases {
+		for _, sizes := range bufferSizes {
+			t.Run(fmt.Sprintf("%s/%v", tc.name, sizes), func(t *testing.T) {
+				qp := coding.NewQPCleaner(strings.NewReader(tc.input))
+				var output strings.Builder
+				for reads := 0; ; reads++ {
+					dest := make([]byte, sizes[reads%len(sizes)])
+					n, err := qp.Read(dest)
+					if err != nil && err != io.EOF {
+						t.Fatal(err)
+					}
+					output.Write(dest[:n])
+					if err == io.EOF {
+						break
+					}
+				}
+				if got, want := output.String(), tc.want; got != want {
+					t.Errorf("got %d bytes ending %q, want %d bytes ending %q",
+						len(got), got[max(0, len(got)-12):], len(want), want[max(0, len(want)-12):])
+				}
+			})
+		}
 	}
 }
 

@@ -39,6 +39,21 @@ func TestPlainTextPart(t *testing.T) {
 	test.ContentContainsString(t, p.Content, want)
 }
 
+func TestQuotedPrintablePartPreservesByteAfterWrap(t *testing.T) {
+	input := strings.Repeat("short line\n", 279) + strings.Repeat("a", 1024) + "END"
+	message := "Content-Type: application/octet-stream\r\n" +
+		"Content-Disposition: attachment; filename=\"long-line.txt\"\r\n" +
+		"Content-Transfer-Encoding: quoted-printable\r\n\r\n" + input
+	p, err := enmime.ReadParts(strings.NewReader(message))
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	assert.Empty(t, p.Errors)
+	assert.Equal(t, "long-line.txt", p.FileName)
+	if got := string(p.Content); got != input {
+		t.Errorf("attachment content differs: got %d bytes, want %d", len(got), len(input))
+	}
+}
+
 func TestContentTypeSuffixParamNotDropped(t *testing.T) {
 	// "name" carries the attachment filename and must not be dropped just
 	// because "name=" is a substring of the earlier "xname=" param (#162).
