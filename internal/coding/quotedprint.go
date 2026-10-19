@@ -44,14 +44,6 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		qp.overflow = qp.overflow[n:]
 	}
 
-	// writeByte outputs a single byte, space for which will have already been ensured by the loop
-	// condition. Updates counters.
-	writeByte := func(in byte) {
-		dest[n] = in
-		n++
-		qp.lineLen++
-	}
-
 	// safeWriteByte outputs a single byte, storing overflow for next read. Updates counters.
 	safeWriteByte := func(in byte) {
 		if n < destLen {
@@ -95,9 +87,6 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		if qp.lineLen >= MaxQPLineLen {
 			writeBytes(lineBreak)
 			qp.lineLen = 0
-			if n == destLen {
-				break
-			}
 		}
 
 		switch {
@@ -105,10 +94,9 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 		case b == '=':
 			ensureLineLen(2)
 
-			var hexBytes []byte
-			hexBytes, err = qp.in.Peek(2)
-			if err != nil && err != io.EOF {
-				return 0, err
+			hexBytes, peekErr := qp.in.Peek(2)
+			if peekErr != nil && peekErr != io.EOF {
+				return 0, peekErr
 			}
 			if validHexBytes(hexBytes) {
 				safeWriteByte(b)
@@ -118,11 +106,11 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 
 		// Valid special character.
 		case b == '\t':
-			writeByte(b)
+			safeWriteByte(b)
 
 		// Valid special characters that reset line length.
 		case b == '\r' || b == '\n':
-			writeByte(b)
+			safeWriteByte(b)
 			qp.lineLen = 0
 
 		// Invalid characters, render as quoted-printable.
@@ -132,7 +120,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 
 		// Acceptable characters.
 		default:
-			writeByte(b)
+			safeWriteByte(b)
 		}
 	}
 
