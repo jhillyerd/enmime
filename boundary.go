@@ -132,9 +132,6 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 						n, err = b.buffer.Read(dest)
 						switch err {
 						case nil, io.EOF:
-							if b.atPartStart && n > 0 {
-								b.atPartStart = false
-							}
 							return n, io.EOF
 						default:
 							return 0, errors.WithStack(err)
@@ -172,11 +169,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 	}
 
 	// Read the contents of the buffer into the destination slice.
-	n, err = b.buffer.Read(dest)
-	if b.atPartStart && n > 0 {
-		b.atPartStart = false
-	}
-	return n, err
+	return b.buffer.Read(dest)
 }
 
 // Next moves over the boundary to the next part, returns true if there is another part to be read.
