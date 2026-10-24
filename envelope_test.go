@@ -221,6 +221,34 @@ func TestParseMultiMixedText(t *testing.T) {
 	}
 }
 
+// TestParseDelimiterMidLine checks that the boundary is only taken as a
+// delimiter at the start of a line (RFC 2046 5.1.1): a part whose body or
+// headers mention "--boundary" elsewhere on a line is still one part, and a
+// quoted-printable body that encodes to such a line is decoded whole.
+func TestParseDelimiterMidLine(t *testing.T) {
+	msg := "Content-Type: multipart/mixed; boundary=bnd\r\n\r\n" +
+		"--bnd\r\nContent-Type: text/html\r\n\r\n<p>hi</p>\r\n --bnd\r\nContent-Type: text/plain\r\n\r\nnot a part\r\n" +
+		"--bnd\r\nContent-Type: text/plain\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nhello\r\n=20--bnd\r\nmore\r\n" +
+		"--bnd--\r\n"
+	e, err := enmime.ReadEnvelope(strings.NewReader(msg))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	var kids []*enmime.Part
+	for p := e.Root.FirstChild; p != nil; p = p.NextSibling {
+		kids = append(kids, p)
+	}
+	if len(kids) != 2 {
+		t.Fatalf("got %d parts, want 2", len(kids))
+	}
+	if got, want := string(kids[0].Content), "<p>hi</p>\r\n --bnd\r\nContent-Type: text/plain\r\n\r\nnot a part"; got != want {
+		t.Errorf("part 1 content got %q, want %q", got, want)
+	}
+	if got, want := string(kids[1].Content), "hello\r\n --bnd\r\nmore"; got != want {
+		t.Errorf("part 2 content got %q, want %q", got, want)
+	}
+}
+
 func TestParseMultiMixedRelatedHtml(t *testing.T) {
 	msg := test.OpenTestData("mail", "mime-mixed-related.raw")
 	e, err := enmime.ReadEnvelope(msg)
