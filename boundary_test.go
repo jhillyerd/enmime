@@ -69,6 +69,32 @@ func TestBoundaryReader(t *testing.T) {
 			boundary: "STOPHERE",
 			want:     "good\n--STOPHERE-A",
 		},
+		// RFC 2046 5.1.1: a delimiter is only recognized at the start of a line.
+		{
+			input:    "good\r\n --STOPHERE\r\n--STOPHERE--\r\nafter",
+			boundary: "STOPHERE",
+			want:     "good\r\n --STOPHERE",
+		},
+		{
+			input:    "good\r\nx--STOPHERE\r\n--STOPHERE--\r\nafter",
+			boundary: "STOPHERE",
+			want:     "good\r\nx--STOPHERE",
+		},
+		{
+			input:    "good\n --STOPHERE\n--STOPHERE--\nafter",
+			boundary: "STOPHERE",
+			want:     "good\n --STOPHERE",
+		},
+		{
+			input:    "good\rx--STOPHERE \r\n--STOPHERE--\r\nafter",
+			boundary: "STOPHERE",
+			want:     "good\rx--STOPHERE ",
+		},
+		{
+			input:    "good\r\n --STOPHERE--\r\n--STOPHERE--\r\nafter",
+			boundary: "STOPHERE",
+			want:     "good\r\n --STOPHERE--",
+		},
 	}
 
 	for _, tt := range ttable {
@@ -200,6 +226,28 @@ func TestBoundaryReaderParts(t *testing.T) {
 			boundary: "STOP",
 			parts:    []string{"", ""},
 		},
+		// RFC 2046 5.1.1: a delimiter is only recognized at the start of a line,
+		// in the preamble, between parts, and at the start of a part.
+		{
+			input:    "preamble --STOP here\r\n--STOP\r\npart1\r\n--STOP--\r\n",
+			boundary: "STOP",
+			parts:    []string{"part1"},
+		},
+		{
+			input:    "--STOP\r\npart1\r\n --STOP\r\npart2\r\n--STOP--\r\n",
+			boundary: "STOP",
+			parts:    []string{"part1\r\n --STOP\r\npart2"},
+		},
+		{
+			input:    "--STOP\r\nhello x --STOP \r\nmore\r\n--STOP--\r\n",
+			boundary: "STOP",
+			parts:    []string{"hello x --STOP \r\nmore"},
+		},
+		{
+			input:    "--STOP\r\npart1\r\nx --STOP-- y\r\n--STOP\r\npart2\r\n--STOP--\r\n",
+			boundary: "STOP",
+			parts:    []string{"part1\r\nx --STOP-- y", "part2"},
+		},
 	}
 
 	for _, tt := range ttable {
@@ -240,6 +288,38 @@ func TestBoundaryReaderParts(t *testing.T) {
 		}
 		if next {
 			t.Fatal("Next() = true, want: false")
+		}
+	}
+}
+
+// TestBoundaryReaderPartStartWindow checks that the start-of-part delimiter
+// check applies to the first byte of the part only: once that byte has been
+// consumed, a boundary mentioned mid-line within the same Read must not end the
+// part, whatever the size of the destination buffer.
+func TestBoundaryReaderPartStartWindow(t *testing.T) {
+	input := "--STOP\r\nabc --STOP \r\n--STOP--\r\n"
+	want := "abc --STOP "
+	for _, size := range []int{1, 2, 3, 4, 8, 64} {
+		ir := bufio.NewReader(strings.NewReader(input))
+		br := newBoundaryReader(ir, "STOP")
+		next, err := br.Next()
+		if err != nil || !next {
+			t.Fatalf("Next() = %v, %v, want true, nil", next, err)
+		}
+		var got []byte
+		dest := make([]byte, size)
+		for {
+			n, err := br.Read(dest)
+			got = append(got, dest[:n]...)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("Read() error with buffer size %d: %v", size, err)
+			}
+		}
+		if string(got) != want {
+			t.Errorf("buffer size %d: got %q, want %q", size, got, want)
 		}
 	}
 }

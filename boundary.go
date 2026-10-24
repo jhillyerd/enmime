@@ -113,6 +113,11 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 				peek, err = b.r.Peek(len(b.nlPrefix) + padding + 1)
 				switch err {
 				case nil:
+					// A lone CR is not a line break (RFC 2046 §5.1.1 requires CRLF), so
+					// the bytes after it cannot begin a delimiter.
+					if padding == 2 && peek[1] != '\n' {
+						break
+					}
 					// Check the whitespace at the head of the peek to avoid checking for a boundary early.
 					if bytes.HasPrefix(peek, []byte("\n\n")) ||
 						bytes.HasPrefix(peek, []byte("\n\r")) ||
@@ -127,9 +132,6 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 						n, err = b.buffer.Read(dest)
 						switch err {
 						case nil, io.EOF:
-							if b.atPartStart && n > 0 {
-								b.atPartStart = false
-							}
 							return n, io.EOF
 						default:
 							return 0, errors.WithStack(err)
@@ -160,14 +162,14 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		if err = b.buffer.WriteByte(next); err != nil {
 			return 0, errors.WithStack(err)
 		}
+		// Only the first byte of a part can begin a delimiter without a preceding
+		// line break; once it has been consumed, every later check is anchored
+		// to a line break above.
+		b.atPartStart = false
 	}
 
 	// Read the contents of the buffer into the destination slice.
-	n, err = b.buffer.Read(dest)
-	if b.atPartStart && n > 0 {
-		b.atPartStart = false
-	}
-	return n, err
+	return b.buffer.Read(dest)
 }
 
 // Next moves over the boundary to the next part, returns true if there is another part to be read.
@@ -227,26 +229,22 @@ func (b *boundaryReader) Next() (bool, error) {
 	}
 }
 
-// isDelimiter returns true for --BOUNDARY\r\n but not --BOUNDARY--
+// isDelimiter returns true for --BOUNDARY\r\n but not --BOUNDARY--. buf must
+// begin at the start of a line: RFC 2046 §5.1.1 recognizes a delimiter only
+// there, and searching further into the line would split a part at text that
+// merely mentions the boundary, where other MIME parsers do not.
 func (b *boundaryReader) isDelimiter(buf []byte) bool {
-	idx := bytes.Index(buf, b.prefix)
-	if idx == -1 {
+	if !bytes.HasPrefix(buf, b.prefix) {
 		return false
 	}
 
 	// Fast forward to the end of the boundary prefix.
-	buf = buf[idx+len(b.prefix):]
-	if len(buf) > 0 {
-		if unicode.IsSpace(rune(buf[0])) {
-			return true
-		}
-	}
-
-	return false
+	buf = buf[len(b.prefix):]
+	return len(buf) > 0 && unicode.IsSpace(rune(buf[0]))
 }
 
-// isTerminator returns true for --BOUNDARY--
+// isTerminator returns true for --BOUNDARY--. As with isDelimiter, buf must
+// begin at the start of a line.
 func (b *boundaryReader) isTerminator(buf []byte) bool {
-	idx := bytes.Index(buf, b.final)
-	return idx != -1
+	return bytes.HasPrefix(buf, b.final)
 }
