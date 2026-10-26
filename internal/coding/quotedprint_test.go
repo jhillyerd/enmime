@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/quotedprintable"
 	"strings"
 	"testing"
 
@@ -25,6 +26,11 @@ func TestQPCleaner(t *testing.T) {
 		{"Stuffs’s", "Stuffs=E2=80=99s"},
 		{"=", "=3D"},
 		{"=a", "=3Da"},
+		// Transport padding before a soft line break is left for the decoder (RFC 2045 section 6.7)
+		{"abc= \r\ndef", "abc= \r\ndef"},
+		{"abc=\t \ndef", "abc=\t \ndef"},
+		{"abc= def", "abc=3D def"},
+		{"abc= \rdef", "abc=3D \rdef"},
 	}
 
 	for _, tc := range ttable {
@@ -40,6 +46,19 @@ func TestQPCleaner(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("Got: %q, want: %q", got, tc.want)
 		}
+	}
+}
+
+func TestQPCleanerSoftLineBreakPadding(t *testing.T) {
+	input := "abc= \r\ndef=\t\r\nghi\r\n"
+	qp := quotedprintable.NewReader(coding.NewQPCleaner(strings.NewReader(input)))
+	got, err := io.ReadAll(qp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "abcdefghi\r\n"
+	if string(got) != want {
+		t.Errorf("Got: %q, want: %q", got, want)
 	}
 }
 

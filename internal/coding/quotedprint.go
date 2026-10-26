@@ -110,7 +110,7 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 			if err != nil && err != io.EOF {
 				return 0, err
 			}
-			if validHexBytes(hexBytes) {
+			if validHexBytes(hexBytes) || qp.softLineBreakWithPadding() {
 				safeWriteByte(b)
 			} else {
 				writeBytes(escapedEquals)
@@ -137,6 +137,29 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 	}
 
 	return n, err
+}
+
+// softLineBreakWithPadding returns true if the equals sign just read is followed by spaces or tabs
+// and then a line break. RFC 2045 section 6.7 calls such whitespace transport padding, which a
+// decoder deletes, so the equals sign is a soft line break.
+func (qp *QPCleaner) softLineBreakWithPadding() bool {
+	for i := 1; ; i++ {
+		peeked, err := qp.in.Peek(i)
+		if err != nil {
+			return false
+		}
+		switch peeked[i-1] {
+		case ' ', '\t':
+			continue
+		case '\n':
+			return i > 1
+		case '\r':
+			next, err := qp.in.Peek(i + 1)
+			return i > 1 && err == nil && next[i] == '\n'
+		default:
+			return false
+		}
+	}
 }
 
 func validHexByte(b byte) bool {
