@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"io"
 	"net/textproto"
+	"strings"
 	"testing"
 	"time"
 
@@ -313,6 +314,35 @@ func TestEncodePartContentQuotable(t *testing.T) {
 		t.Fatal(err)
 	}
 	test.DiffGolden(t, b.Bytes(), "testdata", "encode", "part-quoted-content.golden")
+}
+
+func TestEncodePartContentLongLines(t *testing.T) {
+	// RFC 5322 limits a line to 998 characters, so 7bit content with a longer line must be
+	// quoted-printable encoded, which wraps its lines.
+	cases := []struct {
+		content string
+		cte     string
+	}{
+		{strings.Repeat("a", 998) + "\r\nb", ""},
+		{strings.Repeat("a", 999), "quoted-printable"},
+		{"<p>\r\n" + strings.Repeat("<a href=\"https://example.com/\">x</a>", 30) + "\r\n</p>", "quoted-printable"},
+	}
+
+	for _, tc := range cases {
+		p := enmime.NewPart("text/html")
+		p.Content = []byte(tc.content)
+
+		b := &bytes.Buffer{}
+		require.NoError(t, p.Encode(b))
+		assert.Equal(t, tc.cte, p.Header.Get("Content-Transfer-Encoding"))
+		for line := range strings.SplitSeq(b.String(), "\r\n") {
+			assert.LessOrEqual(t, len(line), 998)
+		}
+
+		decoded, err := enmime.ReadParts(b)
+		require.NoError(t, err)
+		assert.Equal(t, tc.content, string(decoded.Content))
+	}
 }
 
 func TestEncodePartWithExistingEncodingHeader(t *testing.T) {
