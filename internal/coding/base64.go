@@ -47,7 +47,11 @@ func (bc *Base64Cleaner) Read(p []byte) (n int, err error) {
 	buf := bc.buffer[:size]
 	bn, err := bc.r.Read(buf)
 	for i := range bn {
-		switch base64CleanerTable[buf[i]&0x7f] {
+		class := int8(-1) // Bytes >= 0x80 are never base64.
+		if buf[i] < 0x80 {
+			class = base64CleanerTable[buf[i]]
+		}
+		switch class {
 		case -2:
 			// Strip these silently: tab, \n, \r, space, equals sign.
 		case -1:
