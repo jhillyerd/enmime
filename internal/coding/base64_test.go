@@ -46,6 +46,9 @@ func TestBase64CleanerErrors(t *testing.T) {
 		{"#c", "c"},
 		{"d$d", "dd"},
 		{"ee\b", "ee"},
+		{"f\xc1f", "ff"},
+		{"g\x80", "g"},
+		{"\xa0h", "h"},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.want, func(t *testing.T) {
