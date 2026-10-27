@@ -1012,6 +1012,15 @@ Message body
 				{Name: "testname", Address: "testname@example.com"},
 			},
 		},
+		{
+			// Address folded onto the next line, issue #387
+			"First <first@example.com>, Second <second@example\n .com>,\n Third <third@example.com>",
+			[]*mail.Address{
+				{Name: "First", Address: "first@example.com"},
+				{Name: "Second", Address: "second@example.com"},
+				{Name: "Third", Address: "third@example.com"},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {

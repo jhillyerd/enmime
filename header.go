@@ -79,8 +79,10 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 	ret, err := parser.ParseList(list)
 	if err != nil {
 		switch err.Error() {
-		case "mail: expected comma":
-			// Attempt to add commas and parse again.
+		case "mail: expected comma",
+			// Whitespace inside an angle-addr, usually left by an address folded across lines.
+			"mail: unclosed angle-addr", "mail: missing @ in addr-spec", "mail: trailing dot in atom":
+			// Attempt to add commas, remove whitespace inside angle brackets, and parse again.
 			return parser.ParseList(stringutil.EnsureCommaDelimitedAddresses(list))
 		case "mail: no address":
 			return nil, mail.ErrHeaderNotPresent
