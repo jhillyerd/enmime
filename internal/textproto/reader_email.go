@@ -12,10 +12,17 @@ import (
 // This is a modified version of the stock func that better handles the characters
 // we must support in email, instead of just HTTP.
 func (r *Reader) ReadEmailMIMEHeader() (MIMEHeader, error) {
+	h, _, err := readEmailMIMEHeader(r, math.MaxInt64)
+	return h, err
+}
+
+// ReadEmailMIMEHeaderOrdered is like ReadEmailMIMEHeader but also returns the
+// canonical header keys in the order they appeared in the input.
+func (r *Reader) ReadEmailMIMEHeaderOrdered() (MIMEHeader, []string, error) {
 	return readEmailMIMEHeader(r, math.MaxInt64)
 }
 
-func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
+func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, []string, error) {
 	// Avoid lots of small slice allocations later by allocating one
 	// large one ahead of time which we'll cut up into smaller
 	// slices. If this isn't big enough later, we allocate small ones.
@@ -26,30 +33,31 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 	}
 
 	m := make(MIMEHeader, hint)
+	var order []string
 
 	// The first line cannot start with a leading space.
 	if buf, err := r.R.Peek(1); err == nil && (buf[0] == ' ' || buf[0] == '\t') {
 		line, err := r.readLineSlice()
 		if err != nil {
-			return m, err
+			return m, order, err
 		}
-		return m, ProtocolError(fmt.Sprintf("malformed MIME header initial line: %q", line))
+		return m, order, ProtocolError(fmt.Sprintf("malformed MIME header initial line: %q", line))
 	}
 
 	for {
 		kv, err := r.readContinuedLineSlice(mustHaveFieldNameColon)
 		if len(kv) == 0 {
-			return m, err
+			return m, order, err
 		}
 
 		// Key ends at first colon.
 		k, v, ok := bytes.Cut(kv, colon)
 		if !ok {
-			return m, ProtocolError(fmt.Sprintf("malformed MIME header line: %q", kv))
+			return m, order, ProtocolError(fmt.Sprintf("malformed MIME header line: %q", kv))
 		}
 		key, ok := canonicalEmailMIMEHeaderKey(k)
 		if !ok {
-			return m, ProtocolError(fmt.Sprintf("malformed MIME header line: %q", kv))
+			return m, order, ProtocolError(fmt.Sprintf("malformed MIME header line: %q", kv))
 		}
 		// for _, c := range v {
 		// 	if !validHeaderValueByte(c) {
@@ -76,7 +84,7 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 		if lim < 0 {
 			// TODO: This should be a distinguishable error (ErrMessageTooLarge)
 			// to allow mime/multipart to detect it.
-			return m, errors.New("message too large")
+			return m, order, errors.New("message too large")
 		}
 		if vv == nil && len(strs) > 0 {
 			// More than likely this will be a single-element key.
@@ -86,12 +94,16 @@ func readEmailMIMEHeader(r *Reader, lim int64) (MIMEHeader, error) {
 			vv, strs = strs[:1:1], strs[1:]
 			vv[0] = value
 			m[key] = vv
+			order = append(order, key)
 		} else {
 			m[key] = append(vv, value)
+			if vv == nil {
+				order = append(order, key)
+			}
 		}
 
 		if err != nil {
-			return m, err
+			return m, order, err
 		}
 	}
 }

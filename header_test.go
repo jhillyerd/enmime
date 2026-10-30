@@ -126,6 +126,32 @@ func TestParseAddressListResult(t *testing.T) {
 	}
 }
 
+func TestReadHeaderOrdered(t *testing.T) {
+	raw := "Subject: first\r\nFrom: a@b.com\r\nTo: c@d.com\r\n\r\n"
+	r := bufio.NewReader(strings.NewReader(raw))
+	header, order, err := ReadHeaderOrdered(r, noopErrorCollector{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantOrder := []string{"Subject", "From", "To"}
+	if len(order) != len(wantOrder) {
+		t.Fatalf("order = %v, want %v", order, wantOrder)
+	}
+	for i := range wantOrder {
+		if order[i] != wantOrder[i] {
+			t.Fatalf("order[%d] = %q, want %q", i, order[i], wantOrder[i])
+		}
+	}
+	if got := header.Get("Subject"); got != "first" {
+		t.Fatalf("Subject = %q, want first", got)
+	}
+}
+
+type noopErrorCollector struct{}
+
+func (noopErrorCollector) AddError(string, string, ...any)   {}
+func (noopErrorCollector) AddWarning(string, string, ...any) {}
+
 func TestReadHeader(t *testing.T) {
 	// These values will surround the test table input string.
 	prefix := "From: hooman\n \n being\n"
@@ -310,7 +336,7 @@ func TestReadHeader(t *testing.T) {
 			r := bufio.NewReader(strings.NewReader(prefix + tt.input + suffix))
 
 			p := &Part{}
-			header, err := readHeader(r, p)
+			header, _, err := readHeader(r, p)
 			if err != nil {
 				t.Fatal(err)
 			}
