@@ -149,7 +149,7 @@ func TestReadHeaderOrdered(t *testing.T) {
 
 type noopErrorCollector struct{}
 
-func (noopErrorCollector) AddError(string, string, ...any)  {}
+func (noopErrorCollector) AddError(string, string, ...any)   {}
 func (noopErrorCollector) AddWarning(string, string, ...any) {}
 
 func TestReadHeader(t *testing.T) {
