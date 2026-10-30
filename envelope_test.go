@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/mail"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -820,9 +819,8 @@ func TestEnvelopeGetHeaderKeys(t *testing.T) {
 		t.Fatal("Failed to parse non-MIME:", err)
 	}
 
-	want := []string{"Date", "From", "Subject", "To", "X-Mailer"}
+	want := []string{"Date", "To", "From", "Subject", "X-Mailer"}
 	got = e.GetHeaderKeys()
-	sort.Strings(got)
 	test.DiffStrings(t, got, want)
 
 	// Test UTF-8 subject line
@@ -832,9 +830,11 @@ func TestEnvelopeGetHeaderKeys(t *testing.T) {
 		t.Fatal("Failed to parse MIME:", err)
 	}
 
-	want = []string{"Content-Type", "Date", "From", "Message-Id", "Mime-Version", "Sender", "Subject", "To", "User-Agent"}
+	want = []string{
+		"Message-Id", "Date", "From", "Sender", "User-Agent",
+		"Mime-Version", "To", "Subject", "Content-Type",
+	}
 	got = e.GetHeaderKeys()
-	sort.Strings(got)
 	test.DiffStrings(t, got, want)
 }
 

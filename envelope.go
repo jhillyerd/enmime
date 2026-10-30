@@ -28,11 +28,15 @@ type Envelope struct {
 	header     *textproto.MIMEHeader // Header from original message
 }
 
-// GetHeaderKeys returns a list of header keys seen in this message. Get
-// individual headers with `GetHeader(name)`
+// GetHeaderKeys returns a list of header keys seen in this message, in the
+// order they appeared in the input when the message was parsed. Get individual
+// headers with `GetHeader(name)`
 func (e *Envelope) GetHeaderKeys() (headers []string) {
 	if e.header == nil {
 		return
+	}
+	if e.Root != nil && len(e.Root.headerKeys) > 0 {
+		return append([]string(nil), e.Root.headerKeys...)
 	}
 	for key := range *e.header {
 		headers = append(headers, key)
@@ -78,6 +82,9 @@ func (e *Envelope) SetHeader(name string, value []string) error {
 		}
 		e.header.Add(name, mime.BEncoding.Encode("utf-8", v))
 	}
+	if e.Root != nil {
+		e.Root.recordHeaderKey(name)
+	}
 	return nil
 }
 
@@ -89,6 +96,9 @@ func (e *Envelope) AddHeader(name string, value string) error {
 	}
 
 	e.header.Add(name, mime.BEncoding.Encode("utf-8", value))
+	if e.Root != nil {
+		e.Root.recordHeaderKey(name)
+	}
 	return nil
 }
 
@@ -99,6 +109,9 @@ func (e *Envelope) DeleteHeader(name string) error {
 	}
 
 	e.header.Del(name)
+	if e.Root != nil {
+		e.Root.removeHeaderKey(name)
+	}
 	return nil
 }
 

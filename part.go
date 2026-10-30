@@ -32,6 +32,7 @@ type Part struct {
 	FirstChild  *Part                // FirstChild is the top most child of this part.
 	NextSibling *Part                // NextSibling of this part.
 	Header      textproto.MIMEHeader // Header for this part.
+	headerKeys  []string             // Canonical header keys in message order.
 
 	Boundary          string            // Boundary marker used within this part.
 	ContentID         string            // ContentID header for cid URL scheme.
@@ -160,11 +161,12 @@ func (p *Part) TextContent() bool {
 
 // setupHeaders reads the header, then populates the MIME header values for this Part.
 func (p *Part) setupHeaders(r *bufio.Reader, defaultContentType string) error {
-	header, err := readHeader(r, p)
+	header, headerKeys, err := readHeader(r, p)
 	if err != nil {
 		return err
 	}
 	p.Header = textproto.MIMEHeader(header)
+	p.headerKeys = headerKeys
 	p.ContentID = coding.FromIDHeader(header.Get(hnContentID))
 	ctype := header.Get(hnContentType)
 	if ctype == "" {
@@ -427,6 +429,7 @@ func (p *Part) Clone(parent *Part) *Part {
 	newPart := &Part{
 		PartID:                  p.PartID,
 		Header:                  p.Header,
+		headerKeys:              append([]string(nil), p.headerKeys...),
 		Parent:                  parent,
 		Boundary:                p.Boundary,
 		ContentID:               p.ContentID,

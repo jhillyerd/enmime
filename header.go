@@ -101,6 +101,15 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 // textproto.MIMEHeader. Header parse warnings & errors will be added to
 // ErrorCollector, io errors will be returned directly.
 func ReadHeader(r *bufio.Reader, p ErrorCollector) (textproto.MIMEHeader, error) {
+	h, _, err := ReadHeaderOrdered(r, p)
+	return h, err
+}
+
+// ReadHeaderOrdered reads a block of SMTP or MIME headers and returns the
+// header map along with the canonical header keys in the order they appeared
+// in the input. Header parse warnings & errors will be added to ErrorCollector,
+// io errors will be returned directly.
+func ReadHeaderOrdered(r *bufio.Reader, p ErrorCollector) (textproto.MIMEHeader, []string, error) {
 	// buf holds the massaged output for textproto.Reader.ReadMIMEHeader()
 	buf := &bytes.Buffer{}
 	tp := inttp.NewReader(r)
@@ -173,12 +182,12 @@ line:
 
 	buf.Write([]byte{'\r', '\n'})
 	tr := inttp.NewReader(bufio.NewReader(buf))
-	header, err := tr.ReadEmailMIMEHeader()
-	return textproto.MIMEHeader(header), errors.WithStack(err)
+	header, order, err := tr.ReadEmailMIMEHeaderOrdered()
+	return textproto.MIMEHeader(header), order, errors.WithStack(err)
 }
 
 // readHeader reads a block of SMTP or MIME headers and returns a textproto.MIMEHeader.
 // Header parse warnings & errors will be added to p.Errors, io errors will be returned directly.
-func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, error) {
-	return ReadHeader(r, &partErrorCollector{p})
+func readHeader(r *bufio.Reader, p *Part) (textproto.MIMEHeader, []string, error) {
+	return ReadHeaderOrdered(r, &partErrorCollector{p})
 }
