@@ -10,7 +10,11 @@ import (
 // NewExtMimeDecoder creates new MIME word decoder which allows decoding of additional charsets.
 func NewExtMimeDecoder() *mime.WordDecoder {
 	return &mime.WordDecoder{
-		CharsetReader: NewCharsetReader,
+		CharsetReader: func(charset string, input io.Reader) (io.Reader, error) {
+			// RFC 2231 section 5 allows a language after the charset, as in =?UTF-8*en?Q?...?=
+			charset, _, _ = strings.Cut(charset, "*")
+			return NewCharsetReader(charset, input)
+		},
 	}
 }
 

@@ -136,6 +136,26 @@ func TestDecodeCharsets(t *testing.T) {
 	}
 }
 
+func TestDecodeLanguage(t *testing.T) {
+	var ttable = []struct {
+		in, want string
+	}{
+		// RFC 2231 section 5 allows a language after the charset of an encoded word
+		{"=?UTF-8*en?Q?Keith_Moore?=", "Keith Moore"},
+		{"=?US-ASCII*EN?B?SGVsbG8gV29ybGQ=?=", "Hello World"},
+		{"=?iso-8859-1*fr?q?caf=e9?=", "caf\u00e9"},
+	}
+
+	for _, tt := range ttable {
+		t.Run(tt.in, func(t *testing.T) {
+			got := DecodeExtHeader(tt.in)
+			if got != tt.want {
+				t.Errorf("DecodeExtHeader(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRfc2047Decode(t *testing.T) {
 	var ttable = []struct {
 		label, in, want string
