@@ -129,6 +129,11 @@ func TestParseAddressListResult(t *testing.T) {
 			"Example User < user@example.com >",
 			[]*mail.Address{{Name: "Example User", Address: "user@example.com"}},
 		},
+		{
+			// Addresses from the retry are decoded too
+			`=?UTF-8?B?dGVzdG5hbWU=?= <=?UTF-8?B?dGVzdG5hbWU=?=@example .com>`,
+			[]*mail.Address{{Name: "testname", Address: "testname@example.com"}},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {

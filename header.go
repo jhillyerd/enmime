@@ -83,11 +83,13 @@ func ParseAddressList(list string) ([]*mail.Address, error) {
 			// Whitespace inside an angle-addr, usually left by an address folded across lines.
 			"mail: unclosed angle-addr", "mail: missing @ in addr-spec", "mail: trailing dot in atom":
 			// Attempt to add commas, remove whitespace inside angle brackets, and parse again.
-			return parser.ParseList(stringutil.EnsureCommaDelimitedAddresses(list))
+			ret, err = parser.ParseList(stringutil.EnsureCommaDelimitedAddresses(list))
 		case "mail: no address":
 			return nil, mail.ErrHeaderNotPresent
 		}
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for i := range ret {
