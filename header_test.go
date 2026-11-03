@@ -100,6 +100,40 @@ func TestParseAddressListResult(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Whitespace left inside angle-addr by unfolding, issue #387
+			"Example User <user@example .com>",
+			[]*mail.Address{{Name: "Example User", Address: "user@example.com"}},
+		},
+		{
+			"<user@example. com>",
+			[]*mail.Address{{Name: "", Address: "user@example.com"}},
+		},
+		{
+			"<user@exam ple.com>",
+			[]*mail.Address{{Name: "", Address: "user@example.com"}},
+		},
+		{
+			"<us er@example.com>",
+			[]*mail.Address{{Name: "", Address: "user@example.com"}},
+		},
+		{
+			"a@example.com, Example User <user@example\t.com>, b@example.com",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "Example User", Address: "user@example.com"},
+				{Name: "", Address: "b@example.com"},
+			},
+		},
+		{
+			"Example User < user@example.com >",
+			[]*mail.Address{{Name: "Example User", Address: "user@example.com"}},
+		},
+		{
+			// Addresses from the retry are decoded too
+			`=?UTF-8?B?dGVzdG5hbWU=?= <=?UTF-8?B?dGVzdG5hbWU=?=@example .com>`,
+			[]*mail.Address{{Name: "testname", Address: "testname@example.com"}},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
