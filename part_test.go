@@ -1741,6 +1741,24 @@ func TestMaxMIMEDepth(t *testing.T) {
 		assert.Equal(t, enmime.ErrorNestingTooDeep, deep.Errors[0].Name)
 	})
 
+	t.Run("multipart over limit encodes unchanged", func(t *testing.T) {
+		// Non-ASCII text in the unparsed part would make the encoder pick base64 or
+		// quoted-printable, which RFC 2045 forbids for multiparts and which hides the
+		// boundaries from a later parse.
+		msg := strings.Replace(buildDeepMessage(6), "body", "bödy\xff", 1)
+		p, err := enmime.NewParser(enmime.MaxMIMEDepth(5)).ReadParts(strings.NewReader(msg))
+		require.NoError(t, err)
+		var b strings.Builder
+		require.NoError(t, p.Encode(&b))
+
+		p, err = enmime.ReadParts(strings.NewReader(b.String()))
+		require.NoError(t, err)
+		assert.Equal(t, 6, countParts(p))
+		deep := p.DepthMatchFirst(func(p *enmime.Part) bool { return p.Boundary == "B5" })
+		require.NotNil(t, deep)
+		assert.Equal(t, "8bit", deep.Header.Get("Content-Transfer-Encoding"))
+	})
+
 	t.Run("rest of the message parses", func(t *testing.T) {
 		msg := "Content-Type: multipart/mixed; boundary=TOP\r\n\r\n" +
 			"--TOP\r\nContent-Type: text/html\r\n\r\n<p>first</p>\r\n" +
