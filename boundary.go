@@ -27,6 +27,12 @@ type boundaryReader struct {
 	final       []byte        // Final boundary prefix
 	buffer      *bytes.Buffer // Content waiting to be read
 	unbounded   bool          // Flag to throw errNoBoundaryTerminator
+	// atEnd is set once the current part has ended, at its boundary or at the
+	// end of the source: Read then returns io.EOF without asking the source
+	// again, until Next moves to the next part. bufio.Reader does not keep an
+	// io.EOF, so with nested multiparts each level would otherwise ask the
+	// level below twice per call (Peek, then ReadByte), 2^depth reads.
+	atEnd bool
 }
 
 // newBoundaryReader returns an initialized boundaryReader
@@ -77,6 +83,10 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		}
 
 		return n, err
+	}
+	if b.atEnd {
+		n, _ = b.buffer.Read(dest)
+		return n, io.EOF
 	}
 
 	for range dest {
@@ -129,6 +139,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 					if b.isDelimiter(peek[padding:]) || b.isTerminator(peek[padding:]) {
 						// We have found our boundary terminator, lets write out the final bytes
 						// and return io.EOF to indicate that this section read is complete.
+						b.atEnd = true
 						n, err = b.buffer.Read(dest)
 						switch err {
 						case nil, io.EOF:
@@ -153,6 +164,7 @@ func (b *boundaryReader) Read(dest []byte) (n int, err error) {
 		if err != nil {
 			// EOF is not fatal, it just means that we have drained the reader.
 			if errors.Is(err, io.EOF) {
+				b.atEnd = true
 				break
 			}
 
@@ -213,6 +225,7 @@ func (b *boundaryReader) Next() (bool, error) {
 			// Start of a new part.
 			b.partsRead++
 			b.atPartStart = true
+			b.atEnd = false
 			return true, nil
 		}
 		if err == io.EOF {
