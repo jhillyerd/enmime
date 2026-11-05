@@ -4,18 +4,41 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"regexp"
 	"strings"
 )
+
+// rfc2231Language matches a language tag as defined by RFC 2231 section 7, which uses the
+// RFC 1766 grammar: one or more one to eight letter segments separated by "-", as in "en-US".
+var rfc2231Language = regexp.MustCompile(`^[a-zA-Z]{1,8}(-[a-zA-Z]{1,8})*$`)
 
 // NewExtMimeDecoder creates new MIME word decoder which allows decoding of additional charsets.
 func NewExtMimeDecoder() *mime.WordDecoder {
 	return &mime.WordDecoder{
 		CharsetReader: func(charset string, input io.Reader) (io.Reader, error) {
 			// RFC 2231 section 5 allows a language after the charset, as in =?UTF-8*en?Q?...?=
-			charset, _, _ = strings.Cut(charset, "*")
+			charset, err := stripRFC2231Language(charset)
+			if err != nil {
+				return nil, err
+			}
 			return NewCharsetReader(charset, input)
 		},
 	}
+}
+
+// stripRFC2231Language removes the RFC 2231 section 5 language that may follow the charset of
+// an encoded word, as in "UTF-8*en".  A malformed language, such as the empty tag in
+// "UTF-8*" or "UTF-8*bad*extra", is rejected so the encoded word is left undecoded instead of
+// being read with a charset its author never specified.
+func stripRFC2231Language(charset string) (string, error) {
+	base, language, found := strings.Cut(charset, "*")
+	if !found {
+		return charset, nil
+	}
+	if !rfc2231Language.MatchString(language) {
+		return "", fmt.Errorf("invalid RFC 2231 language %q in charset %q", language, charset)
+	}
+	return base, nil
 }
 
 // DecodeExtHeader decodes a single line (per RFC 2047, aka Message Header Extensions) using Golang's

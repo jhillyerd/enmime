@@ -144,6 +144,11 @@ func TestDecodeLanguage(t *testing.T) {
 		{"=?UTF-8*en?Q?Keith_Moore?=", "Keith Moore"},
 		{"=?US-ASCII*EN?B?SGVsbG8gV29ybGQ=?=", "Hello World"},
 		{"=?iso-8859-1*fr?q?caf=e9?=", "caf\u00e9"},
+		// A language tag may have multiple segments
+		{"=?UTF-8*en-US?Q?Keith_Moore?=", "Keith Moore"},
+		// Malformed language tags leave the word encoded
+		{"=?UTF-8*?Q?Keith_Moore?=", "=?UTF-8*?Q?Keith_Moore?="},
+		{"=?UTF-8*bad*extra?Q?Keith_Moore?=", "=?UTF-8*bad*extra?Q?Keith_Moore?="},
 	}
 
 	for _, tt := range ttable {
