@@ -17,6 +17,11 @@ func TestMaxMIMEPartsOption(t *testing.T) {
 	assert.Equal(t, 42, NewParser(MaxMIMEParts(42)).maxMIMEParts)
 }
 
+func TestMaxMIMEDepthOption(t *testing.T) {
+	assert.Equal(t, 0, NewParser().maxMIMEDepth, "NewParser() should not limit the depth")
+	assert.Equal(t, 42, NewParser(MaxMIMEDepth(42)).maxMIMEDepth)
+}
+
 func TestSetCustomParseMediaType(t *testing.T) {
 	alwaysReturnHTML := func(_ string) (mtype string, params map[string]string, invalidParams []string, err error) {
 		return "text/html", nil, nil, err

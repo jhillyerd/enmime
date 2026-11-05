@@ -1,6 +1,7 @@
 package enmime_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -1701,4 +1702,71 @@ func TestRFC2047FilenameWithQuote(t *testing.T) {
 			}
 		})
 	}
+}
+
+// buildDeepMessage returns a MIME message nesting depth multipart containers, the root one
+// included, around a single text part.
+func buildDeepMessage(depth int) string {
+	var b strings.Builder
+	for i := range depth {
+		fmt.Fprintf(&b, "Content-Type: multipart/mixed; boundary=B%d\r\n\r\n--B%d\r\n", i, i)
+	}
+	b.WriteString("Content-Type: text/plain\r\n\r\nbody\r\n")
+	for i := depth - 1; i >= 0; i-- {
+		fmt.Fprintf(&b, "--B%d--\r\n", i)
+	}
+	return b.String()
+}
+
+func TestMaxMIMEDepth(t *testing.T) {
+	t.Run("message at limit parses", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEDepth(5))
+		p, err := parser.ReadParts(strings.NewReader(buildDeepMessage(5)))
+		require.NoError(t, err)
+		assert.Equal(t, 5, countParts(p))
+		assert.Empty(t, p.DepthMatchAll(func(p *enmime.Part) bool { return len(p.Errors) > 0 }))
+	})
+
+	t.Run("multipart over limit is kept unparsed", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEDepth(5))
+		p, err := parser.ReadParts(strings.NewReader(buildDeepMessage(6)))
+		require.NoError(t, err)
+		// The sixth container is a leaf: the text part inside it is not parsed.
+		assert.Equal(t, 5, countParts(p))
+		deep := p.DepthMatchFirst(func(p *enmime.Part) bool { return p.Boundary == "B5" })
+		require.NotNil(t, deep)
+		assert.Nil(t, deep.FirstChild)
+		assert.Contains(t, string(deep.Content), "--B5\r\nContent-Type: text/plain\r\n\r\nbody")
+		require.Len(t, deep.Errors, 1)
+		assert.Equal(t, enmime.ErrorNestingTooDeep, deep.Errors[0].Name)
+	})
+
+	t.Run("rest of the message parses", func(t *testing.T) {
+		msg := "Content-Type: multipart/mixed; boundary=TOP\r\n\r\n" +
+			"--TOP\r\nContent-Type: text/html\r\n\r\n<p>first</p>\r\n" +
+			"--TOP\r\n" + buildDeepMessage(3) +
+			"--TOP\r\nContent-Type: text/plain\r\n\r\nlast\r\n" +
+			"--TOP--\r\n"
+		parser := enmime.NewParser(enmime.MaxMIMEDepth(2))
+		e, err := parser.ReadEnvelope(strings.NewReader(msg))
+		require.NoError(t, err)
+		assert.Equal(t, "<p>first</p>", e.HTML)
+		assert.Contains(t, e.Text, "last")
+		assert.NotContains(t, e.Text, "body")
+		require.Len(t, e.Errors, 1)
+		assert.Equal(t, enmime.ErrorNestingTooDeep, e.Errors[0].Name)
+	})
+
+	t.Run("zero disables the limit", func(t *testing.T) {
+		parser := enmime.NewParser(enmime.MaxMIMEDepth(0))
+		p, err := parser.ReadParts(strings.NewReader(buildDeepMessage(200)))
+		require.NoError(t, err)
+		assert.Equal(t, 200, countParts(p))
+	})
+
+	t.Run("disabled by default", func(t *testing.T) {
+		p, err := enmime.ReadParts(strings.NewReader(buildDeepMessage(200)))
+		require.NoError(t, err)
+		assert.Equal(t, 200, countParts(p))
+	})
 }

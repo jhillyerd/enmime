@@ -27,6 +27,8 @@ const (
 	ErrorMalformedChildPart = "Malformed child part"
 	// ErrorDataHasBoundary name.
 	ErrorDataHasBoundary = "Data contains boundary marker"
+	// ErrorNestingTooDeep name.
+	ErrorNestingTooDeep = "Nesting too deep"
 )
 
 // Error describes an error encountered while parsing.
