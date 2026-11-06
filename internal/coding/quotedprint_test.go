@@ -26,9 +26,9 @@ func TestQPCleaner(t *testing.T) {
 		{"Stuffs’s", "Stuffs=E2=80=99s"},
 		{"=", "=3D"},
 		{"=a", "=3Da"},
-		// Transport padding before a soft line break is left for the decoder (RFC 2045 section 6.7)
-		{"abc= \r\ndef", "abc= \r\ndef"},
-		{"abc=\t \ndef", "abc=\t \ndef"},
+		// Transport padding before a soft line break is deleted (RFC 2045 section 6.7)
+		{"abc= \r\ndef", "abc=\r\ndef"},
+		{"abc=\t \ndef", "abc=\ndef"},
 		{"abc= def", "abc=3D def"},
 		{"abc= \rdef", "abc=3D \rdef"},
 	}
@@ -211,6 +211,31 @@ type peekBreakReader string
 // Read always returns a ErrPeek
 func (r peekBreakReader) Read(p []byte) (int, error) {
 	return copy(p, r), ErrPeek
+}
+
+func TestQPCleanerSoftLineBreakPaddingAtMaxLineLen(t *testing.T) {
+	// The padding reaches the maximum line length, where the cleaner inserts a line break.
+	input := strings.Repeat("x", coding.MaxQPLineLen-3) + "= \t\r\nb"
+	qp := quotedprintable.NewReader(coding.NewQPCleaner(strings.NewReader(input)))
+	got, err := io.ReadAll(qp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := strings.Repeat("x", coding.MaxQPLineLen-3) + "b"
+	if string(got) != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestQPPeekErrorAfterPadding(t *testing.T) {
+	// The lookahead for a soft line break hits the error after the padding.
+	qp := coding.NewQPCleaner(peekBreakReader("=  "))
+
+	buf := make([]byte, 100)
+	_, err := qp.Read(buf)
+	if err != ErrPeek {
+		t.Errorf("Got: %q, want: %q", err, ErrPeek)
+	}
 }
 
 func TestQPPeekError(t *testing.T) {

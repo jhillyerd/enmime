@@ -110,7 +110,20 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 			if err != nil && err != io.EOF {
 				return 0, err
 			}
-			if validHexBytes(hexBytes) || qp.softLineBreakWithPadding() {
+			if validHexBytes(hexBytes) {
+				safeWriteByte(b)
+				break
+			}
+
+			var padding int
+			padding, err = qp.softLineBreakPadding()
+			if err != nil {
+				return 0, err
+			}
+			if padding > 0 {
+				// A decoder deletes the padding anyway. Dropping it here keeps the line break we may
+				// insert for the line length from landing between the padding and the line break.
+				_, _ = qp.in.Discard(padding)
 				safeWriteByte(b)
 			} else {
 				writeBytes(escapedEquals)
@@ -139,27 +152,43 @@ func (qp *QPCleaner) Read(dest []byte) (n int, err error) {
 	return n, err
 }
 
-// softLineBreakWithPadding returns true if the equals sign just read is followed by spaces or tabs
-// and then a line break. RFC 2045 section 6.7 calls such whitespace transport padding, which a
-// decoder deletes, so the equals sign is a soft line break.
-func (qp *QPCleaner) softLineBreakWithPadding() bool {
+// softLineBreakPadding returns the number of spaces and tabs between the equals sign just read
+// and a line break. RFC 2045 section 6.7 calls such whitespace transport padding, which a decoder
+// deletes, so the equals sign is a soft line break. It returns 0 if the equals sign is not followed
+// by padding and a line break, and an error if the lookahead fails with an error other than EOF.
+func (qp *QPCleaner) softLineBreakPadding() (int, error) {
 	for i := 1; ; i++ {
 		peeked, err := qp.in.Peek(i)
 		if err != nil {
-			return false
+			return 0, peekError(err)
 		}
 		switch peeked[i-1] {
 		case ' ', '\t':
 			continue
 		case '\n':
-			return i > 1
+			return i - 1, nil
 		case '\r':
 			next, err := qp.in.Peek(i + 1)
-			return i > 1 && err == nil && next[i] == '\n'
+			if err != nil {
+				return 0, peekError(err)
+			}
+			if next[i] == '\n' {
+				return i - 1, nil
+			}
+			return 0, nil
 		default:
-			return false
+			return 0, nil
 		}
 	}
+}
+
+// peekError returns the error of a lookahead, or nil if the input ended or the lookahead did not
+// fit into the buffer, in which case the bytes are not a soft line break.
+func peekError(err error) error {
+	if err == io.EOF || err == bufio.ErrBufferFull {
+		return nil
+	}
+	return err
 }
 
 func validHexByte(b byte) bool {
