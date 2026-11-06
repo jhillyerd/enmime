@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -631,6 +632,74 @@ func BenchmarkBoundaryReader(b *testing.B) {
 		_, err = io.Copy(io.Discard, br)
 		if err != nil {
 			b.Fatalf("Failed to read content: %+v", err)
+		}
+	}
+}
+
+// countingReader counts the Read calls that reach the reader below it.
+type countingReader struct {
+	r     io.Reader
+	calls *int
+}
+
+func (c countingReader) Read(p []byte) (int, error) {
+	*c.calls++
+	return c.r.Read(p)
+}
+
+// nestedBoundaryReaders stacks depth boundaryReaders the way parseParts does,
+// each reading through a bufio.Reader from the one below, and returns the
+// top one. Only the outermost boundary, b0, appears in input: every level
+// above it ends without its own boundary. calls counts the reads between the
+// levels.
+func nestedBoundaryReaders(t *testing.T, input string, depth int, calls *int) *boundaryReader {
+	t.Helper()
+	var r io.Reader = strings.NewReader(input)
+	var br *boundaryReader
+	for i := 0; i < depth; i++ {
+		br = newBoundaryReader(bufio.NewReader(countingReader{r, calls}), "b"+strconv.Itoa(i))
+		if i == 0 {
+			if next, err := br.Next(); !next || err != nil {
+				t.Fatalf("Next() = %v, %v", next, err)
+			}
+		}
+		r = br
+	}
+	return br
+}
+
+// TestBoundaryReaderEOFIsSticky checks that a boundaryReader that has seen
+// io.EOF, from its boundary or from the reader below, does not ask the reader
+// below again. bufio.Reader does not keep an io.EOF, so each level of nested
+// multiparts would otherwise ask the level below twice per call (Peek, then
+// ReadByte): 2^depth reads when the levels end without their own boundary.
+func TestBoundaryReaderEOFIsSticky(t *testing.T) {
+	for _, input := range []string{
+		"--b0\r\ncontent\r\n--b0--\r\n", // the outermost boundary ends the levels above
+		"--b0\r\ncontent",               // the end of the input does
+	} {
+		reads := func(depth int) int {
+			calls := 0
+			top := nestedBoundaryReaders(t, input, depth, &calls)
+			got, err := io.ReadAll(top)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != "content" {
+				t.Fatalf("got %q, want %q", got, "content")
+			}
+			// Callers read again after io.EOF: Next drains the part, and
+			// bufio.Reader refills.
+			for range 3 {
+				if n, err := top.Read(make([]byte, 10)); n != 0 || err != io.EOF {
+					t.Fatalf("Read after EOF = %d, %v; want 0, io.EOF", n, err)
+				}
+			}
+			return calls
+		}
+		r8, r16 := reads(8), reads(16)
+		if r16 > 2*r8+16 {
+			t.Errorf("%q: %d reads at depth 8, %d at depth 16: want linear growth", input, r8, r16)
 		}
 	}
 }
