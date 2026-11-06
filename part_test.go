@@ -1,6 +1,7 @@
 package enmime_test
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"testing"
@@ -1757,6 +1758,19 @@ func TestMaxMIMEDepth(t *testing.T) {
 		deep := p.DepthMatchFirst(func(p *enmime.Part) bool { return p.Boundary == "B5" })
 		require.NotNil(t, deep)
 		assert.Equal(t, "8bit", deep.Header.Get("Content-Transfer-Encoding"))
+	})
+
+	t.Run("multipart from a ContentReader keeps base64", func(t *testing.T) {
+		// Content streamed from a ContentReader is written as base64: the header must say so.
+		body := "--B0\r\nContent-Type: text/plain\r\n\r\nbödy\r\n--B0--\r\n"
+		p := &enmime.Part{
+			ContentType:   "multipart/mixed",
+			ContentReader: strings.NewReader(body),
+		}
+		var b strings.Builder
+		require.NoError(t, p.Encode(&b))
+		assert.Equal(t, "base64", p.Header.Get("Content-Transfer-Encoding"))
+		assert.Contains(t, b.String(), base64.StdEncoding.EncodeToString([]byte(body))[:40])
 	})
 
 	t.Run("rest of the message parses", func(t *testing.T) {

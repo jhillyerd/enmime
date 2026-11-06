@@ -143,13 +143,15 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 		// present, so for auto-detected 7bit (and for empty content) no header is emitted.
 		ct := strings.ToLower(p.ContentType)
 		if strings.HasPrefix(ct, "message/") ||
-			(p.FirstChild == nil && strings.HasPrefix(ct, "multipart/")) {
+			(p.FirstChild == nil && p.ContentReader == nil && strings.HasPrefix(ct, "multipart/")) {
 			// RFC 1341: `message` types must have no encoding other than "7bit", "8bit", or
 			// "binary". The message header fields are always US-ASCII in any case, and data within
 			// the body can still be encoded, in which case the Content-Transfer-Encoding header
 			// field in the encapsulated message will reflect this.
 			// RFC 2045 6.4 sets the same rule for `multipart` types. A multipart without children
 			// holds its body unparsed (see MaxMIMEDepth): it is written as is, boundaries included.
+			// Content streamed from a ContentReader is always written as base64, so it keeps
+			// the base64 declaration below.
 			cte = te8Bit
 		} else {
 			cte = teBase64
