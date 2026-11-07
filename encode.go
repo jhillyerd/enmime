@@ -8,7 +8,6 @@ import (
 	"mime"
 	"mime/quotedprintable"
 	"net/textproto"
-	"sort"
 	"strings"
 	"time"
 
@@ -211,15 +210,10 @@ func (p *Part) setupMIMEHeaders() transferEncoding {
 	return cte
 }
 
-// encodeHeader writes out a sorted list of headers.
+// encodeHeader writes out headers, preserving their original order when known.
 func (p *Part) encodeHeader(b *bufio.Writer) error {
-	keys := make([]string, 0, len(p.Header))
-	for k := range p.Header {
-		keys = append(keys, k)
-	}
+	keys := p.headerKeysInWriteOrder()
 	rawContent := p.parser != nil && p.parser.rawContent
-
-	sort.Strings(keys)
 	for _, k := range keys {
 		for _, v := range p.Header[k] {
 			encv := v
