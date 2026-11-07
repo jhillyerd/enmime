@@ -138,6 +138,23 @@ func (o maxMIMEPartsOption) apply(p *Parser) {
 	p.maxMIMEParts = int(o)
 }
 
+// MaxMIMEDepth sets the maximum number of nested multipart containers in a message, the root
+// one included.  A multipart nested deeper is not parsed: it is kept as a leaf part holding its
+// raw content, with an ErrorNestingTooDeep error, and the rest of the message is parsed as
+// usual.  Each level of nesting reads the message through one more reader, so parsing takes
+// time proportional to the size of the message times its depth; this bounds the cost of
+// hostile messages nesting thousands of levels.  The default, zero or a negative value,
+// disables the limit.
+func MaxMIMEDepth(n int) Option {
+	return maxMIMEDepthOption(n)
+}
+
+type maxMIMEDepthOption int
+
+func (o maxMIMEDepthOption) apply(p *Parser) {
+	p.maxMIMEDepth = int(o)
+}
+
 // MinCharsetDetectRunes sets the minimum length of a MIME part before enmime will attempt to
 // detect its character set.  The shorter the text, the more likely an incorrect character set
 // will be chosen.  The default is 100.
