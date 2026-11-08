@@ -1517,3 +1517,294 @@ func TestNilEnvelopeClone(t *testing.T) {
 		t.Fatal("Clone of nil envelope is not nil, failed")
 	}
 }
+
+func TestEnvelopeSend(t *testing.T) {
+	sender := &mockSender{}
+	msg := test.OpenTestData("mail", "attachment.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	from := "from@example.com"
+	to := "to@example.com"
+	if err := e.SetHeader("From", []string{"Sender Name <" + from + ">"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.SetHeader("To", []string{"Recipient Name <" + to + ">"}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = e.Send(sender)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if sender.from != from {
+		t.Errorf("Got reverse-path %q, wanted %q", sender.from, from)
+	}
+	test.DiffStrings(t, sender.to, []string{to})
+	if !bytes.Contains(sender.msg, []byte("A text section")) {
+		t.Errorf("msg bytes did not contain text body %q", "A text section")
+	}
+	if !bytes.Contains(sender.msg, []byte("test.html")) {
+		t.Errorf("msg bytes did not contain attachment %q", "test.html")
+	}
+}
+
+func TestEnvelopeSendWithReversePath(t *testing.T) {
+	sender := &mockSender{}
+	msg := test.OpenTestData("mail", "attachment.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+	if err := e.SetHeader("To", []string{"to@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+
+	const ret = "return@example.com"
+	err = e.SendWithReversePath(sender, ret)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if sender.from != ret {
+		// The From header should not be provided to Sender.Send().
+		t.Errorf("Got reverse-path %q, wanted %q", sender.from, ret)
+	}
+	test.DiffStrings(t, sender.to, []string{"to@example.com"})
+}
+
+func TestEnvelopeSendMultipleHeaderValues(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`From: from@example.com
+To: one@example.com
+To: two@example.com
+Cc: three@example.com
+Subject: Folded
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if sender.from != "from@example.com" {
+		t.Errorf("Got reverse-path %q, wanted %q", sender.from, "from@example.com")
+	}
+	// A second "To:" value must not be silently dropped.
+	test.DiffStrings(t, sender.to,
+		[]string{"one@example.com", "two@example.com", "three@example.com"})
+}
+
+func TestEnvelopeSendDuplicateRecipients(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`From: from@example.com
+To: dup@example.com, dup@example.com
+Cc: other@example.com
+Subject: Dupes
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.DiffStrings(t, sender.to, []string{"dup@example.com", "other@example.com"})
+}
+
+func TestEnvelopeSendNoRecipients(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`From: from@example.com
+Subject: Nobody
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if err.Error() != enmime.ErrorMissingRecipient {
+		t.Fatalf("Unexpected error, wanted %q got %s", enmime.ErrorMissingRecipient, err)
+	}
+}
+
+func TestEnvelopeSendMissingFrom(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`To: to@example.com
+Subject: No From
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "From") {
+		t.Errorf("Error %q should mention the From header", err)
+	}
+}
+
+func TestEnvelopeSendUnparsableFrom(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`From: not-an-address
+To: to@example.com
+Subject: Bad From
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+}
+
+func TestEnvelopeSendUnparsableRecipient(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`From: from@example.com
+To: not-an-address
+Subject: Bad recipient
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+}
+
+func TestEnvelopeSendNilEnvelope(t *testing.T) {
+	var e *enmime.Envelope
+	if err := e.Send(&mockSender{}); err == nil {
+		t.Fatal("Expected error sending nil Envelope, got nil")
+	}
+}
+
+func TestEnvelopeSendBcc(t *testing.T) {
+	sender := &mockSender{}
+	msg := strings.NewReader(`From: from@example.com
+To: to@example.com
+Bcc: secret@example.com
+Subject: Bcc
+
+Body
+`)
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.DiffStrings(t, sender.to, []string{"to@example.com", "secret@example.com"})
+	if bytes.Contains(sender.msg, []byte("Bcc:")) {
+		t.Error("Transmitted message must not contain a Bcc header, see RFC 5322 section 3.6.3")
+	}
+	if got := e.GetHeader("Bcc"); got != "secret@example.com" {
+		t.Errorf("Envelope Bcc header == %q, want it restored to %q", got, "secret@example.com")
+	}
+}
+
+func TestEnvelopeSendRoundTripGolden(t *testing.T) {
+	sender := &mockSender{}
+	msg := test.OpenTestData("mail", "mime-mixed.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.Send(sender)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The parsed message should survive re-encoding, boundaries included.
+	reparsed, err := enmime.ReadEnvelope(bytes.NewReader(sender.msg))
+	if err != nil {
+		t.Fatal("Failed to reparse sent message:", err)
+	}
+	if reparsed.Text != e.Text {
+		t.Errorf("Text changed on round trip: %q != %q", reparsed.Text, e.Text)
+	}
+	if reparsed.HTML != e.HTML {
+		t.Errorf("HTML changed on round trip: %q != %q", reparsed.HTML, e.HTML)
+	}
+	if len(reparsed.Attachments) != len(e.Attachments) {
+		t.Errorf("Attachment count changed: %d != %d",
+			len(reparsed.Attachments), len(e.Attachments))
+	}
+
+	test.DiffGolden(t, sender.msg, "testdata", "encode", "envelope-send-mime-mixed.golden")
+}
+
+func TestEnvelopeSendRejectsCRLFAddress(t *testing.T) {
+	// ParseAddressList decodes RFC 2047 encoded words, so these headers can decode to addresses
+	// embedding CRLF; they must be rejected rather than handed to the Sender.
+	crlf := "=?utf-8?q?a=0D=0Ab?=@example.com"
+
+	for _, tc := range []struct {
+		name string
+		msg  string
+		ret  string
+	}{
+		{"recipient", "From: from@example.com\nTo: " + crlf + "\nSubject: x\n\nBody\n", ""},
+		{"reverse-path", "From: " + crlf + "\nTo: to@example.com\nSubject: x\n\nBody\n", ""},
+		{"explicit reverse-path", "From: from@example.com\nTo: to@example.com\nSubject: x\n\nBody\n", "bad\r\naddress"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sender := &mockSender{}
+			e, err := enmime.ReadEnvelope(strings.NewReader(tc.msg))
+			if err != nil {
+				t.Fatal("Failed to parse MIME:", err)
+			}
+
+			if tc.ret == "" {
+				err = e.Send(sender)
+			} else {
+				err = e.SendWithReversePath(sender, tc.ret)
+			}
+			if err == nil {
+				t.Fatalf("Expected error, got nil; sender got %q -> %q", sender.from, sender.to)
+			}
+			if sender.msg != nil {
+				t.Error("Sender must not be invoked with an invalid address")
+			}
+		})
+	}
+}
