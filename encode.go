@@ -20,6 +20,9 @@ import (
 // from quoted-printable to base64 encoding.
 const b64Percent = 20
 
+// maxLineLen is the maximum length of a line of a message, excluding the CRLF (RFC 5322 section 2.1.1).
+const maxLineLen = 998
+
 type transferEncoding byte
 
 const (
@@ -347,6 +350,7 @@ func (p *Part) resolveForcedCTE() transferEncoding {
 }
 
 // selectTransferEncoding scans content for non-ASCII characters and selects 'b' or 'q' encoding.
+// Content with lines longer than RFC 5322 allows is 'q' encoded, so that its lines are wrapped.
 func (p *Part) selectTransferEncoding(content []byte, quoteLineBreaks bool) transferEncoding {
 	if len(content) == 0 {
 		return te7Bit
@@ -359,9 +363,12 @@ func (p *Part) selectTransferEncoding(content []byte, quoteLineBreaks bool) tran
 	// Binary chars remaining before we choose b64 encoding.
 	threshold := b64Percent * len(content) / 100
 	bincount := 0
+	lineLen := 0
+	longLine := false
 	for _, b := range content {
 		if (b < ' ' || '~' < b) && b != '\t' {
 			if !quoteLineBreaks && (b == '\r' || b == '\n') {
+				lineLen = 0
 				continue
 			}
 			bincount++
@@ -369,8 +376,12 @@ func (p *Part) selectTransferEncoding(content []byte, quoteLineBreaks bool) tran
 				return teBase64
 			}
 		}
+		lineLen++
+		if lineLen > maxLineLen {
+			longLine = true
+		}
 	}
-	if bincount == 0 {
+	if bincount == 0 && (quoteLineBreaks || !longLine) {
 		return te7Bit
 	}
 	return teQuoted
