@@ -17,7 +17,9 @@ see the wiki for example [Builder Usage].
 `BCC()` and `BCCAddrs()` addresses are not written into the `Bcc:` header of the message built by
 `Build()`; they are passed to the SMTP server as envelope recipients by `Send()` instead, per
 [RFC 5322 section 3.6.3].  An absent `Bcc` header is therefore expected, not an encoding bug.  Use
-`Header()` if you want one in the message itself.
+`Header()` if you want one in the message itself.  `Envelope.Send()` behaves the same way: a `Bcc`
+header found in a parsed message is delivered as recipients, but stripped from the transmitted
+bytes.
 
 [RFC 5322 section 3.6.3]: https://www.rfc-editor.org/rfc/rfc5322#section-3.6.3
 

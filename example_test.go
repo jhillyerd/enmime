@@ -293,3 +293,65 @@ func (s *stdoutSender) Send(from string, tos []string, msg []byte) error {
 
 	return nil
 }
+
+// ExampleEnvelope_Send illustrates forwarding a parsed message: read an envelope, edit its address
+// headers, and transmit it through a Sender without rebuilding the message.
+func ExampleEnvelope_Send() {
+	// Parse a message received from somewhere else.
+	r, err := os.Open("testdata/mail/attachment.raw")
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	defer r.Close()
+
+	env, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// Rewrite the address headers; the part tree is left untouched.
+	if err := env.SetHeader("From", []string{"Forwarded By <forwarder@inbucket.org>"}); err != nil {
+		fmt.Print(err)
+		return
+	}
+	if err := env.SetHeader("To", []string{"Original Recipient <greg@inbucket.com>"}); err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// Instead of a fake sender printing to stdout, use a real one:
+	// sender := enmime.NewSMTP("smtp.relay.host:25", nil)
+	sender := &stdoutSender{}
+
+	// Send uses the From address as the envelope reverse-path, and the To, Cc and Bcc headers as
+	// recipients.  An explicit reverse-path can be provided with SendWithReversePath.
+	if err := env.Send(sender); err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// Output:
+	// MAIL FROM:<forwarder@inbucket.org>
+	// RCPT TO:<greg@inbucket.com>
+	// DATA
+	// Content-Type: multipart/mixed; boundary=Enmime-Test-100
+	// Date: Thu, 18 Oct 2012 22:48:39 -0700
+	// From: Forwarded By <forwarder@inbucket.org>
+	// Message-Id: <07B7061D-2676-487E-942E-C341CE4D13DC@makita.skynet>
+	// Mime-Version: 1.0
+	// Subject: Attachment
+	// To: Original Recipient <greg@inbucket.com>
+	//
+	// --Enmime-Test-100
+	// Content-Type: text/plain; charset=us-ascii
+	//
+	// A text section
+	// --Enmime-Test-100
+	// Content-Disposition: attachment; filename=test.html
+	// Content-Type: text/html; charset=utf-8; name=test.html
+	//
+	// <html>
+	// --Enmime-Test-100--
+}
