@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"mime/quotedprintable"
 )
 
 // QPCleaner scans quoted printable content for invalid characters and encodes them so that
@@ -198,4 +199,96 @@ func validHexBytes(v []byte) bool {
 		return true
 	}
 	return validHexByte(v[0]) && validHexByte(v[1])
+}
+
+// WriteQuotedPrintable writes content to w as quoted-printable encoded data. No line of the
+// encoded data begins with the multipart boundary delimiter "--" + boundary, because a parser
+// reads such a line as the end of the part (RFC 2046 section 5.1.1). An empty boundary (the
+// content is not part of a multipart) disables the check.
+//
+// When the encoder would start a line with the delimiter, that line is ended after its first
+// hyphen instead, so the rest of the delimiter starts the next one. Decoders remove the soft
+// line break this adds, so the decoded content is unchanged. Encoding the first hyphen as =2D
+// would have the same effect, but would push the line past the 76 characters of RFC 2045
+// section 6.7.
+func WriteQuotedPrintable(w io.Writer, content []byte, boundary string) error {
+	out := &qpDelimiterWriter{w: w, lineStart: true}
+	if boundary != "" {
+		out.delim = "--" + boundary
+	}
+
+	qp := quotedprintable.NewWriter(out)
+	if _, err := qp.Write(content); err != nil {
+		return err
+	}
+	if err := qp.Close(); err != nil {
+		return err
+	}
+
+	return out.Flush()
+}
+
+// qpDelimiterWriter passes quoted-printable encoded data through to an underlying writer, with
+// the guarantees of WriteQuotedPrintable.
+type qpDelimiterWriter struct {
+	w         io.Writer
+	delim     string // Delimiter that must not begin a line, empty if there is none.
+	buf       []byte // Encoded data for the current Write call.
+	hold      []byte // Start of a line that may yet turn out to be the delimiter.
+	lineStart bool   // The next byte written begins a line.
+}
+
+// Write method for io.Writer interface.
+func (qp *qpDelimiterWriter) Write(p []byte) (n int, err error) {
+	qp.buf = qp.buf[:0]
+
+	for _, b := range p {
+		switch {
+		case len(qp.hold) > 0 && b != qp.delim[len(qp.hold)]:
+			// Not the delimiter after all, so write out what was held back.
+			qp.buf = append(qp.buf, qp.hold...)
+			qp.buf = append(qp.buf, b)
+			qp.hold = qp.hold[:0]
+			qp.lineStart = b == '\n'
+		case len(qp.hold) > 0:
+			qp.hold = append(qp.hold, b)
+			if len(qp.hold) < len(qp.delim) {
+				continue
+			}
+			// The delimiter would begin this line: end the line after its first hyphen.
+			qp.buf = append(qp.buf, '-', '=', '\r', '\n')
+			qp.buf = append(qp.buf, qp.hold[1:]...)
+			qp.hold = qp.hold[:0]
+			qp.lineStart = false
+		case qp.lineStart && qp.delim != "" && b == '-':
+			qp.hold = append(qp.hold[:0], b)
+		default:
+			qp.buf = append(qp.buf, b)
+			qp.lineStart = b == '\n'
+		}
+	}
+
+	if err := qp.flush(); err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
+// Flush writes out any bytes held back while waiting for the rest of a possible delimiter.
+func (qp *qpDelimiterWriter) Flush() error {
+	if len(qp.hold) > 0 {
+		qp.buf = append(qp.buf[:0], qp.hold...)
+		qp.hold = qp.hold[:0]
+		return qp.flush()
+	}
+	return nil
+}
+
+// flush writes buf to the underlying writer.
+func (qp *qpDelimiterWriter) flush() error {
+	if len(qp.buf) == 0 {
+		return nil
+	}
+	_, err := qp.w.Write(qp.buf)
+	return err
 }
