@@ -20,6 +20,7 @@ type CustomParseMediaType func(ctype string) (mtype string, params map[string]st
 type Parser struct {
 	maxStoredPartErrors             int
 	maxMIMEParts                    int
+	maxMIMEDepth                    int
 	multipartWOBoundaryAsSinglePart bool
 	readPartErrorPolicy             ReadPartErrorPolicy
 	skipMalformedParts              bool

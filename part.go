@@ -469,7 +469,7 @@ func (p Parser) ReadParts(r io.Reader) (*Part, error) {
 			parts := p.maxMIMEParts
 			partsLeft = &parts
 		}
-		if err := parseParts(root, br, partsLeft); err != nil {
+		if err := parseParts(root, br, partsLeft, 1); err != nil {
 			return nil, err
 		}
 	} else {
@@ -501,8 +501,10 @@ func isTooManyPartsError(err error) bool {
 
 // parseParts recursively parses a MIME multipart document and sets each Parts PartID.  The
 // partsLeft budget, shared by all recursive invocations, counts down with every part parsed;
-// parsing fails with a TooManyPartsError when it is exhausted.
-func parseParts(parent *Part, reader *bufio.Reader, partsLeft *int) error {
+// parsing fails with a TooManyPartsError when it is exhausted.  depth is the nesting level of
+// parent, 1 for the root: a multipart past the parser's MIME depth limit is not parsed (see
+// MaxMIMEDepth).
+func parseParts(parent *Part, reader *bufio.Reader, partsLeft *int, depth int) error {
 	firstRecursion := parent.Parent == nil
 	// Loop over MIME boundaries.
 	br := newBoundaryReader(reader, parent.Boundary)
@@ -576,8 +578,16 @@ func parseParts(parent *Part, reader *bufio.Reader, partsLeft *int) error {
 		}
 
 		lastChild = parent.appendChild(lastChild, p)
+		if limit := p.parser.maxMIMEDepth; limit > 0 && depth >= limit {
+			// Too deep: keep the multipart as a leaf, its raw content not parsed.
+			p.addErrorf(ErrorNestingTooDeep, "multipart nested deeper than %d levels: content not parsed", limit)
+			if p.Content, err = p.readPartContent(bbr, p.parser.readPartErrorPolicy); err != nil {
+				return errors.WithStack(err)
+			}
+			continue
+		}
 		// Content is another multipart.
-		if err = parseParts(p, bbr, partsLeft); err != nil {
+		if err = parseParts(p, bbr, partsLeft, depth+1); err != nil {
 			if p.parser.skipMalformedParts && !isTooManyPartsError(err) {
 				parent.addErrorf(ErrorMalformedChildPart, "parse parts: %s", err.Error())
 				continue
