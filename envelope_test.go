@@ -1772,3 +1772,39 @@ func TestEnvelopeSendRoundTripGolden(t *testing.T) {
 
 	test.DiffGolden(t, sender.msg, "testdata", "encode", "envelope-send-mime-mixed.golden")
 }
+
+func TestEnvelopeSendRejectsCRLFAddress(t *testing.T) {
+	// ParseAddressList decodes RFC 2047 encoded words, so these headers can decode to addresses
+	// embedding CRLF; they must be rejected rather than handed to the Sender.
+	crlf := "=?utf-8?q?a=0D=0Ab?=@example.com"
+
+	for _, tc := range []struct {
+		name string
+		msg  string
+		ret  string
+	}{
+		{"recipient", "From: from@example.com\nTo: " + crlf + "\nSubject: x\n\nBody\n", ""},
+		{"reverse-path", "From: " + crlf + "\nTo: to@example.com\nSubject: x\n\nBody\n", ""},
+		{"explicit reverse-path", "From: from@example.com\nTo: to@example.com\nSubject: x\n\nBody\n", "bad\r\naddress"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sender := &mockSender{}
+			e, err := enmime.ReadEnvelope(strings.NewReader(tc.msg))
+			if err != nil {
+				t.Fatal("Failed to parse MIME:", err)
+			}
+
+			if tc.ret == "" {
+				err = e.Send(sender)
+			} else {
+				err = e.SendWithReversePath(sender, tc.ret)
+			}
+			if err == nil {
+				t.Fatalf("Expected error, got nil; sender got %q -> %q", sender.from, sender.to)
+			}
+			if sender.msg != nil {
+				t.Error("Sender must not be invoked with an invalid address")
+			}
+		})
+	}
+}

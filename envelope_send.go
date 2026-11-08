@@ -18,6 +18,8 @@ var sendAddressHeaders = []string{"To", "Cc", "Bcc"}
 //
 // All values of each recipient header are parsed, so a message that folds its recipients across
 // several "To:" lines delivers all of them.  Addresses are delivered once each, even when repeated.
+// An address that decodes to contain CR or LF (possible via RFC 2047 encoded words) is rejected,
+// so it cannot inject SMTP commands into a Sender that writes them verbatim.
 //
 // "Bcc" addresses are delivered as envelope recipients but the transmitted bytes contain no "Bcc"
 // header, per RFC 5322 section 3.6.3 and consistent with MailBuilder.Build().  The header is
@@ -49,6 +51,8 @@ func (e *Envelope) SendWithReversePath(sender Sender, reversePath string) error 
 		if err != nil {
 			return err
 		}
+	} else if err := validateSendAddress(reversePath); err != nil {
+		return err
 	}
 
 	recipients, err := e.recipients()
@@ -88,6 +92,9 @@ func (e *Envelope) reversePath() (string, error) {
 	}
 	for _, addr := range addrs {
 		if addr.Address != "" {
+			if err := validateSendAddress(addr.Address); err != nil {
+				return "", err
+			}
 			return addr.Address, nil
 		}
 	}
@@ -112,6 +119,9 @@ func (e *Envelope) recipients() ([]string, error) {
 				if addr.Address == "" || seen[addr.Address] {
 					continue
 				}
+				if err := validateSendAddress(addr.Address); err != nil {
+					return nil, err
+				}
 				seen[addr.Address] = true
 				recips = append(recips, addr.Address)
 			}
@@ -121,6 +131,17 @@ func (e *Envelope) recipients() ([]string, error) {
 		return nil, errors.New(ErrorMissingRecipient)
 	}
 	return recips, nil
+}
+
+// validateSendAddress rejects addresses containing CR or LF.  ParseAddressList decodes RFC 2047
+// encoded words, so a header such as "To: =?utf-8?q?a=0D=0Ab?=@example.com" can produce an address
+// embedding CRLF.  A Sender that writes SMTP commands verbatim without validating its input would
+// be vulnerable to command injection, so these addresses fail the send instead of being delivered.
+func validateSendAddress(addr string) error {
+	if strings.ContainsAny(addr, "\r\n") {
+		return errors.Errorf("invalid address %q: contains CR or LF", addr)
+	}
+	return nil
 }
 
 // addressList parses every value of the named address header, returning the addresses in order.
