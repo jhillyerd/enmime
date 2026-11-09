@@ -1951,6 +1951,31 @@ func TestEnvelopeSetAddressHeaderNil(t *testing.T) {
 	}
 }
 
+func TestEnvelopeSetAddressHeaderRejectsCRLFAddress(t *testing.T) {
+	e, err := enmime.ReadEnvelope(strings.NewReader("From: old@example.com\n\nBody\n"))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// Part.encodeHeader writes values verbatim in raw-content mode, so an address embedding CRLF
+	// could inject headers into the transmitted message; reject it at the point of entry.
+	for _, addr := range []*mail.Address{
+		{Address: "a@example.com>\r\nX-Injected: yes"},
+		{Address: "evil@example.com\nSubject: injected"},
+	} {
+		err := e.SetAddressHeader("Reply-To", []*mail.Address{addr})
+		if err == nil {
+			t.Fatalf("SetAddressHeader(%q) returned nil, want an error", addr.Address)
+		}
+		if !strings.Contains(err.Error(), "contains CR or LF") {
+			t.Errorf("Got error %v, want it to mention CR or LF", err)
+		}
+		if values := e.GetHeaderValues("Reply-To"); len(values) != 0 {
+			t.Errorf("Reply-To = %q, want the header untouched", values)
+		}
+	}
+}
+
 func TestEnvelopeSetAddressHeaderSendRoundTrip(t *testing.T) {
 	sender := &mockSender{}
 	msg := test.OpenTestData("mail", "mime-mixed.raw")

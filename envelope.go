@@ -134,6 +134,11 @@ func (e *Envelope) SetAddressHeader(name string, addrs []*mail.Address) error {
 		if addr == nil {
 			continue
 		}
+		// A value containing CR or LF would be written verbatim by Part.encodeHeader when the parser
+		// runs in raw-content mode, letting it inject headers into the transmitted message.
+		if err := validateSendAddress(addr.Address); err != nil {
+			return err
+		}
 		if count > 0 {
 			buf.WriteString(", ")
 		}
