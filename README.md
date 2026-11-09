@@ -21,6 +21,11 @@ see the wiki for example [Builder Usage].
 header found in a parsed message is delivered as recipients, but stripped from the transmitted
 bytes.
 
+When editing the address headers of a parsed message before sending it, prefer
+`Envelope.SetAddressHeader()` over `SetHeader()`: it writes an RFC 5322 address list and encodes only
+the non-ASCII display names as RFC 2047 encoded-words, so the result stays a parseable address list
+rather than one encoded-word covering the whole value.
+
 [RFC 5322 section 3.6.3]: https://www.rfc-editor.org/rfc/rfc5322#section-3.6.3
 
 See our [Pkg Docs] for examples and API usage information.

@@ -1808,3 +1808,186 @@ func TestEnvelopeSendRejectsCRLFAddress(t *testing.T) {
 		})
 	}
 }
+
+func TestEnvelopeSetAddressHeader(t *testing.T) {
+	e, err := enmime.ReadEnvelope(strings.NewReader("From: old@example.com\nTo: old@example.com\nSubject: x\n\nBody\n"))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	addrs := []*mail.Address{
+		{Name: "Bob", Address: "bob@example.com"},
+		{Name: "José García", Address: "jose@example.com"},
+		{Name: "", Address: "plain@example.com"},
+		{Name: "Ünïcödé with (parens); semis", Address: "u@example.com"},
+	}
+	if err := e.SetAddressHeader("To", addrs); err != nil {
+		t.Fatal(err)
+	}
+
+	// All previous values are replaced by the single formatted one.
+	if values := e.GetHeaderValues("To"); len(values) != 1 {
+		t.Fatalf("Got %d To values, want 1", len(values))
+	}
+
+	// A non-ASCII display name is written as an encoded-word ahead of its address, never as one
+	// encoded-word covering the whole list.
+	raw := e.Root.Header["To"][0]
+	if !strings.Contains(raw, "=?utf-8?") {
+		t.Errorf("To header %q does not contain an encoded-word", raw)
+	}
+	if strings.Contains(raw, "=? ") {
+		t.Errorf("To header %q looks like an encoded-word wrapping the address list", raw)
+	}
+	for _, addr := range addrs {
+		if !strings.Contains(raw, "<"+addr.Address+">") {
+			t.Errorf("To header %q is missing address %s", raw, addr.Address)
+		}
+	}
+
+	// Round trip: the stored value must parse back into the addresses we set.
+	got, err := enmime.ParseAddressList(raw)
+	if err != nil {
+		t.Fatalf("ParseAddressList(%q): %v", raw, err)
+	}
+	if len(got) != len(addrs) {
+		t.Fatalf("Got %d addresses, want %d", len(got), len(addrs))
+	}
+	for i, want := range addrs {
+		if got[i].Name != want.Name || got[i].Address != want.Address {
+			t.Errorf("Address %d = %q <%s>, want %q <%s>",
+				i, got[i].Name, got[i].Address, want.Name, want.Address)
+		}
+	}
+
+	// AddressList sees the same thing.
+	viaEnv, err := e.AddressList("To")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := deep.Equal(viaEnv, got); diff != nil {
+		t.Errorf("AddressList disagrees with ParseAddressList: %v", diff)
+	}
+}
+
+func TestEnvelopeSetAddressHeaderASCIIName(t *testing.T) {
+	e, err := enmime.ReadEnvelope(strings.NewReader("From: old@example.com\n\nBody\n"))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// A plain ASCII name is left alone rather than encoded or quoted.
+	if err := e.SetAddressHeader("From", []*mail.Address{
+		{Name: "Bob", Address: "bob@example.com"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.Root.Header["From"][0]; got != "Bob <bob@example.com>" {
+		t.Errorf("Got %q, want %q", got, "Bob <bob@example.com>")
+	}
+}
+
+func TestEnvelopeSetAddressHeaderPreEncodedName(t *testing.T) {
+	e, err := enmime.ReadEnvelope(strings.NewReader("From: old@example.com\n\nBody\n"))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// An already-encoded ASCII name is emitted as an encoded-word, not as a quoted-string.  Go's
+	// mail.Address.String would quote it, because = and ? are atom characters; the name must stay
+	// unquoted for parsers to see the encoded-word.
+	if err := e.SetAddressHeader("From", []*mail.Address{
+		{Name: "=?utf-8?Q?Jane_Doe?=", Address: "jane@example.com"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.Root.Header["From"][0]; got != "=?utf-8?Q?Jane_Doe?= <jane@example.com>" {
+		t.Errorf("Got %q, want %q", got, "=?utf-8?Q?Jane_Doe?= <jane@example.com>")
+	}
+
+	addrs, err := enmime.ParseAddressList(e.Root.Header["From"][0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(addrs) != 1 || addrs[0].Name != "Jane Doe" || addrs[0].Address != "jane@example.com" {
+		t.Errorf("Got %+v, want Jane Doe <jane@example.com>", addrs)
+	}
+}
+
+func TestEnvelopeSetAddressHeaderRejectsNonAddressHeader(t *testing.T) {
+	e, err := enmime.ReadEnvelope(strings.NewReader("From: old@example.com\n\nBody\n"))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	err = e.SetAddressHeader("Subject", []*mail.Address{{Address: "bob@example.com"}})
+	if err == nil {
+		t.Fatal("Subject is not an address header, expected error")
+	}
+	if !strings.Contains(err.Error(), "not an address header") {
+		t.Errorf("Got error %q, want it to name the valid address headers", err)
+	}
+
+	err = e.SetAddressHeader("", []*mail.Address{{Address: "bob@example.com"}})
+	if err == nil || err.Error() != "provide non-empty header name" {
+		t.Errorf("Got error %v, want %q", err, "provide non-empty header name")
+	}
+}
+
+func TestEnvelopeSetAddressHeaderNil(t *testing.T) {
+	e, err := enmime.ReadEnvelope(strings.NewReader("From: old@example.com\nTo: first@example.com\n\nBody\n"))
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// Nil and empty slices clear the header instead of writing an empty value.
+	for _, addrs := range [][]*mail.Address{nil, {}, {nil}} {
+		if err := e.SetAddressHeader("To", addrs); err != nil {
+			t.Fatal(err)
+		}
+		if values := e.GetHeaderValues("To"); len(values) != 0 {
+			t.Errorf("To = %q, want it deleted", values)
+		}
+	}
+}
+
+func TestEnvelopeSetAddressHeaderSendRoundTrip(t *testing.T) {
+	sender := &mockSender{}
+	msg := test.OpenTestData("mail", "mime-mixed.raw")
+	e, err := enmime.ReadEnvelope(msg)
+	if err != nil {
+		t.Fatal("Failed to parse MIME:", err)
+	}
+
+	// The point of the feature: edit an address header with a non-ASCII display name, then send the
+	// parsed message without rebuilding it.
+	from := []*mail.Address{{Name: "José García", Address: "jose@example.com"}}
+	if err := e.SetAddressHeader("From", from); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Send(sender); err != nil {
+		t.Fatal(err)
+	}
+
+	if sender.from != "jose@example.com" {
+		t.Errorf("Got reverse-path %q, want %q", sender.from, "jose@example.com")
+	}
+
+	reparsed, err := enmime.ReadEnvelope(bytes.NewReader(sender.msg))
+	if err != nil {
+		t.Fatal("Failed to reparse sent message:", err)
+	}
+	addrs, err := reparsed.AddressList("From")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(addrs) != 1 {
+		t.Fatalf("Got %d From addresses, want 1", len(addrs))
+	}
+	if addrs[0].Name != "José García" || addrs[0].Address != "jose@example.com" {
+		t.Errorf("Got From %q <%s>, want %q <%s>",
+			addrs[0].Name, addrs[0].Address, from[0].Name, from[0].Address)
+	}
+
+	test.DiffGolden(t, sender.msg, "testdata", "encode", "envelope-set-address-header-send.golden")
+}

@@ -3,6 +3,7 @@ package enmime_test
 import (
 	"bytes"
 	"fmt"
+	"net/mail"
 	"os"
 	"sort"
 	"strings"
@@ -354,4 +355,60 @@ func ExampleEnvelope_Send() {
 	//
 	// <html>
 	// --Enmime-Test-100--
+}
+
+// ExampleEnvelope_SetAddressHeader illustrates editing an address header on a parsed message before
+// sending it.  Unlike SetHeader, the addresses keep their own formatting, so non-ASCII display names
+// are encoded as RFC 2047 encoded-words without wrapping the address list itself.
+func ExampleEnvelope_SetAddressHeader() {
+	r, err := os.Open("testdata/mail/mime-mixed.raw")
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	defer r.Close()
+
+	env, err := enmime.ReadEnvelope(r)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// Replace the To header with a mix of ASCII and non-ASCII display names.
+	err = env.SetAddressHeader("To", []*mail.Address{
+		{Name: "Bob", Address: "bob@example.com"},
+		{Name: "Patrik Fältström", Address: "paf@example.com"},
+	})
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	// The stored value is ASCII-safe; GetHeader would decode the encoded-word back to UTF-8.
+	fmt.Println(env.Root.Header.Get("To"))
+	for _, addr := range mustAddresses(env.AddressList("To")) {
+		fmt.Printf("%s <%s>\n", addr.Name, addr.Address)
+	}
+
+	// Send transmits the untouched part tree with the new header; From supplies the reverse-path.
+	sender := &mockSender{}
+	if err := env.Send(sender); err != nil {
+		fmt.Print(err)
+		return
+	}
+	fmt.Printf("reverse-path: %s, recipients: %v\n", sender.from, sender.to)
+
+	// Output:
+	// Bob <bob@example.com>, =?utf-8?q?Patrik_F=C3=A4ltstr=C3=B6m?= <paf@example.com>
+	// Bob <bob@example.com>
+	// Patrik Fältström <paf@example.com>
+	// reverse-path: jamehi03@jamehi03lx.noa.com, recipients: [bob@example.com paf@example.com]
+}
+
+// mustAddresses unwraps the error from Envelope.AddressList for the example above.
+func mustAddresses(addrs []*mail.Address, err error) []*mail.Address {
+	if err != nil {
+		panic(err)
+	}
+	return addrs
 }
