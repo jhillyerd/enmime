@@ -833,6 +833,26 @@ func TestEncodeEmptyBodyReadableByTextproto(t *testing.T) {
 	assert.Equal(t, "Test", h.Get("Subject"))
 }
 
+func TestEncodeClonedPartKeepsParsedBytes(t *testing.T) {
+	// A parsed part is written back byte for byte, bare LF included; a clone
+	// of it must behave the same, so Clone has to carry the parser state.
+	raw := "Content-Type: text/plain\n\nline one\nline two\n"
+	p, err := ReadParts(strings.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var original, cloned bytes.Buffer
+	if err := p.Encode(&original); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Clone(nil).Encode(&cloned); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(original.Bytes(), cloned.Bytes()) {
+		t.Errorf("clone encodes differently\noriginal: %q\nclone:    %q", original.String(), cloned.String())
+	}
+}
+
 func TestEncodePartBareLineBreaks(t *testing.T) {
 	// 7bit text is copied as is, so bare LF and bare CR in the content would end up in the
 	// message; RFC 5322 requires CRLF.
