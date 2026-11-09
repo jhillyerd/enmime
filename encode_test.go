@@ -837,7 +837,7 @@ func TestEncodeClonedPartKeepsParsedBytes(t *testing.T) {
 	// A parsed part is written back byte for byte, bare LF included; a clone
 	// of it must behave the same, so Clone has to carry the parser state.
 	raw := "Content-Type: text/plain\n\nline one\nline two\n"
-	p, err := ReadParts(strings.NewReader(raw))
+	p, err := enmime.ReadParts(strings.NewReader(raw))
 	if err != nil {
 		t.Fatal(err)
 	}
