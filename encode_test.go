@@ -845,6 +845,9 @@ func TestEncodeClonedPartKeepsParsedBytes(t *testing.T) {
 	if err := p.Encode(&original); err != nil {
 		t.Fatal(err)
 	}
+	if !strings.HasSuffix(original.String(), "\r\n\r\nline one\nline two\n") {
+		t.Fatalf("parsed body changed: %q", original.String())
+	}
 	if err := p.Clone(nil).Encode(&cloned); err != nil {
 		t.Fatal(err)
 	}
