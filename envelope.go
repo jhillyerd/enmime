@@ -5,6 +5,7 @@ import (
 	"mime"
 	"net/mail"
 	"net/textproto"
+	"sort"
 	"strings"
 	"time"
 
@@ -100,6 +101,107 @@ func (e *Envelope) DeleteHeader(name string) error {
 
 	e.header.Del(name)
 	return nil
+}
+
+// SetAddressHeader sets the named address header to addrs, formatted as an RFC 5322 address list.
+// If the header exists already, all existing values are replaced; passing a nil or empty addrs
+// slice deletes the header instead of writing an empty value.
+//
+// Names containing non-ASCII characters are emitted as RFC 2047 encoded-words, so the header stays
+// ASCII-safe on the wire while remaining a parseable address list.  Pure-ASCII names are written
+// unchanged, keeping the familiar `Bob <bob@example.com>` form.  Unlike SetHeader, which encodes an
+// entire value as one encoded-word, only the display name of each address is encoded; the address
+// list itself is never wrapped inside an encoded-word, so AddressList and ParseAddressList can read
+// the result back.
+//
+// Pass names as plain UTF-8.  A name that is already an RFC 2047 encoded-word is passed through
+// unchanged, so pre-encoded input from another source is not double-encoded.
+func (e *Envelope) SetAddressHeader(name string, addrs []*mail.Address) error {
+	if name == "" {
+		return errors.New("provide non-empty header name")
+	}
+	if !AddressHeaders[strings.ToLower(name)] {
+		return errors.Errorf("%s is not an address header, expected one of: %s", name,
+			strings.Join(sortedAddressHeaders(), ", "))
+	}
+	if e.header == nil {
+		return errors.New("no headers available")
+	}
+
+	var buf strings.Builder
+	count := 0
+	for _, addr := range addrs {
+		if addr == nil {
+			continue
+		}
+		// A value containing CR or LF would be written verbatim by Part.encodeHeader when the parser
+		// runs in raw-content mode, letting it inject headers into the transmitted message.
+		if err := validateSendAddress(addr.Address); err != nil {
+			return err
+		}
+		if count > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(formatAddress(addr))
+		count++
+	}
+	if count == 0 {
+		e.header.Del(name)
+		return nil
+	}
+
+	e.header.Set(name, buf.String())
+	return nil
+}
+
+// formatAddress renders a single address for an address header.  A Name holding non-ASCII bytes is
+// emitted as an RFC 2047 encoded-word ahead of the addr-spec, which is what mail.Address.String
+// does; a Name that is plain ASCII is written verbatim when it is a legal RFC 5322 phrase, so the
+// common case reads Bob <bob@example.com>.  Names that are neither are quoted by String.
+func formatAddress(addr *mail.Address) string {
+	if addr.Name != "" && !addressNameNeedsEncoding(addr.Name) && addressNameIsPhrase(addr.Name) {
+		return addr.Name + " " + (&mail.Address{Address: addr.Address}).String()
+	}
+	return addr.String()
+}
+
+// addressNameNeedsEncoding reports whether name cannot be written on the wire as-is, either because
+// it holds non-ASCII bytes or because it holds control characters.
+func addressNameNeedsEncoding(name string) bool {
+	for _, r := range name {
+		if (r < ' ' || r > '~') && r != '\t' {
+			return true
+		}
+	}
+	return false
+}
+
+// addressNameIsPhrase reports whether name may stand alone as an RFC 5322 phrase, without being
+// quoted or encoded.  RFC 5322 3.2.4 defines phrase = (atext / SP)*, so only printable ASCII is
+// allowed, and none of the specials ()<>[]:;@\,." may appear.
+func addressNameIsPhrase(name string) bool {
+	if name == "" || name[0] == ' ' || name[len(name)-1] == ' ' {
+		return false
+	}
+	for _, r := range name {
+		if r == ' ' {
+			continue
+		}
+		if r < '!' || r > '~' || strings.ContainsRune("()<>[]:;@\\,.\"", r) {
+			return false
+		}
+	}
+	return true
+}
+
+// sortedAddressHeaders returns the keys of AddressHeaders in sorted order, for error messages.
+func sortedAddressHeaders() []string {
+	keys := make([]string, 0, len(AddressHeaders))
+	for k := range AddressHeaders {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
