@@ -287,8 +287,46 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 		}
 		err = qp.Close()
 	default:
-		_, err = b.Write(p.Content)
+		if cte != teRaw && !p.fromParser() && p.TextContent() {
+			// RFC 5322 2.3: CR and LF only occur together as CRLF. The quoted-printable and base64 encoders
+			// produce that on their own; text written as 7bit or 8bit is copied verbatim, so a
+			// bare LF or CR in content supplied by the caller has to be converted here. Parts that
+			// came out of the parser are re-encoded as they were parsed.
+			err = writeCRLF(b, p.Content)
+		} else {
+			_, err = b.Write(p.Content)
+		}
 	}
+	return err
+}
+
+// fromParser reports whether the part was produced by a Parser rather than constructed by the
+// caller (NewPart and the Builder attach the package default parser).
+func (p *Part) fromParser() bool {
+	return p.parser != nil && p.parser != &defaultParser
+}
+
+// writeCRLF writes content with every bare LF and every bare CR turned into CRLF.
+func writeCRLF(b *bufio.Writer, content []byte) error {
+	start := 0
+	for i := 0; i < len(content); i++ {
+		c := content[i]
+		if c != '\n' && c != '\r' {
+			continue
+		}
+		if c == '\r' && i+1 < len(content) && content[i+1] == '\n' {
+			i++ // already CRLF
+			continue
+		}
+		if _, err := b.Write(content[start:i]); err != nil {
+			return err
+		}
+		if _, err := b.Write(crnl); err != nil {
+			return err
+		}
+		start = i + 1
+	}
+	_, err := b.Write(content[start:])
 	return err
 }
 

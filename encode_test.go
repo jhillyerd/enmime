@@ -832,3 +832,44 @@ func TestEncodeEmptyBodyReadableByTextproto(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Test", h.Get("Subject"))
 }
+
+func TestEncodePartBareLineBreaks(t *testing.T) {
+	// 7bit text is copied as is, so bare LF and bare CR in the content would end up in the
+	// message; RFC 5322 requires CRLF.
+	for _, tc := range []struct{ name, cte, content, want string }{
+		{"auto 7bit", "", "one\ntwo\rthree\r\nfour", "one\r\ntwo\r\nthree\r\nfour"},
+		{"forced 7bit", "7bit", "one\ntwo\n", "one\r\ntwo\r\n"},
+		{"forced 8bit", "8bit", "\xc3\xa9\n\r\r\n", "\xc3\xa9\r\n\r\n\r\n"},
+		{"already CRLF", "", "one\r\ntwo\r\n", "one\r\ntwo\r\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := enmime.NewPart("text/plain")
+			p.Content = []byte(tc.content)
+			p.ContentTransferEncoding = tc.cte
+			b := &bytes.Buffer{}
+			if err := p.Encode(b); err != nil {
+				t.Fatal(err)
+			}
+			out := b.String()
+			i := strings.Index(out, "\r\n\r\n")
+			if i < 0 {
+				t.Fatalf("no header separator in %q", out)
+			}
+			if got := out[i+4:]; got != tc.want {
+				t.Errorf("body %q, want %q", got, tc.want)
+			}
+		})
+	}
+
+	// an attachment is not text and is left alone
+	p := enmime.NewPart("application/octet-stream")
+	p.ContentTransferEncoding = "8bit"
+	p.Content = []byte("a\nb")
+	b := &bytes.Buffer{}
+	if err := p.Encode(b); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(b.String(), "\r\n\r\na\nb") {
+		t.Errorf("binary content changed: %q", b.String())
+	}
+}
