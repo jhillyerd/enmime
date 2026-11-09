@@ -1,0 +1,12 @@
+# CodeRabbit configuration for enmime.
+#
+# This project documents intent with section/package comments and inline `//`
+# comments explaining the "why", rather than aiming for godoc coverage of every
+# function. CodeRabbit's default docstring-coverage pre-merge check (80%
+# threshold, warning mode) therefore fires on most PRs without flagging
+# anything actionable. Disable it; to bring it back as an advisory signal, use
+# `mode: warning` with a lower `threshold`.
+reviews:
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
