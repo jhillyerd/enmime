@@ -35,6 +35,7 @@ func EnsureCommaDelimitedAddresses(s string) string {
 	inDomain := false
 	escapeSequence := false
 	inAngles := false
+	inGroup := false
 	sb := strings.Builder{}
 	for i, r := range s {
 		if escapeSequence {
@@ -67,6 +68,23 @@ func EnsureCommaDelimitedAddresses(s string) string {
 				continue
 			}
 		} else {
+			if r == ':' && !inAngles && !inDomain {
+				// Start of a group, as in "Team: a@example.com, b@example.com;".
+				inGroup = true
+				sb.WriteRune(r)
+				continue
+			}
+			if r == ';' && inGroup && !inAngles {
+				// Keep the semicolon that ends the group, and separate it from any
+				// address that follows.
+				inGroup = false
+				inDomain = false
+				sb.WriteRune(r)
+				if rest := strings.TrimLeft(s[i+1:], " "); rest != "" && rest[0] != ',' {
+					sb.WriteRune(',')
+				}
+				continue
+			}
 			if r == '@' {
 				inDomain = true
 				sb.WriteRune(r)

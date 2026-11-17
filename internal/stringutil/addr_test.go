@@ -62,11 +62,11 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 		},
 		{
 			have: `Joe Company:Joey <joe@company.com> John <other@company.com>;`,
-			want: `Joe Company:Joey <joe@company.com>, John <other@company.com>`,
+			want: `Joe Company:Joey <joe@company.com>, John <other@company.com>;`,
 		},
 		{
 			have: `Joe Company:Joey <joe@company.com> John <other@company.com>; Jimmy John <jimmy.john@company.com>`,
-			want: `Joe Company:Joey <joe@company.com>, John <other@company.com>, Jimmy John <jimmy.john@company.com>`,
+			want: `Joe Company:Joey <joe@company.com>, John <other@company.com>;, Jimmy John <jimmy.john@company.com>`,
 		},
 		{
 			have: `Joe Company <joe@company.com> John Company <other@company.com>`,
@@ -94,11 +94,19 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 		},
 		{
 			have: `A Group:Ed Jones <c@a.test>,joe@where.test,John <jdoe@one.test>;`,
-			want: `A Group:Ed Jones <c@a.test>,joe@where.test,John <jdoe@one.test>`,
+			want: `A Group:Ed Jones <c@a.test>,joe@where.test,John <jdoe@one.test>;`,
 		},
 		{
 			have: `A Group:Ed Jones <c@a.test> joe@where.test John <jdoe@one.test>;`,
-			want: `A Group:Ed Jones <c@a.test>, joe@where.test, John <jdoe@one.test>`,
+			want: `A Group:Ed Jones <c@a.test>, joe@where.test, John <jdoe@one.test>;`,
+		},
+		{
+			have: `Undisclosed recipients:; a@example.com;b@example.com`,
+			want: `Undisclosed recipients:;, a@example.com,b@example.com`,
+		},
+		{
+			have: `Team: a@example.com, b@example.com;, c@example.com;`,
+			want: `Team: a@example.com, b@example.com;, c@example.com`,
 		},
 		{
 			have: "a@example.com;b@example.com",
