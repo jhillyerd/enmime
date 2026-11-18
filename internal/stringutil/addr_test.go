@@ -109,6 +109,18 @@ func TestCommaDelimitedAddressLists(t *testing.T) {
 			want: `Team: a@example.com, b@example.com;, c@example.com`,
 		},
 		{
+			have: `Alice (role:admin) <alice@example.com>;bob@example.com`,
+			want: `Alice (role:admin) <alice@example.com>,bob@example.com`,
+		},
+		{
+			have: `Team: Alice <alice@example .com>; (team)`,
+			want: `Team: Alice <alice@example.com>; (team)`,
+		},
+		{
+			have: `Team: a@example.com; (team \) b@example.com) c@example.com`,
+			want: `Team: a@example.com; (team \) b@example.com), c@example.com`,
+		},
+		{
 			have: "a@example.com;b@example.com",
 			want: "a@example.com,b@example.com",
 		},

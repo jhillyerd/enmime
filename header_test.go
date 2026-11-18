@@ -157,6 +157,24 @@ func TestParseAddressListResult(t *testing.T) {
 			},
 		},
 		{
+			"Alice (role:admin) <alice@example.com>;bob@example.com",
+			[]*mail.Address{
+				{Name: "Alice", Address: "alice@example.com"},
+				{Name: "", Address: "bob@example.com"},
+			},
+		},
+		{
+			"Team: Alice <alice@example .com>; (team)",
+			[]*mail.Address{{Name: "Alice", Address: "alice@example.com"}},
+		},
+		{
+			"Team: a@example.com; (team) b@example.com",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "", Address: "b@example.com"},
+			},
+		},
+		{
 			"Undisclosed recipients:; a@example.com",
 			[]*mail.Address{{Name: "", Address: "a@example.com"}},
 		},
