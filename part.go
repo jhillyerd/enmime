@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	_utf8 "unicode/utf8"
 
 	"github.com/gogs/chardet"
 	"github.com/jhillyerd/enmime/v2/internal/coding"
@@ -266,7 +267,7 @@ func (p *Part) convertFromDetectedCharset(r io.Reader, readPartErrorPolicy ReadP
 		p.addWarningf(ErrorCharsetDeclaration, "charset could not be detected: %v", err)
 	}
 
-	if cs == nil || cs.Confidence < minCharsetConfidence || len(bytes.Runes(buf)) < p.parser.minCharsetDetectRunes {
+	if cs == nil || cs.Confidence < minCharsetConfidence || _utf8.RuneCount(buf) < p.parser.minCharsetDetectRunes {
 		// Low confidence or not enough characters, use declared character set.
 		return p.convertFromStatedCharset(r), nil
 	}

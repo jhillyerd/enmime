@@ -3,6 +3,7 @@ package enmime_test
 import (
 	"encoding/base64"
 	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -1540,6 +1541,23 @@ func TestCharacterDetectionRunes(t *testing.T) {
 	}
 
 	test.ComparePart(t, p, wantp)
+}
+
+func TestCharacterDetectionAllocations(t *testing.T) {
+	raw := "Content-Type: text/plain; charset=utf-8\r\n\r\n" +
+		strings.Repeat("The café on the corner serves crème brûlée.\r\n", 20000)
+	allocated := func(parser *enmime.Parser) uint64 {
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		_, err := parser.ReadParts(strings.NewReader(raw))
+		runtime.ReadMemStats(&after)
+		require.NoError(t, err)
+		return after.TotalAlloc - before.TotalAlloc
+	}
+
+	detected := allocated(enmime.NewParser())
+	declared := allocated(enmime.NewParser(enmime.DisableCharacterDetection(true)))
+	assert.Less(t, detected, declared+2*uint64(len(raw)))
 }
 
 // buildPartsMessage returns a MIME message containing n text/plain parts inside a single
