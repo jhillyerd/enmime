@@ -438,6 +438,7 @@ func (p *Part) Clone(parent *Part) *Part {
 		Errors:                  p.Errors,
 		Content:                 p.Content,
 		Epilogue:                p.Epilogue,
+		parser:                  p.parser,
 	}
 	newPart.FirstChild = p.FirstChild.Clone(newPart)
 	newPart.NextSibling = p.NextSibling.Clone(parent)
