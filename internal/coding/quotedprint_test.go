@@ -378,6 +378,9 @@ func TestWriteQuotedPrintableRoundTrip(t *testing.T) {
 		strings.Repeat("a", 74) + "--" + boundary + strings.Repeat("b", 200),
 		"line\r\n--" + boundary + "\r\nother",
 		strings.Repeat("a", 69) + "é--" + boundary + "--\r\nrest",
+		// Long content, so that the delimiter arrives in the middle of a run of bytes the
+		// encoder passes through without inspecting them.
+		strings.Repeat("a", 500) + "\r\n--" + boundary + "\r\n" + strings.Repeat("b", 300),
 	}
 
 	for _, input := range inputs {
@@ -402,6 +405,23 @@ func TestWriteQuotedPrintableRoundTrip(t *testing.T) {
 		}
 		if string(decoded) != input {
 			t.Errorf("Decoded: %q, want: %q", decoded, input)
+		}
+	}
+}
+
+// BenchmarkWriteQuotedPrintable measures the cost of keeping the delimiter off the start of a
+// line, which is a pass-through for most of the encoded data.
+func BenchmarkWriteQuotedPrintable(b *testing.B) {
+	b.StopTimer()
+	input := bytes.Repeat([]byte("The quick brown fox jumps over the lazy dog. "), 1<<14)
+	b.SetBytes(int64(len(input)))
+	buf := new(bytes.Buffer)
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		if err := coding.WriteQuotedPrintable(buf, input, "boundary"); err != nil {
+			b.Fatal(err)
 		}
 	}
 }
