@@ -437,6 +437,9 @@ func TestWriteQuotedPrintableWriteError(t *testing.T) {
 			w := &failWriter{limit: failAfter}
 			err := coding.WriteQuotedPrintable(w, []byte(content), boundary)
 			if err == nil {
+				if w.rejected {
+					t.Fatalf("boundary %q, fail after %d: a write was rejected, but no error was returned", boundary, failAfter)
+				}
 				if failAfter == 0 {
 					t.Fatal("expected an error from a writer that fails immediately")
 				}
@@ -452,12 +455,14 @@ func TestWriteQuotedPrintableWriteError(t *testing.T) {
 var errWriteFail = errors.New("write failed")
 
 type failWriter struct {
-	limit int // Fail once this many bytes have been accepted.
-	n     int
+	limit    int // Fail once this many bytes have been accepted.
+	n        int
+	rejected bool // A write was refused, so the encoder must have reported it.
 }
 
 func (w *failWriter) Write(p []byte) (int, error) {
 	if w.n+len(p) > w.limit {
+		w.rejected = true
 		return 0, errWriteFail
 	}
 	w.n += len(p)
