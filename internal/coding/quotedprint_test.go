@@ -334,3 +334,74 @@ func BenchmarkQPCleaner(b *testing.B) {
 		}
 	}
 }
+
+func TestWriteQuotedPrintable(t *testing.T) {
+	ttable := []struct {
+		content  string
+		boundary string
+		want     string
+	}{
+		{"", "boundary", ""},
+		{"abc", "", "abc"},
+		{"abc", "boundary", "abc"},
+		{"pédagogues", "boundary", "p=C3=A9dagogues"},
+		// A line may not begin with the delimiter, but other hyphens are left alone.
+		{"--boundary", "", "--boundary"},
+		{"--boundary", "boundary", "-=\r\n-boundary"},
+		{"--other", "boundary", "--other"},
+		{"a--boundary", "boundary", "a--boundary"},
+		{"a\r\n--boundary", "boundary", "a\r\n-=\r\n-boundary"},
+		{"--boundary--", "boundary", "-=\r\n-boundary--"},
+		{"-----BEGIN PGP SIGNATURE-----", "enmime-1234", "-----BEGIN PGP SIGNATURE-----"},
+		{"-", "boundary", "-"},
+		{"--", "boundary", "--"},
+	}
+
+	for _, tc := range ttable {
+		buf := new(bytes.Buffer)
+		err := coding.WriteQuotedPrintable(buf, []byte(tc.content), tc.boundary)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got := buf.String()
+		if got != tc.want {
+			t.Errorf("Got: %q, want: %q", got, tc.want)
+		}
+	}
+}
+
+func TestWriteQuotedPrintableRoundTrip(t *testing.T) {
+	const boundary = "boundary"
+	inputs := []string{
+		"--" + boundary,
+		strings.Repeat("a", 74) + "--" + boundary + strings.Repeat("b", 200),
+		"line\r\n--" + boundary + "\r\nother",
+		strings.Repeat("a", 69) + "é--" + boundary + "--\r\nrest",
+	}
+
+	for _, input := range inputs {
+		buf := new(bytes.Buffer)
+		if err := coding.WriteQuotedPrintable(buf, []byte(input), boundary); err != nil {
+			t.Fatal(err)
+		}
+
+		encoded := buf.String()
+		for line := range strings.SplitSeq(encoded, "\r\n") {
+			if strings.HasPrefix(line, "--"+boundary) {
+				t.Errorf("Encoded line begins with the delimiter: %q", line)
+			}
+			if len(line) > 76 {
+				t.Errorf("Encoded line is %d characters, want 76 or less: %q", len(line), line)
+			}
+		}
+
+		decoded, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(encoded)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(decoded) != input {
+			t.Errorf("Decoded: %q, want: %q", decoded, input)
+		}
+	}
+}

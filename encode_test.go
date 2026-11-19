@@ -345,6 +345,31 @@ func TestEncodePartContentLongLines(t *testing.T) {
 	}
 }
 
+func TestEncodeQuotedPrintableKeepsBoundaryOffLineStart(t *testing.T) {
+	// A soft line break inserted by the quoted-printable encoder must not leave a boundary
+	// delimiter at the start of a line, which a multipart parser reads as the end of the part
+	// (RFC 2046 section 5.1.1).
+	content := strings.Repeat("a", 69) + "é" + "--test--\r\nrest"
+	parent := enmime.NewPart("multipart/mixed")
+	parent.Boundary = "test"
+	child := enmime.NewPart("text/plain")
+	child.Content = []byte(content)
+	parent.AddChild(child)
+	sibling := enmime.NewPart("text/plain")
+	sibling.Content = []byte("sibling body")
+	parent.AddChild(sibling)
+
+	b := &bytes.Buffer{}
+	require.NoError(t, parent.Encode(b))
+
+	root, err := enmime.ReadParts(b)
+	require.NoError(t, err)
+	require.NotNil(t, root.FirstChild)
+	assert.Equal(t, content, string(root.FirstChild.Content))
+	require.NotNil(t, root.FirstChild.NextSibling)
+	assert.Equal(t, "sibling body", string(root.FirstChild.NextSibling.Content))
+}
+
 func TestEncodePartWithExistingEncodingHeader(t *testing.T) {
 	p := enmime.NewPart("text/plain")
 	p.Header.Add("Content-Transfer-Encoding", "quoted-printable")

@@ -6,7 +6,6 @@ import (
 	"io"
 	"maps"
 	"mime"
-	"mime/quotedprintable"
 	"net/textproto"
 	"sort"
 	"strings"
@@ -44,6 +43,13 @@ var crnl = []byte{'\r', '\n'}
 
 // Encode writes this Part and all its children to the specified writer in MIME format.
 func (p *Part) Encode(writer io.Writer) error {
+	return p.encode(writer, "")
+}
+
+// encode writes this Part and all its children to writer.  boundary is the delimiter of the
+// multipart that encloses this Part, or empty if there is none, so that quoted-printable
+// encoding can keep it off the start of a line (see coding.WriteQuotedPrintable).
+func (p *Part) encode(writer io.Writer, boundary string) error {
 	if p.Header == nil {
 		p.Header = make(textproto.MIMEHeader)
 	}
@@ -85,7 +91,7 @@ func (p *Part) Encode(writer io.Writer) error {
 		}
 	}
 	if len(p.Content) > 0 {
-		if err := p.encodeContent(b, cte); err != nil {
+		if err := p.encodeContent(b, cte, boundary); err != nil {
 			return err
 		}
 	}
@@ -103,7 +109,7 @@ func (p *Part) Encode(writer io.Writer) error {
 		if _, err := b.Write(crnl); err != nil {
 			return err
 		}
-		if err := c.Encode(b); err != nil {
+		if err := c.encode(b, p.Boundary); err != nil {
 			return err
 		}
 		c = c.NextSibling
@@ -251,8 +257,9 @@ func (p *Part) encodeHeader(b *bufio.Writer) error {
 	return nil
 }
 
-// encodeContent writes out the content in the selected encoding.
-func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) {
+// encodeContent writes out the content in the selected encoding.  boundary is the delimiter of
+// the enclosing multipart, if any.
+func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding, boundary string) (err error) {
 	if p.ContentReader != nil {
 		return p.encodeContentFromReader(b)
 	}
@@ -281,11 +288,7 @@ func (p *Part) encodeContent(b *bufio.Writer, cte transferEncoding) (err error) 
 			text = text[lineLen:]
 		}
 	case teQuoted:
-		qp := quotedprintable.NewWriter(b)
-		if _, err = qp.Write(p.Content); err != nil {
-			return err
-		}
-		err = qp.Close()
+		err = coding.WriteQuotedPrintable(b, p.Content, boundary)
 	default:
 		_, err = b.Write(p.Content)
 	}
