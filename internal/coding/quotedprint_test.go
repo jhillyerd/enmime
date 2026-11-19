@@ -378,6 +378,9 @@ func TestWriteQuotedPrintableRoundTrip(t *testing.T) {
 		strings.Repeat("a", 74) + "--" + boundary + strings.Repeat("b", 200),
 		"line\r\n--" + boundary + "\r\nother",
 		strings.Repeat("a", 69) + "é--" + boundary + "--\r\nrest",
+		// Long content, so that the delimiter arrives in the middle of a run of bytes the
+		// encoder passes through without inspecting them.
+		strings.Repeat("a", 500) + "\r\n--" + boundary + "\r\n" + strings.Repeat("b", 300),
 	}
 
 	for _, input := range inputs {
@@ -404,4 +407,64 @@ func TestWriteQuotedPrintableRoundTrip(t *testing.T) {
 			t.Errorf("Decoded: %q, want: %q", decoded, input)
 		}
 	}
+}
+
+// BenchmarkWriteQuotedPrintable measures the cost of keeping the delimiter off the start of a
+// line, which is a pass-through for most of the encoded data.
+func BenchmarkWriteQuotedPrintable(b *testing.B) {
+	b.StopTimer()
+	input := bytes.Repeat([]byte("The quick brown fox jumps over the lazy dog. "), 1<<14)
+	b.SetBytes(int64(len(input)))
+	buf := new(bytes.Buffer)
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		if err := coding.WriteQuotedPrintable(buf, input, "boundary"); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func TestWriteQuotedPrintableWriteError(t *testing.T) {
+	// The encoder writes out in pieces, so a failure at any of them must reach the caller.
+	// Content that reaches every branch: a full delimiter, a prefix that turns out not to
+	// be one, and a delimiter cut short by the end of the content.
+	content := strings.Repeat("a", 100) + "\r\n--boundary\r\n" + strings.Repeat("b", 100) +
+		"\r\n--x\r\n--"
+	for _, boundary := range []string{"", "boundary"} {
+		for failAfter := 0; ; failAfter++ {
+			w := &failWriter{limit: failAfter}
+			err := coding.WriteQuotedPrintable(w, []byte(content), boundary)
+			if err == nil {
+				if w.rejected {
+					t.Fatalf("boundary %q, fail after %d: a write was rejected, but no error was returned", boundary, failAfter)
+				}
+				if failAfter == 0 {
+					t.Fatal("expected an error from a writer that fails immediately")
+				}
+				break
+			}
+			if !errors.Is(err, errWriteFail) {
+				t.Fatalf("Got: %v, want: %v", err, errWriteFail)
+			}
+		}
+	}
+}
+
+var errWriteFail = errors.New("write failed")
+
+type failWriter struct {
+	limit    int // Fail once this many bytes have been accepted.
+	n        int
+	rejected bool // A write was refused, so the encoder must have reported it.
+}
+
+func (w *failWriter) Write(p []byte) (int, error) {
+	if w.n+len(p) > w.limit {
+		w.rejected = true
+		return 0, errWriteFail
+	}
+	w.n += len(p)
+	return len(p), nil
 }
