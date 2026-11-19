@@ -425,3 +425,41 @@ func BenchmarkWriteQuotedPrintable(b *testing.B) {
 		}
 	}
 }
+
+func TestWriteQuotedPrintableWriteError(t *testing.T) {
+	// The encoder writes out in pieces, so a failure at any of them must reach the caller.
+	// Content that reaches every branch: a full delimiter, a prefix that turns out not to
+	// be one, and a delimiter cut short by the end of the content.
+	content := strings.Repeat("a", 100) + "\r\n--boundary\r\n" + strings.Repeat("b", 100) +
+		"\r\n--x\r\n--"
+	for _, boundary := range []string{"", "boundary"} {
+		for failAfter := 0; ; failAfter++ {
+			w := &failWriter{limit: failAfter}
+			err := coding.WriteQuotedPrintable(w, []byte(content), boundary)
+			if err == nil {
+				if failAfter == 0 {
+					t.Fatal("expected an error from a writer that fails immediately")
+				}
+				break
+			}
+			if !errors.Is(err, errWriteFail) {
+				t.Fatalf("Got: %v, want: %v", err, errWriteFail)
+			}
+		}
+	}
+}
+
+var errWriteFail = errors.New("write failed")
+
+type failWriter struct {
+	limit int // Fail once this many bytes have been accepted.
+	n     int
+}
+
+func (w *failWriter) Write(p []byte) (int, error) {
+	if w.n+len(p) > w.limit {
+		return 0, errWriteFail
+	}
+	w.n += len(p)
+	return len(p), nil
+}
