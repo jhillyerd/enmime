@@ -134,6 +134,50 @@ func TestParseAddressListResult(t *testing.T) {
 			`=?UTF-8?B?dGVzdG5hbWU=?= <=?UTF-8?B?dGVzdG5hbWU=?=@example .com>`,
 			[]*mail.Address{{Name: "testname", Address: "testname@example.com"}},
 		},
+		{
+			// The retry keeps the semicolon that ends a group
+			"Team: a@example.com, Example User <user@example .com>;",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "Example User", Address: "user@example.com"},
+			},
+		},
+		{
+			"Team: a@example.com b@example.com;",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "", Address: "b@example.com"},
+			},
+		},
+		{
+			"Team: a@example.com;, Example User <user@example .com>",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "Example User", Address: "user@example.com"},
+			},
+		},
+		{
+			"Alice (role:admin) <alice@example.com>;bob@example.com",
+			[]*mail.Address{
+				{Name: "Alice", Address: "alice@example.com"},
+				{Name: "", Address: "bob@example.com"},
+			},
+		},
+		{
+			"Team: Alice <alice@example .com>; (team)",
+			[]*mail.Address{{Name: "Alice", Address: "alice@example.com"}},
+		},
+		{
+			"Team: a@example.com; (team) b@example.com",
+			[]*mail.Address{
+				{Name: "", Address: "a@example.com"},
+				{Name: "", Address: "b@example.com"},
+			},
+		},
+		{
+			"Undisclosed recipients:; a@example.com",
+			[]*mail.Address{{Name: "", Address: "a@example.com"}},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {

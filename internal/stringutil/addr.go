@@ -35,10 +35,34 @@ func EnsureCommaDelimitedAddresses(s string) string {
 	inDomain := false
 	escapeSequence := false
 	inAngles := false
+	inGroup := false
+	commentDepth := 0
 	sb := strings.Builder{}
+	skipTo := 0
 	for i, r := range s {
+		if i < skipTo {
+			continue
+		}
 		if escapeSequence {
 			escapeSequence = false
+			sb.WriteRune(r)
+			continue
+		}
+		if commentDepth > 0 {
+			// Keep comments as they are, so a colon in "(role:admin)" doesn't open a group.
+			switch r {
+			case '\\':
+				escapeSequence = true
+			case '(':
+				commentDepth++
+			case ')':
+				commentDepth--
+			}
+			sb.WriteRune(r)
+			continue
+		}
+		if r == '(' && !inQuotes && !inAngles {
+			commentDepth++
 			sb.WriteRune(r)
 			continue
 		}
@@ -67,6 +91,27 @@ func EnsureCommaDelimitedAddresses(s string) string {
 				continue
 			}
 		} else {
+			if r == ':' && !inAngles && !inDomain {
+				// Start of a group, as in "Team: a@example.com, b@example.com;".
+				inGroup = true
+				sb.WriteRune(r)
+				continue
+			}
+			if r == ';' && inGroup && !inAngles {
+				// Keep the semicolon that ends the group along with any comment after it,
+				// and separate the group from an address that follows.
+				inGroup = false
+				inDomain = false
+				sb.WriteRune(r)
+				rest := skipCFWS(s[i+1:])
+				comment := strings.TrimRight(s[i+1:len(s)-len(rest)], " ")
+				sb.WriteString(comment)
+				skipTo = i + 1 + len(comment)
+				if rest != "" && rest[0] != ',' {
+					sb.WriteRune(',')
+				}
+				continue
+			}
 			if r == '@' {
 				inDomain = true
 				sb.WriteRune(r)
@@ -103,4 +148,22 @@ func EnsureCommaDelimitedAddresses(s string) string {
 		sb.WriteRune(r)
 	}
 	return sb.String()
+}
+
+// skipCFWS returns s without its leading spaces and comments.
+func skipCFWS(s string) string {
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c == '\\' && depth > 0:
+			i++
+		case c == '(':
+			depth++
+		case c == ')' && depth > 0:
+			depth--
+		case c != ' ' && depth == 0:
+			return s[i:]
+		}
+	}
+	return ""
 }

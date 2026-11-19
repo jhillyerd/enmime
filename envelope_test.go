@@ -1049,6 +1049,14 @@ Message body
 				{Name: "Third", Address: "third@example.com"},
 			},
 		},
+		{
+			// Group with an address folded onto the next line
+			"Project Team: Alice <alice@example.com>, Bob <bob@example\n .com>;",
+			[]*mail.Address{
+				{Name: "Alice", Address: "alice@example.com"},
+				{Name: "Bob", Address: "bob@example.com"},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
