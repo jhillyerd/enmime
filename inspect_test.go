@@ -28,6 +28,14 @@ func TestDecodeRFC2047(t *testing.T) {
 		}
 	})
 
+	t.Run("rfc2047 decoded equals sign", func(t *testing.T) {
+		// https://github.com/jhillyerd/enmime/issues/363
+		s := enmime.DecodeRFC2047("=?UTF-8?Q?s=3Dgreen;d=3Ddomain;i=3Dsender+=C3=A4@domain?=")
+		if want := "s=green;d=domain;i=sender+\u00e4@domain"; s != want {
+			t.Errorf("got %q, want %q", s, want)
+		}
+	})
+
 	t.Run("rfc2047 pass-through", func(t *testing.T) {
 		s := enmime.DecodeRFC2047("Hello World")
 		if s != "Hello World" {

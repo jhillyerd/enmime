@@ -169,6 +169,12 @@ func TestRfc2047Decode(t *testing.T) {
 		{"quoted", "=?US-ASCII?q?Hello=20World?=", "Hello World"},
 		{"base64", "=?US-ASCII?b?SGVsbG8gV29ybGQ=?=", "Hello World"},
 		{"nested qp+b64", "=?utf-8?b?PT9VUy1BU0NJST9xP0hlbGxvPTIwV29ybGQ/PQ==?=", "Hello World"},
+		// https://github.com/jhillyerd/enmime/issues/363
+		{
+			"decoded equals sign",
+			"=?UTF-8?Q?s=3Dgreen;d=3Ddomain;i=3Dsender+=C3=A4@domain?=",
+			"s=green;d=domain;i=sender+\u00e4@domain",
+		},
 	}
 
 	for _, tt := range ttable {
@@ -176,6 +182,26 @@ func TestRfc2047Decode(t *testing.T) {
 			got := RFC2047Decode(tt.in)
 			if got != tt.want {
 				t.Errorf("RFC2047Decode(%q) == %q, want: %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRfc2047DecodePair(t *testing.T) {
+	var ttable = []struct {
+		label, in, want string
+	}{
+		{"pass through", "name=plain", "name=plain"},
+		{"no equals sign", "=?US-ASCII?q?Hello=20World?=", "Hello World"},
+		{"adds quotes", "=?utf-8?b?bmFtZT1ow6ZsbG8gd29ybGQ=?=", "name=\"h\u00e6llo world\""},
+		{"keeps quotes", "=?utf-8?q?name=3D=22hello=22?=", `name="hello"`},
+	}
+
+	for _, tt := range ttable {
+		t.Run(tt.label, func(t *testing.T) {
+			got := RFC2047DecodePair(tt.in)
+			if got != tt.want {
+				t.Errorf("RFC2047DecodePair(%q) == %q, want: %q", tt.in, got, tt.want)
 			}
 		})
 	}

@@ -419,7 +419,7 @@ func fixMangledMediaType(mtype string, sep rune, options ParseOptions) string {
 //
 // https://github.com/jhillyerd/enmime/issues/384
 func decodeRFC2047Param(p string) string {
-	decoded := coding.RFC2047Decode(p)
+	decoded := coding.RFC2047DecodePair(p)
 	// When the chunk has no literal quotes, decoding is free to introduce the structural
 	// quotes it adds itself (e.g. an encoded word standing in for an entire key=value pair).
 	// Once literal quotes are present, extra quotes in the decoded text must come from the
