@@ -62,6 +62,36 @@ func DecodeExtHeader(input string) string {
 //
 // RFC2047 Example: `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
 func RFC2047Decode(s string) string {
+	s, _ = rfc2047DecodeAll(s)
+	return s
+}
+
+// RFC2047DecodePair is like RFC2047Decode, but for a single `key=value` parameter. If decoding
+// changed the input, the value after the first `=` is wrapped in double quotes as needed.
+func RFC2047DecodePair(s string) string {
+	s, decoded := rfc2047DecodeAll(s)
+	if !decoded {
+		return s
+	}
+
+	key, value, found := strings.Cut(s, "=")
+	if !found {
+		return s
+	}
+
+	// Add quotes as needed.
+	if !strings.HasPrefix(value, "\"") {
+		value = `"` + value
+	}
+	if !strings.HasSuffix(value, "\"") {
+		value += `"`
+	}
+
+	return fmt.Sprintf("%s=%s", key, value)
+}
+
+// rfc2047DecodeAll repeatedly decodes s, reporting whether any decoding took place.
+func rfc2047DecodeAll(s string) (string, bool) {
 	// Convert CR/LF to spaces.
 	s = strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\r' {
@@ -70,35 +100,13 @@ func RFC2047Decode(s string) string {
 		return r
 	}, s)
 
-	var err error
 	decoded := false
 	for {
-		s, err = rfc2047Recurse(s)
-		switch err {
-		case nil:
-			decoded = true
-			continue
-
-		default:
-			if decoded {
-				key, value, found := strings.Cut(s, "=")
-				if !found {
-					return s
-				}
-
-				// Add quotes as needed.
-				if !strings.HasPrefix(value, "\"") {
-					value = `"` + value
-				}
-				if !strings.HasSuffix(value, "\"") {
-					value += `"`
-				}
-
-				return fmt.Sprintf("%s=%s", key, value)
-			}
-
-			return s
+		next, err := rfc2047Recurse(s)
+		if err != nil {
+			return s, decoded
 		}
+		s, decoded = next, true
 	}
 }
 
