@@ -169,6 +169,8 @@ func TestRfc2047Decode(t *testing.T) {
 		{"quoted", "=?US-ASCII?q?Hello=20World?=", "Hello World"},
 		{"base64", "=?US-ASCII?b?SGVsbG8gV29ybGQ=?=", "Hello World"},
 		{"nested qp+b64", "=?utf-8?b?PT9VUy1BU0NJST9xP0hlbGxvPTIwV29ybGQ/PQ==?=", "Hello World"},
+		// https://github.com/jhillyerd/enmime/issues/363
+		{"qp key=value pairs", "=?UTF-8?Q?s=3Dgreen;d=3Ddomain;i=3Dsender+=C3=A4@domain?=", "s=green;d=domain;i=sender+ä@domain"},
 	}
 
 	for _, tt := range ttable {

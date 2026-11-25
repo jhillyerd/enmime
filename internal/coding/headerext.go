@@ -62,6 +62,40 @@ func DecodeExtHeader(input string) string {
 //
 // RFC2047 Example: `=?UTF-8?B?bmFtZT0iw7DCn8KUwoo=?=`
 func RFC2047Decode(s string) string {
+	s, _ = rfc2047Decode(s)
+	return s
+}
+
+// RFC2047DecodeParam decodes RFC 2047 encoded words within a single key=value MIME parameter
+// chunk. Unlike RFC2047Decode, when decoding takes place the value is wrapped in double quotes
+// as needed: an encoded word can stand in for an entire key=value pair whose value contains
+// characters, such as ";" or whitespace, that would otherwise break the parameter structure
+// when the header is reassembled and parsed.
+func RFC2047DecodeParam(s string) string {
+	s, decoded := rfc2047Decode(s)
+	if !decoded {
+		return s
+	}
+
+	key, value, found := strings.Cut(s, "=")
+	if !found {
+		return s
+	}
+
+	// Add quotes as needed.
+	if !strings.HasPrefix(value, "\"") {
+		value = `"` + value
+	}
+	if !strings.HasSuffix(value, "\"") {
+		value += `"`
+	}
+
+	return fmt.Sprintf("%s=%s", key, value)
+}
+
+// rfc2047Decode decodes the RFC 2047 encoded words in s and reports whether any decoding took
+// place.
+func rfc2047Decode(s string) (string, bool) {
 	// Convert CR/LF to spaces.
 	s = strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\r' {
@@ -74,31 +108,10 @@ func RFC2047Decode(s string) string {
 	decoded := false
 	for {
 		s, err = rfc2047Recurse(s)
-		switch err {
-		case nil:
-			decoded = true
-			continue
-
-		default:
-			if decoded {
-				key, value, found := strings.Cut(s, "=")
-				if !found {
-					return s
-				}
-
-				// Add quotes as needed.
-				if !strings.HasPrefix(value, "\"") {
-					value = `"` + value
-				}
-				if !strings.HasSuffix(value, "\"") {
-					value += `"`
-				}
-
-				return fmt.Sprintf("%s=%s", key, value)
-			}
-
-			return s
+		if err != nil {
+			return s, decoded
 		}
+		decoded = true
 	}
 }
 
